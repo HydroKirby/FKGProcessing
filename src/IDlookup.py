@@ -25,6 +25,7 @@ DEFAULT_OUTFILENAME = 'result.txt'
 DEFAULT_ASSETPATH = 'asset'
 
 # Specify the Flower Knight ID and their English name (which is not available in getMaster)
+# Note: Always make sure findID and english_nameList are list types!
 findID = [158101]
 english_nameList = ["Aizoon Stonecrop"]
 ImgDownload = False
@@ -148,6 +149,43 @@ class UnitTest(object):
 		vals, success, actual_count = split_and_check_count(oracle_str, 6)
 		test_print(vals, success, actual_count, len(oracle_str))
 
+def get_char_module(master_data):
+	"""Gets the text to fill in a character module.
+
+	If the user chooses to abort the operation, an empty string is returned.
+
+	@returns The full text for a character module.
+	"""
+	_METHODS = ['By using the embedded "findID" in the source code.',
+		'By inputting the character name or ID.',
+		'By getting all of the newly updated/added characters.',
+		'Cancel.']
+
+	# Determine how the user wants to look up the character.
+	method = -1
+	print('How do you want to look up the character?')
+	for m in range(len(_METHODS)):
+		print('{0}: {1}'.format(m, _METHODS[m]))
+	while method < 0 or method >= len(_METHODS):
+		try:
+			method = int(input('>>> Input the method number: '))
+		except ValueError:
+			pass
+
+	# The method is determined. Look up the character.
+	output_text = ''
+	if method == 0:
+		output_text += '\n\n'.join([master_data.get_char_module(id) for id in findID])
+	elif method == 1:
+		name_or_id = input('>>> Input the character\'s Japanese name or ID: ')
+		output_text = master_data.get_char_module(name_or_id)
+	elif method == 2:
+		# TODO
+		print('Not implemented yet!')
+	elif method == 3:
+		print('Cancelled.')
+	return output_text
+
 def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	"""Asks the user which function they want to use."""
 	# Make the list of potential actions.
@@ -216,7 +254,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_GET_CHAR_TEMPLATE:
 			output_template(master_data.get_char_template(input_name_or_id, english_name))
 		elif user_input == ACT_GET_CHAR_MODULE:
-			output_text = master_data.get_char_module(input_name_or_id)
+			output_text = get_char_module(master_data)
 		elif user_input == ACT_WRITE_SKILL_LIST:
 			output_text = master_data.get_skill_list_page()
 		elif user_input == ACT_WRITE_ABILITY_LIST:

@@ -163,6 +163,7 @@ class FlowerKnight(object):
 		my.nation = pre_evo_entry.getval('nation')
 		my.gift = pre_evo_entry.getval('gift')
 		my.charID1 = pre_evo_entry.getval('charID1')
+		my._determine_romaji()
 
 		# Store all stats in lists ordered as such: HP, Atk, Def.
 		my.tiers = {'preEvo':{}, 'evo':{}, 'bloom':{}}
@@ -200,6 +201,11 @@ class FlowerKnight(object):
 			my.tiers['bloom']['lvlMax'] = [bloom_entry.getval('lvlMaxHP'), bloom_entry.getval('lvlMaxAtk'), bloom_entry.getval('lvlMaxDef')]
 			my.tiers['bloom']['aff1'] = [bloom_entry.getval('aff1MultHP'), bloom_entry.getval('aff1MultAtk'), bloom_entry.getval('aff1MultDef')]
 			my.tiers['bloom']['aff2'] = [bloom_entry.getval('aff2MultHP'), bloom_entry.getval('aff2MultAtk'), bloom_entry.getval('aff2MultDef')]
+
+	def _determine_romaji(my):
+		"""Determines the romaji spelling of the full name."""
+		# TODO
+		my.romajiName = ''
 
 class BaseEntry(object):
 	"""Base class for deriving Entry classes.
@@ -648,11 +654,83 @@ class MasterData(object):
 		entries = my.get_char_entries(char_name_or_id)
 		if not entries:
 			return ''
-		text = ''
+		char_entries = my.get_char_entries(char_name_or_id)
+		knight = FlowerKnight(char_entries)
+		skill = my.skills[knight.skill]
+		# Ability 1 is used by pre-evo and evo tiers.
+		ability1 = knight.tiers['preEvo']['abilities'][0]
+		# Ability 2 is used by evo and bloom tiers.
+		ability2 = knight.tiers['evo']['abilities'][1]
+		# Abilities 3 and 4 replace abilities 1 and 2 after blooming.
+		ability3 = knight.tiers['bloom']['abilities'][0]
+		ability4 = knight.tiers['bloom']['abilities'][1]
+		
+		module_name = 'Module:' + knight.fullName
+
+		# TODO: Sanitize user data. It needs to start with a new line and end with }.
+		userData = ''
+
+		# TODO: Fill in the knight's info instead of using these copy-pasted presets.
+		blank = ''
+		masterData = ''.join([
+			'p.masterData = {\n'
+			'\tid = ', knight.tiers['preEvo']['id'], ',\n',
+			'\tname = {japanese = ', knight.fullName, ', romaji = ', knight.romajiName, ',},\n',
+			'\ttype = ', knight.type, ',\n',
+			'\trarity = ', knight.rarity, ',\n',
+			'\tlikes = ', knight.gift, ',\n',
+			'\tnation = ', knight.nation, ',\n',
+			'\t--Stat { HP , ATK , DEF },\n',
+			'\tpreEvoLv1 = { 1800, 690, 400 },\n',
+			'\tpreEvoLvMax = { 6260, 2370, 950 },\n',
+			'\tevoLv1 = { 5000, 1890, 760 },\n',
+			'\tevoLvMax = { 10720, 4050, 1510 },\n',
+			'\tbloomLv1 = { 5900, 2520, 850 },\n',
+			'\tbloomLvMax = { 12220, 4900, 1820 },\n',
+			'\tpreEvoAff1Bonus = { 1800, 720, 120 },\n',
+			'\tpreEvoAff2Bonus = { 2844, 1116, 252 },\n',
+			'\tevoAff2Bonus = { 5460, 2196, 468 },\n',
+			'\tbloomAff2Bonus = { 5652, 2256, 504 },\n',
+			'\tspeed = 635,\n',
+			'\tskill = 1001,\n',
+			'\tability1 = ', ability1, ',\n',
+			'\tability2 = ', ability2, ',\n',
+			'\tability3 = ', ability3, ',\n',
+			'\tability4 = ', ability4, ',\n',
+			'\n',
+			'\tpersonalEquipNameJapanese = "', blank, '",\n',
+			'\tpersonalEvoEquipNameJapanese = "', blank, '",\n',
+			'\tpersonalEquipStatsLv1= { 0, 213, 60 },\n',
+			'\tpersonalEquipStatsLvMax = { 0, 409,  109 },\n',
+			'\tpersonalEvoEquipStatsLv1 = { 0, 320, 90 },\n',
+			'\tpersonalEvoEquipStatsLvMax = { 0, 565, 237 },\n',
+			'}\n'
+		])
+
+		output = '\n'.join([
+			# Write the page header.
+			'-- Character module for ' + knight.fullName,
+			'local p = {}\n',
+
+			# Write the page body.
+			'-- Wikia editors can and should edit the userData table.',
+			'p.userData = {',
+			userData,
+			'}\n\n' \
+			'-- DO NOT EDIT!',
+			'-- The master data comes from the game\'s data itself.',
+			masterData,
+
+			# Write the page footer.
+			'return p\n',
+			])
+		return output
 
 	def get_char_template(my, char_name_or_id, english_name=''):
 		"""Outputs a single character's template text to a file."""
 		char_entries = my.get_char_entries(char_name_or_id)
+		if not entries:
+			return ''
 		knight = FlowerKnight(char_entries)
 		skill = my.skills[knight.skill]
 		# Ability 1 is used by pre-evo and evo tiers.
