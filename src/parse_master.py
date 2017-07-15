@@ -207,6 +207,11 @@ class FlowerKnight(object):
 		# TODO
 		my.romajiName = ''
 
+# Globalize the FlowerKnight constants for short access.
+HP = FlowerKnight.HP
+ATK = FlowerKnight.ATK
+DEF = FlowerKnight.DEF
+
 class BaseEntry(object):
 	"""Base class for deriving Entry classes.
 
@@ -670,7 +675,6 @@ class MasterData(object):
 		# TODO: Sanitize user data. It needs to start with a new line and end with }.
 		userData = ''
 
-		# TODO: Fill in the knight's info instead of using these copy-pasted presets.
 		blank = ''
 		masterData = ''.join([
 			'p.masterData = {\n'
@@ -681,18 +685,18 @@ class MasterData(object):
 			'\tlikes = ', knight.gift, ',\n',
 			'\tnation = ', knight.nation, ',\n',
 			'\t--Stat { HP , ATK , DEF },\n',
-			'\tpreEvoLv1 = { 1800, 690, 400 },\n',
-			'\tpreEvoLvMax = { 6260, 2370, 950 },\n',
-			'\tevoLv1 = { 5000, 1890, 760 },\n',
-			'\tevoLvMax = { 10720, 4050, 1510 },\n',
-			'\tbloomLv1 = { 5900, 2520, 850 },\n',
-			'\tbloomLvMax = { 12220, 4900, 1820 },\n',
-			'\tpreEvoAff1Bonus = { 1800, 720, 120 },\n',
-			'\tpreEvoAff2Bonus = { 2844, 1116, 252 },\n',
-			'\tevoAff2Bonus = { 5460, 2196, 468 },\n',
-			'\tbloomAff2Bonus = { 5652, 2256, 504 },\n',
-			'\tspeed = 635,\n',
-			'\tskill = 1001,\n',
+			'\tpreEvoLv1 = {{ {0}, {1}, {2} }},\n'.format(      knight.tiers['preEvo']['lvlOne'][HP], knight.tiers['preEvo']['lvlOne'][ATK], knight.tiers['preEvo']['lvlOne'][DEF]),
+			'\tpreEvoLvMax = {{ {0}, {1}, {2} }},\n'.format(    knight.tiers['preEvo']['lvlMax'][HP], knight.tiers['preEvo']['lvlMax'][ATK], knight.tiers['preEvo']['lvlMax'][DEF]),
+			'\tevoLv1 = {{ {0}, {1}, {2} }},\n'.format(         knight.tiers['evo']['lvlOne'][HP],    knight.tiers['evo']['lvlOne'][ATK],    knight.tiers['evo']['lvlOne'][DEF]),
+			'\tevoLvMax = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['evo']['lvlMax'][HP],    knight.tiers['evo']['lvlMax'][ATK],    knight.tiers['evo']['lvlMax'][DEF]),
+			'\tbloomLv1 = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['bloom']['lvlOne'][HP],  knight.tiers['bloom']['lvlOne'][ATK],  knight.tiers['bloom']['lvlOne'][DEF]),
+			'\tbloomLvMax = {{ {0}, {1}, {2} }},\n'.format(     knight.tiers['bloom']['lvlMax'][HP],  knight.tiers['bloom']['lvlMax'][ATK],  knight.tiers['bloom']['lvlMax'][DEF]),
+			'\tpreEvoAff1Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff1'][HP],   knight.tiers['preEvo']['aff1'][ATK],   knight.tiers['preEvo']['aff1'][DEF]),
+			'\tpreEvoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
+			'\tevoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(   knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
+			'\tbloomAff2Bonus = {{ {0}, {1}, {2} }},\n'.format( knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
+			'\tspeed = ', knight.spd, ',\n',
+			'\tskill = ', knight.skill, ',\n',
 			'\tability1 = ', ability1, ',\n',
 			'\tability2 = ', ability2, ',\n',
 			'\tability3 = ', ability3, ',\n',
@@ -700,10 +704,11 @@ class MasterData(object):
 			'\n',
 			'\tpersonalEquipNameJapanese = "', blank, '",\n',
 			'\tpersonalEvoEquipNameJapanese = "', blank, '",\n',
-			'\tpersonalEquipStatsLv1= { 0, 213, 60 },\n',
-			'\tpersonalEquipStatsLvMax = { 0, 409,  109 },\n',
-			'\tpersonalEvoEquipStatsLv1 = { 0, 320, 90 },\n',
-			'\tpersonalEvoEquipStatsLvMax = { 0, 565, 237 },\n',
+			# TODO
+			'\tpersonalEquipStatsLv1= {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
+			'\tpersonalEquipStatsLvMax = {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
+			'\tpersonalEvoEquipStatsLv1 = {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
+			'\tpersonalEvoEquipStatsLvMax = {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
 			'}\n'
 		])
 
@@ -729,7 +734,7 @@ class MasterData(object):
 	def get_char_template(my, char_name_or_id, english_name=''):
 		"""Outputs a single character's template text to a file."""
 		char_entries = my.get_char_entries(char_name_or_id)
-		if not entries:
+		if not char_entries:
 			return ''
 		knight = FlowerKnight(char_entries)
 		skill = my.skills[knight.skill]
