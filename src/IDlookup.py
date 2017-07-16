@@ -194,6 +194,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	ACT_INTROSPECT = 'introspect'
 	ACT_UNIT_TEST = 'unit test'
 	ACT_FIND_CHAR = 'find'
+	ACT_SEE_ABILITIES = 'see abilities'
 	ACT_GET_CHAR_TEMPLATE = 'char template'
 	ACT_GET_CHAR_MODULE = 'char module'
 	ACT_WRITE_SKILL_LIST = 'skill list'
@@ -205,6 +206,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_UNIT_TEST:'Unit test some things.',
 		ACT_INTROSPECT:'Activate the interactive prompt.',
 		ACT_FIND_CHAR:'Find a character.',
+		ACT_SEE_ABILITIES:'See the list of unique abilities.',
 		ACT_GET_CHAR_TEMPLATE:'Output a Character template.',
 		ACT_GET_CHAR_MODULE:'Output a Character module.',
 		ACT_WRITE_SKILL_LIST:'Write the Skill list (Skill ID:Skill Info).',
@@ -231,7 +233,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			#print('Set introspecting=False to stop.') # Apparently this doesn't work...
 			print('Use Ctrl+C or input exit() to stop.')
 			print('For convenience, p = print, and m = master_data')
-			print("Hints: Try p(dir(m)), or a=m.preEvo_char_entries, or p(a[11].getval('id0'))")
+			print("Hints: Try p(dir(m)), or a=m.pre_evo_chars, or p(a[11].getval('id0'))")
 			p = print
 			m = master_data
 			while introspecting:
@@ -264,6 +266,9 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			entries = master_data.get_char_entries(char_name_or_id)
 			for entry in entries:
 				print(entry.getlua() + '\n')
+		elif user_input == ACT_SEE_ABILITIES:
+			# Note: You may optionally do something with the return value.
+			ability_list = master_data.find_referenced_abilities()
 		elif user_input == ACT_GET_CHAR_MODULE:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			output_text = master_data.get_char_module(char_name_or_id)

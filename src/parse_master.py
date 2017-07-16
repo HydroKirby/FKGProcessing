@@ -731,6 +731,44 @@ class MasterData(object):
 			])
 		return output
 
+	def find_referenced_abilities(my):
+		"""Finds all abilities that are referenced multiple times."""
+		ref_counts = {}
+		for abilityInstance in my.abilities.values():
+			ability1ID = abilityInstance.getval('ability1ID')
+			if ability1ID not in ref_counts:
+				ref_counts[ability1ID] = [-1, '']
+				ref_counts[ability1ID][1] = u'See FIRST description / \n\t' + \
+					abilityInstance.getval('descJapanese')
+			ref_counts[abilityInstance.getval('ability1ID')][0] += 1
+
+			ability2ID = abilityInstance.getval('ability2ID')
+			if int(ability2ID) <= 0:
+				# ID 0 is actually the "empty" ability for when the character doesn't
+				# have an ability. We don't care about it.
+				continue
+			if ability2ID not in ref_counts:
+				ref_counts[ability2ID] = [-1, '']
+				ref_counts[ability2ID][1] = u'See SECOND description / \n\t' + \
+					abilityInstance.getval('descJapanese')
+			ref_counts[abilityInstance.getval('ability2ID')][0] += 1
+
+		# Organize all of the data.
+		# The result, uniqueAbilities is a list of tuples with data members:
+		# (ability ID, times referenced, example ability description)
+		def sort_method(val):
+			return int(val[0])
+		uniqueAbilities = sorted( [(abilityID, count_and_desc[0], count_and_desc[1]) for
+			abilityID, count_and_desc in ref_counts.items()], key=sort_method )
+
+		# Output the results.
+		print('The following unique abilities and example descriptions exist.')
+		for info in uniqueAbilities:
+			print('ID {0} referenced {1} time(s). Example: {2}'.format(
+				info[0], info[1], info[2]))
+
+		return uniqueAbilities
+
 	def get_char_template(my, char_name_or_id, english_name=''):
 		"""Outputs a single character's template text to a file."""
 		char_entries = my.get_char_entries(char_name_or_id)
