@@ -23,6 +23,7 @@ __doc__ = """Checks the getMaster Data to generate the template data"""
 DEFAULT_INFILENAME = 'getMaster_latest.txt'
 DEFAULT_OUTFILENAME = 'result.txt'
 DEFAULT_ASSETPATH = 'asset'
+DL_OUTPUT_FOLDER = 'dl'
 
 # Specify the Flower Knight ID and their English name (which is not available in getMaster)
 # Note: Always make sure findID and english_nameList are list types!
@@ -200,6 +201,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	ACT_WRITE_SKILL_LIST = 'skill list'
 	ACT_WRITE_ABILITY_LIST = 'ability list'
 	ACT_WRITE_CHAR_NAME_LIST = 'char list'
+	ACT_FRAME_ICONS = 'frame'
 	action_list = {
 		ACT_EXIT:'Exit and return the parsed master data.',
 		ACT_HELP:'List all actions.',
@@ -212,10 +214,14 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_WRITE_SKILL_LIST:'Write the Skill list (Skill ID:Skill Info).',
 		ACT_WRITE_ABILITY_LIST:'Write the Ability list (Ability ID:Ability Info).',
 		ACT_WRITE_CHAR_NAME_LIST:'Write the Character list (FKG ID:JP Name).',
+		ACT_FRAME_ICONS:'Puts frames on all character icons in the "dl" folder.'
 	}
 	def list_actions():
 		for key, action in action_list.items():
 			print('{0}: {1}'.format(key, action))
+
+	# Stores the Imaging class instance.
+	imaging = None
 
 	# Begin the prompt loop for which action to take.
 	list_actions()
@@ -263,15 +269,25 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			output_text = master_data.get_ability_list_page()
 		elif user_input == ACT_FIND_CHAR:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
-			entries = master_data.get_char_entries(char_name_or_id)
-			for entry in entries:
-				print(entry.getlua() + '\n')
+			print('\n\n'.join([entry.getlua() for entry in
+				master_data.get_char_entries(char_name_or_id)]))
 		elif user_input == ACT_SEE_ABILITIES:
 			# Note: You may optionally do something with the return value.
 			ability_list = master_data.find_referenced_abilities()
 		elif user_input == ACT_GET_CHAR_MODULE:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			output_text = master_data.get_char_module(char_name_or_id)
+		elif user_input == ACT_FRAME_ICONS:
+			if not imaging:
+				from imaging import Imaging
+				imaging = Imaging()
+			for icon in os.listdir(DL_OUTPUT_FOLDER):
+				if 'icon' not in icon:
+					return
+				icon = os.path.join(DL_OUTPUT_FOLDER, icon)
+				outputfilename = os.path.splitext(icon)[0] + '_out.png'
+				framed_icon = imaging.get_framed_icon(icon, outputfilename, 5, 1)
+				print('Completed the processing for {0}.'.format(icon))
 
 		if output_text:
 			with open(DEFAULT_OUTFILENAME, 'w', encoding="utf-8") as outfile:
@@ -284,7 +300,11 @@ def main(input_name_or_id=None, english_name=''):
 
 	# Choose how to process the data.
 	# Someday, it would be nice to turn this into a GUI.
-	action_prompt(master_data, input_name_or_id, english_name)
+	try:
+		action_prompt(master_data, input_name_or_id, english_name)
+	except KeyboardInterrupt:
+		# Make Ctrl+C output quiet.
+		pass
 
 	return master_data
 	

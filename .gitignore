@@ -1,6 +1,7 @@
 # Junk made by the project.
 getMaster*
 result.txt
+dl/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
