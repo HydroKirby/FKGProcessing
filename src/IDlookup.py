@@ -187,6 +187,50 @@ def get_char_module(master_data):
 		print('Cancelled.')
 	return output_text
 
+def introspect(master_data, imaging):
+	"""Allows real-time introspection of the program and data."""
+	introspecting = True
+	print('Entering introspection mode.')
+	#print('Set introspecting=False to stop.') # Apparently this doesn't work...
+	print('Use Ctrl+C or input exit() to stop.')
+	print('For convenience, p = print, and m = master_data')
+	print("Hints: Try p(dir(m)), or a=m.pre_evo_chars, or p(a[11].getval('id0'))")
+	p = print
+	m = master_data
+	while introspecting:
+		import logging
+		# Warning: This logging code is only partially tested.
+		# It is probably being used incorrectly.
+		logging.basicConfig()
+		logger = logging.getLogger('catch_all')
+		try:
+			# This 3-tuple format for exec works in Python 2 and 3.
+			exec(input('>>> '), globals(), locals())
+		except Exception as e:
+			logger.exception(str(e))
+
+def apply_frames(master_data, imaging):
+	"""Applies frames to character icons."""
+	print('\nThis function has a unique interface. ' \
+		'If there are files in ' + os.path.realpath(DL_OUTPUT_FOLDER) + \
+		' with "icon" but not "out" in their filenames, ' \
+		'the icons there will have frames applied to them.' \
+		'\nOtherwise, you will be asked to download the icons somehow.\n')
+	downloaded_files = [icon for icon in os.listdir(DL_OUTPUT_FOLDER) \
+		if 'icon' in icon and 'out' not in icon]
+	if downloaded_files:
+		print('Icons are found in the downloads folder. Now framing them.')
+		for icon in downloaded_files:
+			icon = os.path.join(DL_OUTPUT_FOLDER, icon)
+			outputfilename = os.path.splitext(icon)[0] + '_out.png'
+			framed_icon = imaging.get_framed_icon(icon, outputfilename, 5, 1)
+			print('Completed the processing for {0}.'.format(icon))
+	else:
+		print('No icons found in the downloads folder')
+
+		# TODO: Make this part functional. Ask the user how to DL icons.
+		print('This function is incomplete and does not work yet!')
+
 def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	"""Asks the user which function they want to use."""
 	# Make the list of potential actions.
@@ -220,8 +264,8 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		for key, action in action_list.items():
 			print('{0}: {1}'.format(key, action))
 
-	# Stores the Imaging class instance.
-	imaging = None
+	from imaging import Imaging
+	imaging = Imaging()
 
 	# Begin the prompt loop for which action to take.
 	list_actions()
@@ -234,25 +278,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 
 		output_text = ''
 		if user_input == ACT_INTROSPECT:
-			introspecting = True
-			print('Entering introspection mode.')
-			#print('Set introspecting=False to stop.') # Apparently this doesn't work...
-			print('Use Ctrl+C or input exit() to stop.')
-			print('For convenience, p = print, and m = master_data')
-			print("Hints: Try p(dir(m)), or a=m.pre_evo_chars, or p(a[11].getval('id0'))")
-			p = print
-			m = master_data
-			while introspecting:
-				import logging
-				# Warning: This logging code is only partially tested.
-				# It is probably being used incorrectly.
-				logging.basicConfig()
-				logger = logging.getLogger('catch_all')
-				try:
-					# This 3-tuple format for exec works in Python 2 and 3.
-					exec(input('>>> '), globals(), locals())
-				except Exception as e:
-					logger.exception(str(e))
+			introspect(master_data, imaging)
 		elif user_input == ACT_HELP:
 			list_actions()
 		elif user_input == ACT_UNIT_TEST:
@@ -278,16 +304,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			output_text = master_data.get_char_module(char_name_or_id)
 		elif user_input == ACT_FRAME_ICONS:
-			if not imaging:
-				from imaging import Imaging
-				imaging = Imaging()
-			for icon in os.listdir(DL_OUTPUT_FOLDER):
-				if 'icon' not in icon:
-					return
-				icon = os.path.join(DL_OUTPUT_FOLDER, icon)
-				outputfilename = os.path.splitext(icon)[0] + '_out.png'
-				framed_icon = imaging.get_framed_icon(icon, outputfilename, 5, 1)
-				print('Completed the processing for {0}.'.format(icon))
+			apply_frames(master_data, imaging)
 
 		if output_text:
 			with open(DEFAULT_OUTFILENAME, 'w', encoding="utf-8") as outfile:
