@@ -12,19 +12,38 @@ except ImportError:
 	print('You will not be able to do image manipulation.')
 	print('Install it with pip or easy_install.exe .')
 
-ICON_BACKGROUND = '../res/icon_bg.png'
-ICON_FRAME = '../res/icon_frame.png'
-ICON_TYPES = [
-'../res/icon_type1.png',
-'../res/icon_type2.png',
-'../res/icon_type3.png',
-'../res/icon_type4.png']
-
 class Imaging(object):
+	"""Manages all image processing.
+
+	The main purpose of this class is to take flower knight icons and
+	re-apply the background, frame, and type icons to it.
+	See: get_framed_icon()
+
+	It is only necessary to make one instance of this class and reuse it.
+	"""
+
+	ICON_BACKGROUNDS = [
+	'../res/rarity-bg1.png',
+	'../res/rarity-bg2.png',
+	'../res/rarity-bg3.png',
+	'../res/rarity-bg4.png',
+	'../res/rarity-bg5.png']
+	ICON_FRAMES = [
+	'../res/rarity-frame1.png',
+	'../res/rarity-frame2.png',
+	'../res/rarity-frame3.png',
+	'../res/rarity-frame4.png',
+	'../res/rarity-frame5.png']
+	ICON_TYPES = [
+	'../res/type-slash.png',
+	'../res/type-blunt.png',
+	'../res/type-pierce.png',
+	'../res/type-magic.png']
+
 	def __init__(my):
-		my.icon_bg = my.load_image(ICON_BACKGROUND)
-		my.icon_frame = my.load_image(ICON_FRAME)
-		my.icon_types = [my.load_image(weakType) for weakType in ICON_TYPES]
+		my.icon_bgs = [my.load_image(filename) for filename in Imaging.ICON_BACKGROUNDS]
+		my.icon_frames = [my.load_image(filename) for filename in Imaging.ICON_FRAMES]
+		my.icon_types = [my.load_image(filename) for filename in Imaging.ICON_TYPES]
 
 	def load_image(my, filename):
 		"""Loads an image or returns the image as-is."""
@@ -66,11 +85,18 @@ class Imaging(object):
 		"""
 
 		if not _HAS_LIB: my._print_no_library_warning(); return None
+		# Load the icon. Cancel on failure.
 		char_icon = my.load_image(icon_filename)
+		if not char_icon:
+			return None
+		# Select the layers to use.
 		icon_typing = my.icon_types[typing - 1]
-		frame = my.icon_frame
-		result = my.apply_layer(char_icon, my.icon_bg)
+		frame = my.icon_frames[rarity - 1]
+		bg = my.icon_bgs[rarity - 1]
+		# Apply the layers.
+		result = my.apply_layer(char_icon, bg)
 		result = my.apply_layer(frame, result)
 		result = my.apply_layer(icon_typing, result)
+		# Save and return the result.
 		result.save(outfilename, 'png')
 		return result
