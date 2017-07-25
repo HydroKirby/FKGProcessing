@@ -23,10 +23,6 @@ __doc__ = '''Parses getMaster and stores data in human-readable formats.'''
 DL_FAIL, # The download failed.
 DL_QUIT) = range(3) # The user forcefully stopped the download.
 
-# Character image types.
-(IMG_ICON,
-IMG_STAND) = range(2)
-
 CmdPrint = True
 
 attribList = {
@@ -167,6 +163,7 @@ class FlowerKnight(object):
 
 		# Store all stats in lists ordered as such: HP, Atk, Def.
 		my.tiers = {'preEvo':{}, 'evo':{}, 'bloom':{}}
+		# Store pre-evolution info.
 		my.tiers['preEvo']['id'] = pre_evo_entry.getval('id0')
 		my.tiers['preEvo']['lvlCap'] = maxLevel[my.rarity][0]
 		my.tiers['preEvo']['abilities'] = [pre_evo_entry.getval('ability1ID'), pre_evo_entry.getval('ability2ID')]
@@ -174,6 +171,11 @@ class FlowerKnight(object):
 		my.tiers['preEvo']['lvlMax'] = [pre_evo_entry.getval('lvlMaxHP'), pre_evo_entry.getval('lvlMaxAtk'), pre_evo_entry.getval('lvlMaxDef')]
 		my.tiers['preEvo']['aff1'] = [pre_evo_entry.getval('aff1MultHP'), pre_evo_entry.getval('aff1MultAtk'), pre_evo_entry.getval('aff1MultDef')]
 		my.tiers['preEvo']['aff2'] = [pre_evo_entry.getval('aff2MultHP'), pre_evo_entry.getval('aff2MultAtk'), pre_evo_entry.getval('aff2MultDef')]
+		# Both date values and the game-version-when-added strings can differ between tiers.
+		my.tiers['preEvo']['date0'] = pre_evo_entry.getval('date0')
+		my.tiers['preEvo']['date1'] = pre_evo_entry.getval('date1')
+		my.tiers['preEvo']['gameVersionWhenAdded'] = pre_evo_entry.getval('gameVersionWhenAdded')
+		# Store evolution info.
 		my.tiers['evo']['id'] = evo_entry.getval('id0')
 		my.tiers['evo']['lvlCap'] = maxLevel[my.rarity][1]
 		my.tiers['evo']['abilities'] = [evo_entry.getval('ability1ID'), evo_entry.getval('ability2ID')]
@@ -181,6 +183,10 @@ class FlowerKnight(object):
 		my.tiers['evo']['lvlMax'] = [evo_entry.getval('lvlMaxHP'), evo_entry.getval('lvlMaxAtk'), evo_entry.getval('lvlMaxDef')]
 		my.tiers['evo']['aff1'] = [evo_entry.getval('aff1MultHP'), evo_entry.getval('aff1MultAtk'), evo_entry.getval('aff1MultDef')]
 		my.tiers['evo']['aff2'] = [evo_entry.getval('aff2MultHP'), evo_entry.getval('aff2MultAtk'), evo_entry.getval('aff2MultDef')]
+		my.tiers['evo']['date0'] = evo_entry.getval('date0')
+		my.tiers['evo']['date1'] = evo_entry.getval('date1')
+		my.tiers['evo']['gameVersionWhenAdded'] = evo_entry.getval('gameVersionWhenAdded')
+		# Default bloom info to null/unset.
 		my.bloomability = FlowerKnight.NO_BLOOM
 		my.tiers['bloom']['id'] = ''
 		my.tiers['preEvo']['lvlCap'] = '0'
@@ -189,7 +195,11 @@ class FlowerKnight(object):
 		my.tiers['bloom']['lvlMax'] = []
 		my.tiers['bloom']['aff1'] = []
 		my.tiers['bloom']['aff2'] = []
+		my.tiers['bloom']['date0'] = ''
+		my.tiers['bloom']['date1'] = ''
+		my.tiers['bloom']['gameVersionWhenAdded'] = ''
 		if bloom_entry:
+			# Store bloom info.
 			if bloom_entry.getval('isBloomedPowersOnly') == "1":
 				my.bloomability = FlowerKnight.BLOOM_POWERS_ONLY
 			else:
@@ -201,6 +211,9 @@ class FlowerKnight(object):
 			my.tiers['bloom']['lvlMax'] = [bloom_entry.getval('lvlMaxHP'), bloom_entry.getval('lvlMaxAtk'), bloom_entry.getval('lvlMaxDef')]
 			my.tiers['bloom']['aff1'] = [bloom_entry.getval('aff1MultHP'), bloom_entry.getval('aff1MultAtk'), bloom_entry.getval('aff1MultDef')]
 			my.tiers['bloom']['aff2'] = [bloom_entry.getval('aff2MultHP'), bloom_entry.getval('aff2MultAtk'), bloom_entry.getval('aff2MultDef')]
+			my.tiers['bloom']['date0'] = bloom_entry.getval('date0')
+			my.tiers['bloom']['date1'] = bloom_entry.getval('date1')
+			my.tiers['bloom']['gameVersionWhenAdded'] = bloom_entry.getval('gameVersionWhenAdded')
 
 	def _determine_romaji(my):
 		"""Determines the romaji spelling of the full name."""
@@ -557,6 +570,49 @@ class MasterData(object):
 		my._parse_skill_entries()
 		my._parse_ability_entries()
 		my._parse_equipment_entries()
+
+	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
+		"""Turns a version date into a sortable integer.
+
+		It converts version strings into a single number.
+		For example, version "1.22.33" would become integer 1022033 .
+		This allows you to sort Entry instances by version numbers.
+
+		This is a helper function not meant to be called by other functions
+		intending to sort Entry instances by version numbers.
+		"""
+
+		return int(main_ver)*10**6 + int(major_ver)*10**3 + int(minor_ver)
+
+	def _sort_by_entrys_version_added(my, entry):
+		"""Turns a CharacterEntry's version date into a sortable int.
+
+		Use this function in a sort function like these examples.
+		sorted(entry_list, key=MasterData._sort_by_entrys_version_added)
+		sorted(my.characters.values(),
+			key=MasterData._sort_by_entrys_version_added)
+		"""
+
+		main_ver, major_ver, minor_ver = \
+			remove_quotes(entry.getval('gameVersionWhenAdded')).split('.')
+		return my._convert_version_to_int(main_ver, major_ver, minor_ver)
+
+	def get_newest_characters(my):
+		"""Gets a list of only the most recently added characters.
+
+		This function is good for finding which characters to update.
+		"""
+		
+		# Get all character entries sorted by date from oldest to newest.
+		def getdate(entry):
+			return entry.getval('date1')
+		entries_by_date = [(char.getval('date1'), char) for \
+			char in sorted(my.characters.values(), key=getdate)]
+		newest_date = entries_by_date[-1][0]
+		# Remove all entries that aren't the newest date.
+		entries_by_date = [entry for date, entry in entries_by_date if \
+			date == newest_date]
+		return entries_by_date
 
 	def get_skill_list_page(my):
 		"""Outputs the table of skill IDs and their related skill info."""

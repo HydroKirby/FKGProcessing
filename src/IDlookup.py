@@ -2,6 +2,7 @@
 # coding=utf-8
 from __future__ import print_function
 import os, sys, math, re, random, zlib, hashlib
+from textwrap import dedent
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -31,6 +32,10 @@ findID = [158101]
 english_nameList = ["Aizoon Stonecrop"]
 ImgDownload = False
 
+# Character image types.
+(IMG_ICON,
+IMG_STAND) = range(2)
+
 def output_template(text, outfilename=DEFAULT_OUTFILENAME, append=True):
 	has_data = append and os.path.exists(outfilename) and os.path.getsize(outfilename) > 0
 	open_mode = 'a' if append else 'w'
@@ -42,7 +47,7 @@ def output_template(text, outfilename=DEFAULT_OUTFILENAME, append=True):
 			print("Creating new file: " + outfilename)
 		outfile.write(text)
 	
-def downloadImageFunction(inputID,IconName,Bloom,EquipImgID,PowerOnly):
+def downloadImageFunction(inputID,IconName,Bloom,EquipImgID,PowerOnly,imaging=None):
 	
 	#Create directory path if non-existant.
 	if not os.path.exists(DEFAULT_ASSETPATH): os.makedirs(DEFAULT_ASSETPATH)
@@ -52,12 +57,15 @@ def downloadImageFunction(inputID,IconName,Bloom,EquipImgID,PowerOnly):
 	if (Bloom and (PowerOnly == "0")):
 		#download bloomed images only
 		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_ICON,2)
+		#if dl_state == DL_OK and imaging: dl_state = imaging.get_framed_icon(IconName, imaging, rarity, charType)
 		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_STAND,2)
 	else:
 		#download basic and evolved images, plus equipment images
 		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_ICON,0)
+		#if dl_state == DL_OK and imaging: dl_state = imaging.get_framed_icon(IconName, imaging, rarity, charType)
 		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_STAND,0)
 		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_ICON,1)
+		#if dl_state == DL_OK and imaging: dl_state = imaging.get_framed_icon(IconName, imaging, rarity, charType)
 		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_STAND,1)
 		try:
 			if dl_state == DL_OK:
@@ -70,22 +78,29 @@ getCharaURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/character/"
 imgPreLink  = { IMG_ICON:'i/',      IMG_STAND:'s/' }
 imgTypeName = { IMG_ICON:'_icon0',  IMG_STAND:'_chara0'}
 imgType     = { IMG_ICON:'icon_l_', IMG_STAND:'stand_s_' }
-def downloadCharaImage(inputID,IconName,type,stage):
+def downloadCharaImage(inputID,IconName,iconType,stage,imaging=None,rarity=0,charType=0):
 
 	#Check the Flower Knight's evolution stage, and refactor the ID appropriately.
 	if (stage == 2): inputID += 300000
 	else: inputID += stage
 	
 	#Calculate the hashed filename of the character images.
-	KeyName = imgType[type] + str(inputID)
-	hash = hashlib.md5(KeyName.encode('utf-8')).hexdigest()
+	KeyName = imgType[iconType] + str(inputID)
+	linkHash = hashlib.md5(KeyName.encode('utf-8')).hexdigest()
 	
 	#Define the image link and filename.
-	ImgFileLink = getCharaURL + imgPreLink[type] + hash + ".bin"
-	ImgFileName = IconName + imgTypeName[type] + str(stage) + ".png"
+	ImgFileLink = getCharaURL + imgPreLink[iconType] + linkHash + ".bin"
+	ImgFileName = IconName + imgTypeName[iconType] + str(stage) + ".png"
 	
 	#Pass the variables to download function call.
-	return downloadImage(ImgFileLink,ImgFileName,True)
+	dl_state = downloadImage(ImgFileLink,ImgFileName,True)
+	if dl_state == DL_OK and iconType == IMG_ICON:
+		#For icons, apply the background, frame, and typing to the image.
+		#Note: For this function, downloadCharaImage, it'd be better put it
+		#into a Class because of all the involved variables.
+		if not imaging.get_framed_icon(ImgFileName, ImgFileName, rarity, charType):
+			dl_state = DL_FAIL
+	return dl_state
 
 def downloadEquipImage(ENName,imgID,stage):
 	getEquipURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/item/100x100/"
@@ -211,11 +226,12 @@ def introspect(master_data, imaging):
 
 def apply_frames(master_data, imaging):
 	"""Applies frames to character icons."""
-	print('\nThis function has a unique interface. ' \
-		'If there are files in ' + os.path.realpath(DL_OUTPUT_FOLDER) + \
-		' with "icon" but not "out" in their filenames, ' \
-		'the icons there will have frames applied to them.' \
-		'\nOtherwise, you will be asked to download the icons somehow.\n')
+	print(dedent('''\nThis function has a unique interface.
+		If there are files in ' + os.path.realpath(DL_OUTPUT_FOLDER)
+		with "icon" but not "out" in their filenames,
+		the icons there will have frames applied to them.
+
+		Otherwise, you will be asked to download the icons somehow.'''))
 	downloaded_files = [icon for icon in os.listdir(DL_OUTPUT_FOLDER) \
 		if 'icon' in icon and 'out' not in icon]
 	if downloaded_files:
@@ -226,10 +242,24 @@ def apply_frames(master_data, imaging):
 			framed_icon = imaging.get_framed_icon(icon, outputfilename, 5, 1)
 			print('Completed the processing for {0}.'.format(icon))
 	else:
-		print('No icons found in the downloads folder')
+		print('No icons found in the downloads folder.')
 
-		# TODO: Make this part functional. Ask the user how to DL icons.
-		print('This function is incomplete and does not work yet!')
+		print('This function does not work yet.')
+		return
+
+		# The code beyond this point doesn't work.
+		print('Will now download the newest character icons.')
+		for entry in master_data.get_newest_characters():
+			dl_state = downloadCharaImage(int(entry.getval('id0')),
+				entry.getval('fullName'), IMG_ICON, int(entry.getval('evolutionTier')))
+			if dl_state != DL_OK:
+				print('The download did not work. Skipping for {0} in evolution state {1}'.format(
+					remove_quotes(entry.getval('fullName')), entry.getval('evolutionTier')))
+				continue
+			ImgFileName = IconName + imgTypeName[iconType] + str(stage) + ".png"
+			framed_icon = imaging.get_framed_icon(icon, ImgFileName,
+				int(entry.getval('rarity')), int(entry.getval('type')))
+			print('Completed the processing for {0}.'.format(remove_quotes(entry.getval('fullName'))))
 
 def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	"""Asks the user which function they want to use."""
