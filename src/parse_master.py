@@ -341,6 +341,9 @@ class BaseEntry(object):
 		# Example output: {"Bob", "cat", 5},
 		return '{' + u', '.join([v for v in my.values]) + '},'
 
+	def __str__(my):
+		return my.getlua()
+
 class CharacterEntry(BaseEntry):
 	"""Stores one line of data from the masterCharacter section."""
 	__NAMED_ENTRIES = [
