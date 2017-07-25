@@ -226,7 +226,8 @@ def introspect(master_data, imaging):
 
 def apply_frames(master_data, imaging):
 	"""Applies frames to character icons."""
-	print(dedent('''\nThis function has a unique interface.
+	print(dedent('''\
+		This function has a unique interface.
 		If there are files in ' + os.path.realpath(DL_OUTPUT_FOLDER)
 		with "icon" but not "out" in their filenames,
 		the icons there will have frames applied to them.

@@ -128,97 +128,112 @@ class FlowerKnight(object):
 	BLOOMABLE,
 	BLOOM_POWERS_ONLY) = range(3)
 
-	def __init__(my, entries):
+	def __init__(my, entries=[]):
 		"""Constructor.
 
-		@param entries: A list of 2~3 CharacterEntry instances.
-			They must be the pre-evolved, evolved, and bloomed forms.
+		@param entries: A list of 0~3 CharacterEntry instances.
+			They would be the pre-evolved, evolved, and bloomed forms.
 		"""
 
-		# Organize the entries given to the ctor based on evolution tier.
-		pre_evo_entry = evo_entry = bloom_entry = None
-		if len(entries) < 1:
-			print("Error: Can't find the requested flower knight.")
-			return
-		for entry in entries:
-			tier = entry.getval('evolutionTier')
-			if tier == '1':
-				pre_evo_entry = entry
-			elif tier == '2':
-				evo_entry = entry
-			else:
-				bloom_entry = entry
+		# Unset the full name. When we get the 1st entry, this will be filled.
+		my.fullName = ''
+		# Organize the entries based on evolution tier.
+		my.tiers = {'preEvo':{}, 'evo':{}, 'bloom':{}}
+		# Assume the character can't bloom.
+		my.bloomability = FlowerKnight.NO_BLOOM
+		my.add_entries(entries)
 
-		# Store info which should be the same across all evolution tiers of the character.
-		my.spd = pre_evo_entry.getval('lvlOneSpd')
-		my.fullName = pre_evo_entry.getval('fullName')
-		my.rarity = pre_evo_entry.getval('rarity')
-		my.skill = pre_evo_entry.getval('skill1ID')
-		my.family = pre_evo_entry.getval('family')
-		my.type = pre_evo_entry.getval('type')
-		my.nation = pre_evo_entry.getval('nation')
-		my.gift = pre_evo_entry.getval('gift')
-		my.charID1 = pre_evo_entry.getval('charID1')
+	def add_entries(my, entries):
+		"""Adds a list of CharacterEntry instances to this knight's data."""
+		for entry in entries:
+			my.add_entry(entry)
+
+	def add_entry(my, entry):
+		"""Adds a CharacterEntry instance to this knight's data."""
+		tier = entry.getval('evolutionTier')
+		if tier == '1':
+			my._add_pre_evo_entry(entry)
+		elif tier == '2':
+			my._add_evo_entry(entry)
+		else:
+			my._add_bloom_entry(entry)
+
+	def _add_common_data(my, entry):
+		"""Stores info which should be the same for all evolution tiers."""
+		if my.fullName:
+			# The data is already stored.
+			return
+		my.fullName = entry.getval('fullName')
+		my.rarity = entry.getval('rarity')
+		my.spd = entry.getval('lvlOneSpd')
+		my.skill = entry.getval('skill1ID')
+		my.family = entry.getval('family')
+		my.type = entry.getval('type')
+		my.nation = entry.getval('nation')
+		my.gift = entry.getval('gift')
+		my.charID1 = entry.getval('charID1')
 		my._determine_romaji()
 
-		# Store all stats in lists ordered as such: HP, Atk, Def.
-		my.tiers = {'preEvo':{}, 'evo':{}, 'bloom':{}}
-		# Store pre-evolution info.
-		my.tiers['preEvo']['id'] = pre_evo_entry.getval('id0')
+	def _add_pre_evo_entry(my, entry):
+		"""Stores the CharacterEntry's data as the pre-evolved info.
+
+		As a side-effect of calling this method, some of the common
+		information between all evolution tiers is stored in the class.
+		"""
+		
+		my._add_common_data(entry)
+		my.tiers['preEvo']['id'] = entry.getval('id0')
 		my.tiers['preEvo']['lvlCap'] = maxLevel[my.rarity][0]
-		my.tiers['preEvo']['abilities'] = [pre_evo_entry.getval('ability1ID'), pre_evo_entry.getval('ability2ID')]
-		my.tiers['preEvo']['lvlOne'] = [pre_evo_entry.getval('lvlOneHP'), pre_evo_entry.getval('lvlOneAtk'), pre_evo_entry.getval('lvlOneDef')]
-		my.tiers['preEvo']['lvlMax'] = [pre_evo_entry.getval('lvlMaxHP'), pre_evo_entry.getval('lvlMaxAtk'), pre_evo_entry.getval('lvlMaxDef')]
-		my.tiers['preEvo']['aff1'] = [pre_evo_entry.getval('aff1MultHP'), pre_evo_entry.getval('aff1MultAtk'), pre_evo_entry.getval('aff1MultDef')]
-		my.tiers['preEvo']['aff2'] = [pre_evo_entry.getval('aff2MultHP'), pre_evo_entry.getval('aff2MultAtk'), pre_evo_entry.getval('aff2MultDef')]
+		my.tiers['preEvo']['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
+		my.tiers['preEvo']['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
+		my.tiers['preEvo']['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
+		my.tiers['preEvo']['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
+		my.tiers['preEvo']['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
 		# Both date values and the game-version-when-added strings can differ between tiers.
-		my.tiers['preEvo']['date0'] = pre_evo_entry.getval('date0')
-		my.tiers['preEvo']['date1'] = pre_evo_entry.getval('date1')
-		my.tiers['preEvo']['gameVersionWhenAdded'] = pre_evo_entry.getval('gameVersionWhenAdded')
-		# Store evolution info.
-		my.tiers['evo']['id'] = evo_entry.getval('id0')
+		my.tiers['preEvo']['date0'] = entry.getval('date0')
+		my.tiers['preEvo']['date1'] = entry.getval('date1')
+		my.tiers['preEvo']['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
+
+	def _add_evo_entry(my, entry):
+		"""Stores the CharacterEntry's data as the evolved info."""
+		my._add_common_data(entry)
+		my.tiers['evo']['id'] = entry.getval('id0')
 		my.tiers['evo']['lvlCap'] = maxLevel[my.rarity][1]
-		my.tiers['evo']['abilities'] = [evo_entry.getval('ability1ID'), evo_entry.getval('ability2ID')]
-		my.tiers['evo']['lvlOne'] = [evo_entry.getval('lvlOneHP'), evo_entry.getval('lvlOneAtk'), evo_entry.getval('lvlOneDef')]
-		my.tiers['evo']['lvlMax'] = [evo_entry.getval('lvlMaxHP'), evo_entry.getval('lvlMaxAtk'), evo_entry.getval('lvlMaxDef')]
-		my.tiers['evo']['aff1'] = [evo_entry.getval('aff1MultHP'), evo_entry.getval('aff1MultAtk'), evo_entry.getval('aff1MultDef')]
-		my.tiers['evo']['aff2'] = [evo_entry.getval('aff2MultHP'), evo_entry.getval('aff2MultAtk'), evo_entry.getval('aff2MultDef')]
-		my.tiers['evo']['date0'] = evo_entry.getval('date0')
-		my.tiers['evo']['date1'] = evo_entry.getval('date1')
-		my.tiers['evo']['gameVersionWhenAdded'] = evo_entry.getval('gameVersionWhenAdded')
-		# Default bloom info to null/unset.
-		my.bloomability = FlowerKnight.NO_BLOOM
-		my.tiers['bloom']['id'] = ''
-		my.tiers['preEvo']['lvlCap'] = '0'
-		my.tiers['bloom']['abilities'] = ['', '']
-		my.tiers['bloom']['lvlOne'] = []
-		my.tiers['bloom']['lvlMax'] = []
-		my.tiers['bloom']['aff1'] = []
-		my.tiers['bloom']['aff2'] = []
-		my.tiers['bloom']['date0'] = ''
-		my.tiers['bloom']['date1'] = ''
-		my.tiers['bloom']['gameVersionWhenAdded'] = ''
-		if bloom_entry:
-			# Store bloom info.
-			if bloom_entry.getval('isBloomedPowersOnly') == "1":
-				my.bloomability = FlowerKnight.BLOOM_POWERS_ONLY
-			else:
-				my.bloomability = FlowerKnight.BLOOMABLE
-			my.tiers['bloom']['id'] = bloom_entry.getval('id0')
-			my.tiers['bloom']['lvlCap'] = maxLevel[my.rarity][2]
-			my.tiers['bloom']['abilities'] = [bloom_entry.getval('ability1ID'), bloom_entry.getval('ability2ID')]
-			my.tiers['bloom']['lvlOne'] = [bloom_entry.getval('lvlOneHP'), bloom_entry.getval('lvlOneAtk'), bloom_entry.getval('lvlOneDef')]
-			my.tiers['bloom']['lvlMax'] = [bloom_entry.getval('lvlMaxHP'), bloom_entry.getval('lvlMaxAtk'), bloom_entry.getval('lvlMaxDef')]
-			my.tiers['bloom']['aff1'] = [bloom_entry.getval('aff1MultHP'), bloom_entry.getval('aff1MultAtk'), bloom_entry.getval('aff1MultDef')]
-			my.tiers['bloom']['aff2'] = [bloom_entry.getval('aff2MultHP'), bloom_entry.getval('aff2MultAtk'), bloom_entry.getval('aff2MultDef')]
-			my.tiers['bloom']['date0'] = bloom_entry.getval('date0')
-			my.tiers['bloom']['date1'] = bloom_entry.getval('date1')
-			my.tiers['bloom']['gameVersionWhenAdded'] = bloom_entry.getval('gameVersionWhenAdded')
+		my.tiers['evo']['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
+		my.tiers['evo']['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
+		my.tiers['evo']['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
+		my.tiers['evo']['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
+		my.tiers['evo']['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
+		my.tiers['evo']['date0'] = entry.getval('date0')
+		my.tiers['evo']['date1'] = entry.getval('date1')
+		my.tiers['evo']['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
+
+	def _add_bloom_entry(my, entry):
+		"""Stores the CharacterEntry's data as the bloomed info.
+
+		Aa a side-effect of calling this method, the "bloomability" is set.
+		"""
+
+		my._add_common_data(entry)
+		if entry.getval('isBloomedPowersOnly') == "1":
+			my.bloomability = FlowerKnight.BLOOM_POWERS_ONLY
+		else:
+			my.bloomability = FlowerKnight.BLOOMABLE
+		my.tiers['bloom']['id'] = entry.getval('id0')
+		my.tiers['bloom']['lvlCap'] = maxLevel[my.rarity][2]
+		my.tiers['bloom']['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
+		my.tiers['bloom']['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
+		my.tiers['bloom']['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
+		my.tiers['bloom']['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
+		my.tiers['bloom']['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
+		my.tiers['bloom']['date0'] = entry.getval('date0')
+		my.tiers['bloom']['date1'] = entry.getval('date1')
+		my.tiers['bloom']['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
 
 	def _determine_romaji(my):
 		"""Determines the romaji spelling of the full name."""
 		# TODO
-		my.romajiName = ''
+		my.romajiName = '""'
 
 # Globalize the FlowerKnight constants for short access.
 HP = FlowerKnight.HP
@@ -602,7 +617,7 @@ class MasterData(object):
 
 		This function is good for finding which characters to update.
 		"""
-		
+
 		# Get all character entries sorted by date from oldest to newest.
 		def getdate(entry):
 			return entry.getval('date1')
@@ -718,13 +733,15 @@ class MasterData(object):
 		char_entries = my.get_char_entries(char_name_or_id)
 		knight = FlowerKnight(char_entries)
 		skill = my.skills[knight.skill]
+		bloomable = knight.bloomability != FlowerKnight.NO_BLOOM
 		# Ability 1 is used by pre-evo and evo tiers.
 		ability1 = knight.tiers['preEvo']['abilities'][0]
 		# Ability 2 is used by evo and bloom tiers.
 		ability2 = knight.tiers['evo']['abilities'][1]
-		# Abilities 3 and 4 replace abilities 1 and 2 after blooming.
-		ability3 = knight.tiers['bloom']['abilities'][0]
-		ability4 = knight.tiers['bloom']['abilities'][1]
+		if bloomable:
+			# Abilities 3 and 4 replace abilities 1 and 2 after blooming.
+			ability3 = knight.tiers['bloom']['abilities'][0]
+			ability4 = knight.tiers['bloom']['abilities'][1]
 		
 		module_name = 'Module:' + knight.fullName
 
@@ -745,18 +762,30 @@ class MasterData(object):
 			'\tpreEvoLvMax = {{ {0}, {1}, {2} }},\n'.format(    knight.tiers['preEvo']['lvlMax'][HP], knight.tiers['preEvo']['lvlMax'][ATK], knight.tiers['preEvo']['lvlMax'][DEF]),
 			'\tevoLv1 = {{ {0}, {1}, {2} }},\n'.format(         knight.tiers['evo']['lvlOne'][HP],    knight.tiers['evo']['lvlOne'][ATK],    knight.tiers['evo']['lvlOne'][DEF]),
 			'\tevoLvMax = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['evo']['lvlMax'][HP],    knight.tiers['evo']['lvlMax'][ATK],    knight.tiers['evo']['lvlMax'][DEF]),
-			'\tbloomLv1 = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['bloom']['lvlOne'][HP],  knight.tiers['bloom']['lvlOne'][ATK],  knight.tiers['bloom']['lvlOne'][DEF]),
-			'\tbloomLvMax = {{ {0}, {1}, {2} }},\n'.format(     knight.tiers['bloom']['lvlMax'][HP],  knight.tiers['bloom']['lvlMax'][ATK],  knight.tiers['bloom']['lvlMax'][DEF]),
+		])
+		if bloomable:
+			masterData += \
+			'\tbloomLv1 = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['bloom']['lvlOne'][HP],  knight.tiers['bloom']['lvlOne'][ATK],  knight.tiers['bloom']['lvlOne'][DEF]) +\
+			'\tbloomLvMax = {{ {0}, {1}, {2} }},\n'.format(     knight.tiers['bloom']['lvlMax'][HP],  knight.tiers['bloom']['lvlMax'][ATK],  knight.tiers['bloom']['lvlMax'][DEF])
+		masterData += ''.join([
 			'\tpreEvoAff1Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff1'][HP],   knight.tiers['preEvo']['aff1'][ATK],   knight.tiers['preEvo']['aff1'][DEF]),
 			'\tpreEvoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
-			'\tevoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(   knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
-			'\tbloomAff2Bonus = {{ {0}, {1}, {2} }},\n'.format( knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
+			'\tevoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(   knight.tiers['evo']['aff2'][HP],      knight.tiers['evo']['aff2'][ATK],      knight.tiers['evo']['aff2'][DEF]),
+		])
+		if bloomable:
+			masterData +=\
+			'\tbloomAff2Bonus = {{ {0}, {1}, {2} }},\n'.format( knight.tiers['bloom']['aff2'][HP],    knight.tiers['bloom']['aff2'][ATK],    knight.tiers['bloom']['aff2'][DEF])
+		masterData += ''.join([
 			'\tspeed = ', knight.spd, ',\n',
 			'\tskill = ', knight.skill, ',\n',
 			'\tability1 = ', ability1, ',\n',
 			'\tability2 = ', ability2, ',\n',
-			'\tability3 = ', ability3, ',\n',
-			'\tability4 = ', ability4, ',\n',
+		])
+		if bloomable:
+			masterData += \
+			'\tability3 = {ability3}\n'.format(ability3=ability3) +\
+			'\tability4 = {ability4}\n'.format(ability4=ability4)
+		masterData += ''.join([
 			'\n',
 			'\tpersonalEquipNameJapanese = "', blank, '",\n',
 			'\tpersonalEvoEquipNameJapanese = "', blank, '",\n',
