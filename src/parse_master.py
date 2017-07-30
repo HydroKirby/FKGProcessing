@@ -145,8 +145,13 @@ class FlowerKnight(object):
 
 	def add_entries(my, entries):
 		"""Adds a list of CharacterEntry instances to this knight's data."""
-		for entry in entries:
-			my.add_entry(entry)
+		try:
+			for entry in entries:
+				# entries is a list of CharacterEntry instances.
+				my.add_entry(entry)
+		except TypeError:
+			# entries was a single CharacterEntry instance.
+			my.add_entry(entries)
 
 	def add_entry(my, entry):
 		"""Adds a CharacterEntry instance to this knight's data."""
@@ -234,6 +239,10 @@ class FlowerKnight(object):
 		"""Determines the romaji spelling of the full name."""
 		# TODO
 		my.romajiName = '""'
+
+	def __str__(my):
+		return 'FlowerKnight instance for {0} who is a {1}* {2} type.'.format(
+			remove_quotes(my.fullName), my.rarity, attribList[my.type])
 
 # Globalize the FlowerKnight constants for short access.
 HP = FlowerKnight.HP
@@ -425,6 +434,11 @@ class CharacterEntry(BaseEntry):
 	def getlua_id_to_name(my):
 		return u'[{0}] = {1},'.format(my.getval('id0'), my.getval('fullName'))
 
+	def __str__(my):
+		return 'CharacterEntry for {0} at evolution tier {1}: '.format(
+			my.values['fullName'], my.values['evolutionTier']) + \
+		super(CharacterEntry, my).__str__()
+
 class SkillEntry(BaseEntry):
 	"""Stores one line of data from the masterCharacter section."""
 	__NAMED_ENTRIES = [
@@ -541,10 +555,25 @@ class MasterData(object):
 
 	def _parse_character_entries(my):
 		"""Creates a list of character entries from masterCharacter."""
+		# Start by parsing the CSV.
+		# Store the CSV into understandable variable names.
 		character_entries = [CharacterEntry(entry) for entry in my.masterTexts['masterCharacter']]
+		# Store CSV entries in a dict such that their ID is their key.
 		my.characters = {c.getval('id0'):c for c in character_entries}
 		my.pre_evo_chars = {c.getval('id0'):c for c in character_entries if
 			c.getval('isFlowerKnight1') == '1' and c.getval('evolutionTier') == '1'}
+		# Compile a list of all flower knights from the CSVs.
+		my.knights = {}
+		# Dereference the dict for faster access.
+		knights = my.knights
+		for char in character_entries:
+			name = remove_quotes(char.getval('fullName'))
+			if char.getval('isFlowerKnight1') != '1':
+				continue
+			elif name not in knights:
+				knights[name] = FlowerKnight(char)
+			else:
+				knights[name].add_entry(char)
 
 	def _parse_skill_entries(my):
 		"""Creates a list of skill entries from masterCharacterSkill."""
