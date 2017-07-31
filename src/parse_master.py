@@ -658,23 +658,6 @@ class MasterData(object):
 			remove_quotes(entry.getval('gameVersionWhenAdded')).split('.')
 		return my._convert_version_to_int(main_ver, major_ver, minor_ver)
 
-	def get_newest_characters_OLD(my):
-		"""Gets a list of only the most recently added characters.
-
-		This function is good for finding which characters to update.
-		"""
-
-		# Get all character entries sorted by date from oldest to newest.
-		def getdate(entry):
-			return entry.getval('date1')
-		entries_by_date = [(char.getval('date1'), char) for \
-			char in sorted(my.characters.values(), key=getdate)]
-		newest_date = entries_by_date[-1][0]
-		# Remove all entries that aren't the newest date.
-		entries_by_date = [entry for date, entry in entries_by_date if \
-			date == newest_date]
-		return entries_by_date
-
 	def get_newest_characters(my):
 		"""Gets a list of only the most recently added characters.
 
@@ -690,6 +673,60 @@ class MasterData(object):
 		# Remove all entries that aren't the newest date.
 		knights_by_date = [(knight.fullName, knight) for date, knight in \
 			knights_by_date if date == newest_date]
+		return knights_by_date
+
+	def get_knights_by_date(my):
+		"""Gets a list of characters based on their stored dates.
+
+		This function is good for finding which characters to update.
+
+		To get the latest date of all flower knights, do this.
+		master = MasterData()
+		knights_by_date = master.get_knights_by_date()
+		latest_date = max(knights_by_date)
+
+		To get a sorted list of dates, do this.
+		master = MasterData()
+		knights_by_date = master.get_knights_by_date()
+		dates = sorted(knights_by_date)
+
+		To see the flower knights at the latest date, do this.
+		for knight in sorted(knights_by_date)[-1]:
+			print(knight)
+
+		@returns A dict of sets where keys are dates and
+			values are FlowerKnights.
+		"""
+
+		def add_to_set(knight_dict, knight, val):
+			"""Adds the flower knight to the set for some value.
+
+			@param knight_dict: The dict of flower knights keyed by val.
+			@param knight: A FlowerKnight instance. It becomes the value of
+				the key-value pair.
+			@param val: Any value you want to key the flower knights by.
+				For example, dates or stats.
+
+			If the set doesn't exist in the dict, it is initialized.
+			If the flower knight is already in the dict, nothing happens.
+
+			Returns the set with the knight added.
+			"""
+
+			if val not in knight_dict:
+				knight_dict[val] = set()
+			return knight_dict[val].union([knight])
+
+		knights_by_date = {}
+		for knight in my.knights.values():
+			date = knight.tiers['preEvo']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+			date = knight.tiers['preEvo']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+			date = knight.tiers['evo']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+			date = knight.tiers['evo']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+			if knight.bloomability != FlowerKnight.NO_BLOOM:
+				date = knight.tiers['bloom']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+				date = knight.tiers['bloom']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+
 		return knights_by_date
 
 	def get_skill_list_page(my):
