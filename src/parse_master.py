@@ -346,19 +346,12 @@ class BaseEntry(object):
 		for value_index in my._string_valued_indices[entry_type]:
 			my.values[value_index] = add_quotes(my.values[value_index])
 
-	def getval(my, value_name):
-		"""Returns a stored value by its name.
-
-		This is the base class' implementation. Do not call this.
-		"""
-
-		raise Exception('Error: Calling a base class method (getval). ' \
-			'Did you forget to implement it in the child class?')
-
-	def getval_by_index(my, value_index):
-		"""Returns a stored value by its index in the CSV."""
-		if value_index >= 0 and value_index < len(my.values):
-			return my.values[value_index]
+	def getval(my, name_or_index):
+		"""Returns a stored value by its name or index in the CSV."""
+		if type(name_or_index) is int:
+			return my.values[name_or_index]
+		# The name_or_index is a string.
+		return my.values[my._named_values[name_or_index]]
 
 	def getlua(my):
 		"""Returns the stored data as a Lua list.
@@ -448,10 +441,6 @@ class CharacterEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(CharacterEntry.__NAMED_ENTRIES))))
 
-	def getval(my, value_name):
-		"""Returns a stored value by its name."""
-		return my.values[my._named_values[value_name]]
-
 	def getlua(my, named_values={}):
 		"""Returns the stored data as a Lua list."""
 		return super(CharacterEntry, my).getlua()
@@ -494,10 +483,6 @@ class SkillEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(SkillEntry.__NAMED_ENTRIES))))
 
-	def getval(my, value_name):
-		"""Returns a stored value by its name."""
-		return my.values[my._named_values[value_name]]
-
 	def getlua(my):
 		return u'[{0}] = '.format(my.getval('uniqueID')) + \
 			super(SkillEntry, my).getlua()
@@ -533,10 +518,6 @@ class AbilityEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(AbilityEntry.__NAMED_ENTRIES))))
 
-	def getval(my, value_name):
-		"""Returns a stored value by its name."""
-		return my.values[my._named_values[value_name]]
-
 	def getlua(my):
 		return u'[{0}] = '.format(my.getval('uniqueID')) + \
 			super(AbilityEntry, my).getlua()
@@ -557,10 +538,6 @@ class EquipmentEntry(BaseEntry):
 			# my._named_values['id'] = 0
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(EquipmentEntry.__NAMED_ENTRIES))))
-
-	def getval(my, value_name):
-		"""Returns a stored value by its name."""
-		return my.values[my._named_values[value_name]]
 
 	def getlua(my):
 		return u'[{0}] = '.format(my.getval('uniqueID')) + \
