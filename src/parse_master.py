@@ -141,6 +141,10 @@ class FlowerKnight(object):
 		my.tiers = {'preEvo':{}, 'evo':{}, 'bloom':{}}
 		# Assume the character can't bloom.
 		my.bloomability = FlowerKnight.NO_BLOOM
+		# Store the latest date out of all CSV values.
+		# This will be only calculated once on the fly once
+		# get_latest_date is called.
+		my.latest_date = None
 		my.add_entries(entries)
 
 	def add_entries(my, entries):
@@ -240,9 +244,33 @@ class FlowerKnight(object):
 		# TODO
 		my.romajiName = '""'
 
+	def get_latest_date(my):
+		"""Gets the latest date in all evolution tiers."""
+		if my.latest_date:
+			# The latest date was determined and stored.
+			# Just return the pre-calculated value.
+			return my.latest_date
+		# Determine the latest date amongst all available dates.
+		if my.bloomability == FlowerKnight.NO_BLOOM:
+			my.latest_date = max([
+				my.tiers['preEvo']['date0'],
+				my.tiers['preEvo']['date1'],
+				my.tiers['evo']['date0'],
+				my.tiers['evo']['date1'],])
+		else:
+			my.latest_date = max([
+				my.tiers['preEvo']['date0'],
+				my.tiers['preEvo']['date1'],
+				my.tiers['evo']['date0'],
+				my.tiers['evo']['date1'],
+				my.tiers['bloom']['date0'],
+				my.tiers['bloom']['date1'],])
+		return my.latest_date
+
 	def __str__(my):
-		return 'FlowerKnight instance for {0} who is a {1}* {2} type.'.format(
-			remove_quotes(my.fullName), my.rarity, attribList[my.type])
+		return 'FlowerKnight: {0} who is a {1}* {2} type with pre-evo ID {3}.'.format(
+			remove_quotes(my.fullName), my.rarity, attribList[my.type],
+			my.tiers['preEvo']['id'])
 
 # Globalize the FlowerKnight constants for short access.
 HP = FlowerKnight.HP
@@ -436,7 +464,7 @@ class CharacterEntry(BaseEntry):
 
 	def __str__(my):
 		return 'CharacterEntry for {0} at evolution tier {1}: '.format(
-			my.values['fullName'], my.values['evolutionTier']) + \
+			my.getval('fullName'), my.getval('evolutionTier')) + \
 		super(CharacterEntry, my).__str__()
 
 class SkillEntry(BaseEntry):
@@ -644,7 +672,7 @@ class MasterData(object):
 			remove_quotes(entry.getval('gameVersionWhenAdded')).split('.')
 		return my._convert_version_to_int(main_ver, major_ver, minor_ver)
 
-	def get_newest_characters(my):
+	def get_newest_characters_OLD(my):
 		"""Gets a list of only the most recently added characters.
 
 		This function is good for finding which characters to update.
@@ -660,6 +688,23 @@ class MasterData(object):
 		entries_by_date = [entry for date, entry in entries_by_date if \
 			date == newest_date]
 		return entries_by_date
+
+	def get_newest_characters(my):
+		"""Gets a list of only the most recently added characters.
+
+		This function is good for finding which characters to update.
+		"""
+
+		# Get all character entries sorted by date from oldest to newest.
+		def getdate(knight):
+			return knight.get_latest_date()
+		knights_by_date = [(getdate(char), char) for \
+			char in sorted(my.knights.values(), key=getdate)]
+		newest_date = knights_by_date[-1][0]
+		# Remove all entries that aren't the newest date.
+		knights_by_date = [(knight.fullName, knight) for date, knight in \
+			knights_by_date if date == newest_date]
+		return knights_by_date
 
 	def get_skill_list_page(my):
 		"""Outputs the table of skill IDs and their related skill info."""
