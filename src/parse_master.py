@@ -304,10 +304,10 @@ class BaseEntry(object):
 			data_entry_csv, len(entries))
 		if entry_type not in BaseEntry. _WARN_WRONG_SIZE:
 			BaseEntry._WARN_WRONG_SIZE[entry_type] = False
-		if not success and not BaseEntry._WARN_WRONG_SIZE:
-			print('Warning: There are {0} values in a/an {1} entry instead of {2}.'.format(
+		if not success and not BaseEntry._WARN_WRONG_SIZE[entry_type]:
+			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
 				actual_count, entry_type, len(entries)))
-			print('The format of getMaster may have changed.')
+			print('The format of getMaster may have changed.\n')
 			# Don't state the warning again.
 			BaseEntry._WARN_WRONG_SIZE[entry_type] = True
 
@@ -372,6 +372,7 @@ class BaseEntry(object):
 		return '{' + u', '.join([v for v in my.values]) + '},'
 
 	def __str__(my):
+		"""Gets a succinct string describing this instance."""
 		return my.getlua()
 
 class CharacterEntry(BaseEntry):
@@ -426,6 +427,7 @@ class CharacterEntry(BaseEntry):
 		'isBloomedPowersOnly',
 		'variant',
 		'reading',
+		'libararyID',
 		'date0',
 		'date1',
 		'unknown06',
@@ -450,6 +452,13 @@ class CharacterEntry(BaseEntry):
 
 	def getlua_id_to_name(my):
 		return u'[{0}] = {1},'.format(my.getval('id0'), my.getval('fullName'))
+
+	def __repr__(my):
+		"""Gets a string stating nearly everything about this instance."""
+		return 'CSV fields by index, name, value:\n' + \
+			'\n'.join(['{0:02}: {1} = {2}'.format(
+				i, my.__NAMED_ENTRIES[i], my.getval(i)) \
+			for i in range(len(my.values))])
 
 	def __str__(my):
 		return 'CharacterEntry for {0} at evolution tier {1}: '.format(
