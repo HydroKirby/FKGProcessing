@@ -529,8 +529,15 @@ class AbilityEntry(BaseEntry):
 				range(len(AbilityEntry.__NAMED_ENTRIES))))
 
 	def getlua(my):
-		return u'[{0}] = '.format(my.getval('uniqueID')) + \
-			super(AbilityEntry, my).getlua()
+		"""Returns the stored data as a Lua list."""
+		# Copy our dict of named values. Then remove the unneeded elements.
+		named_values = dict(my._named_values)
+		named_values.pop('shortDescJapanese')
+		# Compile a list of variable names-values pairs.
+		lua_list = u', '.join([u'{0}={1}'.format(k, my.values[v]) \
+			for k, v in sorted(named_values.items())])
+		# Relate the list of values to the unique ID.
+		return u'[{0}] = {{{1}}},'.format(my.getval('uniqueID'), lua_list)
 
 class EquipmentEntry(BaseEntry):
 	__NAMED_ENTRIES = [
