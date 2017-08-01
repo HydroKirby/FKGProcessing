@@ -365,7 +365,8 @@ class BaseEntry(object):
 			# Relate the named entries to their value.
 			# This relies on how Python maintains order in dicts.
 			# Example output: {name="Bob", type="cat", hairs=5},
-			return '{' + u', '.join([u'{0}={1}'.format(k, my.values[v]) for k, v in my._named_values.items()]) + '},'
+			return '{' + u', '.join([u'{0}={1}'.format(k, my.values[v]) \
+				for k, v in sorted(my._named_values.items())]) + '},'
 		# There's no dict of named entries-to-indices.
 		# Just output all of the values separated by commas.
 		# Example output: {"Bob", "cat", 5},
