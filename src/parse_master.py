@@ -908,15 +908,14 @@ class MasterData(object):
 
 	def get_knight(my, name_or_id):
 		"""Gets the FlowerKnight instance by ID or name."""
-		# Try the passed value as a FlowerKnight instance.
+		# Test the name_or_id's type.
+		# This is ordered loosely on processing speed and how often
+		# it is expected to see name_or_id as some variable type.
 		if type(name_or_id) is FlowerKnight:
 			return name_or_id
-
-		# Try the passed value as a string: The character's name.
 		elif name_or_id in my.knights:
+			# The passed value is a string: The character's name.
 			return my.knights[name_or_id]
-		
-		# Try the passed value as the character's ID: A string or int.
 		elif type(name_or_id) is int or name_or_id.isdigit():
 			# char_name_or_id was the character's ID.
 			# Find the one entry for this character.
@@ -927,14 +926,12 @@ class MasterData(object):
 			elif not len(matching_knights):
 				print('Error: No character by ID {0} exists.'.format(
 					name_or_id))
-				return []
 			else:
 				print('Bug Error: There are {0} knights with ID {1}.'.format(
 					len(matching_knights), name_or_id))
-				return []
-
-		print('Bug Error: Unknown passed type.')
-		return []
+		else:
+			print('There is no knight with the name {0}.'.format(name_or_id))
+		return None
 
 	def get_char_module(my, char_name_or_id):
 		"""Outputs a single character's module."""

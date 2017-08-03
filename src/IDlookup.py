@@ -213,13 +213,13 @@ def choose_knights_by_date(master_data):
 
 	return knights_by_date[dates[index]]
 
-def get_char_module(master_data):
-	"""Gets the text to fill in a character module.
+def choose_knights(master_data):
+	"""Prompts the user for which flower knights to work with.
 
-	If the user chooses to abort the operation, an empty string is returned.
-
-	@returns The full text for a character module.
+	@param master_data: An instance of MasterData
+	@returns: A list of FlowerKnight instances. May be empty.
 	"""
+
 	_METHODS = ['By using the embedded "findID" in the source code.',
 		'By inputting the character name or ID.',
 		'By getting all of the newly updated/added characters.',
@@ -237,19 +237,28 @@ def get_char_module(master_data):
 			pass
 
 	# The method is determined. Look up the character.
-	output_text = ''
+	knights = []
 	if method == 0:
-		output_text += '\n\n'.join([master_data.get_char_module(id) for id in findID])
+		knights = [master_data.get_knight(id) for id in findID]
 	elif method == 1:
 		name_or_id = input('>>> Input the character\'s Japanese name or ID: ')
-		output_text = master_data.get_char_module(name_or_id)
+		knights = [master_data.get_knight(name_or_id)]
 	elif method == 2:
 		knights = choose_knights_by_date(master_data)
-		output_text = '\n'.join([master_data.get_char_module(knight) for \
-			knight in knights])
 	elif method == 3:
 		print('Cancelled.')
-	return output_text
+	return knights
+
+def get_char_module(master_data):
+	"""Gets the text to fill in a character module.
+
+	If the user chooses to abort the operation, an empty string is returned.
+
+	@returns The full text for a character module.
+	"""
+	knights = choose_knights(master_data)
+	return u'\n\n'.join([master_data.get_char_module(knight) \
+		for knight in knights if knight])
 
 def introspect(master_data, imaging):
 	"""Allows real-time introspection of the program and data."""
@@ -275,41 +284,17 @@ def introspect(master_data, imaging):
 
 def apply_frames(master_data, imaging):
 	"""Applies frames to character icons."""
-	print(dedent('''\
-		This function has a unique interface.
-		If there are files in ' + os.path.realpath(DL_OUTPUT_FOLDER)
-		with "icon" but not "out" in their filenames,
-		the icons there will have frames applied to them.
-
-		Otherwise, you will be asked to download the icons somehow.'''))
-	downloaded_files = [icon for icon in os.listdir(DL_OUTPUT_FOLDER) \
-		if 'icon' in icon and 'out' not in icon]
-	if downloaded_files:
-		print('Icons are found in the downloads folder. Now framing them.')
-		for icon in downloaded_files:
-			icon = os.path.join(DL_OUTPUT_FOLDER, icon)
-			outputfilename = os.path.splitext(icon)[0] + '_out.png'
-			framed_icon = imaging.get_framed_icon(icon, outputfilename, 5, 1)
-			print('Completed the processing for {0}.'.format(icon))
-	else:
-		print('No icons found in the downloads folder.')
-
-		print('This function does not work yet.')
-		return
-
-		# The code beyond this point doesn't work.
-		print('Will now download the newest character icons.')
-		for entry in master_data.get_newest_characters():
-			dl_state = downloadCharaImage(int(entry.getval('id0')),
-				entry.getval('fullName'), IMG_ICON, int(entry.getval('evolutionTier')))
-			if dl_state != DL_OK:
-				print('The download did not work. Skipping for {0} in evolution state {1}'.format(
-					remove_quotes(entry.getval('fullName')), entry.getval('evolutionTier')))
-				continue
-			ImgFileName = IconName + imgTypeName[iconType] + str(stage) + ".png"
-			framed_icon = imaging.get_framed_icon(icon, ImgFileName,
-				int(entry.getval('rarity')), int(entry.getval('type')))
-			print('Completed the processing for {0}.'.format(remove_quotes(entry.getval('fullName'))))
+	for entry in master_data.get_newest_characters():
+		dl_state = downloadCharaImage(int(entry.getval('id0')),
+			entry.getval('fullName'), IMG_ICON, int(entry.getval('evolutionTier')))
+		if dl_state != DL_OK:
+			print('The download did not work. Skipping for {0} in evolution state {1}'.format(
+				remove_quotes(entry.getval('fullName')), entry.getval('evolutionTier')))
+			continue
+		ImgFileName = IconName + imgTypeName[iconType] + str(stage) + ".png"
+		framed_icon = imaging.get_framed_icon(icon, ImgFileName,
+			int(entry.getval('rarity')), int(entry.getval('type')))
+		print('Completed the processing for {0}.'.format(remove_quotes(entry.getval('fullName'))))
 
 def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	"""Asks the user which function they want to use."""
