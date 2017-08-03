@@ -1072,10 +1072,7 @@ class MasterData(object):
 
 	def get_char_template(my, char_name_or_id, english_name=''):
 		"""Outputs a single character's template text to a file."""
-		char_entries = my.get_char_entries(char_name_or_id)
-		if not char_entries:
-			return ''
-		knight = FlowerKnight(char_entries)
+		knight = my.get_knight(char_name_or_id)
 		skill = my.skills[knight.skill]
 		# Ability 1 is used by pre-evo and evo tiers.
 		ability1 = my.abilities[knight.tiers['preEvo']['abilities'][0]]

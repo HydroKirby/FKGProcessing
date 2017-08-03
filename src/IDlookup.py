@@ -365,9 +365,6 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_SEE_ABILITIES:
 			# Note: You may optionally do something with the return value.
 			ability_list = master_data.find_referenced_abilities()
-		elif user_input == ACT_GET_CHAR_MODULE:
-			char_name_or_id = input("Input the character's Japanese name or ID: ")
-			output_text = master_data.get_char_module(char_name_or_id)
 		elif user_input == ACT_FRAME_ICONS:
 			apply_frames(master_data, imaging)
 
