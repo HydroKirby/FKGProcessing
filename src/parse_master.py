@@ -308,6 +308,29 @@ class FlowerKnight(object):
 				my.tiers['bloom']['date1'],])
 		return my.latest_date
 
+	def has_id(my, id):
+		"""Checks if the passed ID is related to this flower knight.
+
+		@param id: String or integer. The ID to check.
+
+		@returns: Boolean. True if the ID is related to this flower knight.
+			False if the id is 0, a blank string, or an unrelated number.
+		"""
+
+		id = str(id)
+		if not id:
+			return False
+		elif 'id' not in my.tiers['evo']:
+			# This flower knight is only a skin. It can't evolve.
+			return id == my.tiers['preEvo']['id']
+		elif my.bloomability == FlowerKnight.NO_BLOOM:
+			# This flower knight is evolvable, but not bloomable.
+			return id in (my.tiers['preEvo']['id'], my.tiers['evo']['id'])
+		else:
+			# This flower knight can bloom.
+			return id in (my.tiers['preEvo']['id'], my.tiers['evo']['id'],
+				my.tiers['bloom']['id'])
+
 	def __str__(my):
 		return 'FlowerKnight: {0} who is a {1}* {2} type with pre-evo ID {3}.'.format(
 			remove_quotes(my.fullName), my.rarity, attribList[my.type],
@@ -608,6 +631,7 @@ class MasterData(object):
 	def __init__(my, infilename=''):
 		my.masterTexts = {}
 		my.characters = {}
+		my.knights = {}
 		my.pre_evo_chars = {}
 		my.skills = {}
 		my.abilities = {}
@@ -742,7 +766,8 @@ class MasterData(object):
 		dates = sorted(knights_by_date)
 
 		To see the flower knights at the latest date, do this.
-		for knight in sorted(knights_by_date)[-1]:
+		latest_date = max(knights_by_date)
+		for knight in knights_by_date[latest_date]:
 			print(knight)
 
 		@returns A dict of sets where keys are dates and
@@ -808,7 +833,7 @@ class MasterData(object):
 	def get_base_ability_list_page(my):
 		"""Outputs the table of ability IDs and their related ability info."""
 		# Write the page header.
-		module_name = 'Module:AbilityList'
+		module_name = 'Module:UniqueAbilityList'
 		def getid(entry):
 			return int(entry.getval('uniqueID'))
 		output = u'\n'.join([
@@ -881,13 +906,39 @@ class MasterData(object):
 			return []
 		return entries
 
+	def get_knight(my, name_or_id):
+		"""Gets the FlowerKnight instance by ID or name."""
+		# Try the passed value as a FlowerKnight instance.
+		if type(name_or_id) is FlowerKnight:
+			return name_or_id
+
+		# Try the passed value as a string: The character's name.
+		elif name_or_id in my.knights:
+			return my.knights[name_or_id]
+		
+		# Try the passed value as the character's ID: A string or int.
+		elif type(name_or_id) is int or name_or_id.isdigit():
+			# char_name_or_id was the character's ID.
+			# Find the one entry for this character.
+			matching_knights = [k for k in my.knights.values() \
+				if k.has_id(name_or_id)]
+			if len(matching_knights) == 1:
+				return matching_knights[0]
+			elif not len(matching_knights):
+				print('Error: No character by ID {0} exists.'.format(
+					name_or_id))
+				return []
+			else:
+				print('Bug Error: There are {0} knights with ID {1}.'.format(
+					len(matching_knights), name_or_id))
+				return []
+
+		print('Bug Error: Unknown passed type.')
+		return []
+
 	def get_char_module(my, char_name_or_id):
 		"""Outputs a single character's module."""
-		entries = my.get_char_entries(char_name_or_id)
-		if not entries:
-			return ''
-		char_entries = my.get_char_entries(char_name_or_id)
-		knight = FlowerKnight(char_entries)
+		knight = my.get_knight(char_name_or_id)
 		skill = my.skills[knight.skill]
 		bloomable = knight.bloomability != FlowerKnight.NO_BLOOM
 		# Ability 1 is used by pre-evo and evo tiers.
@@ -939,8 +990,8 @@ class MasterData(object):
 		])
 		if bloomable:
 			masterData += \
-			'\tability3 = {ability3}\n'.format(ability3=ability3) +\
-			'\tability4 = {ability4}\n'.format(ability4=ability4)
+			'\tability3 = {ability3},\n'.format(ability3=ability3) +\
+			'\tability4 = {ability4},\n'.format(ability4=ability4)
 		masterData += ''.join([
 			'\n',
 			'\tpersonalEquipNameJapanese = "', blank, '",\n',

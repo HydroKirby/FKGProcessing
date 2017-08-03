@@ -174,22 +174,30 @@ def choose_knights_by_date(master_data):
 	"""
 
 	# Get the list of knights sorted by date.
-	knights_by_date = sorted(master_data.get_knights_by_date(), reverse=True)
+	knights_by_date = master_data.get_knights_by_date()
+	dates = sorted(knights_by_date, reverse=True)
 	if not knights_by_date:
 		print('Error: No list was compiled.')
 		return []
 
 	# State what options are available.
 	print('Some of the available dates are as follows.')
-	for i in range(min(len(knights_by_date), 3)):
-		print('{0}: {1}'.format(i, knights_by_date[i]))
+	for i in range(min(len(dates), 3)):
+		# Connect the names of the knights related to this date.
+		names = ', '.join([k.fullName for k in knights_by_date[dates[i]]])
+		# Make the description string.
+		display_str = '{0}: {1} with {2}'.format(i, dates[i], names)
+		# Crop the display string to fit in 80 characters.
+		if len(display_str) > 80:
+			display_str = display_str[:77] + u'...'
+		print(display_str)
 
 	# Get the option from the user.
 	STOP_WORDS = ['exit', 'quit', 'stop', 'cancel', 'end']
 	index = -1
-	while index < 0 or index >= len(knights_by_date):
-		index = input('Choose a date from 0 to {0} (exit to end): '.format(
-			len(knights_by_date)))
+	while index < 0 or index >= len(dates):
+		index = input('Choose a date index from 0 to {0} (exit to end): '.format(
+			len(dates)))
 
 		# Stop if the user decided to quit.
 		if index.lower() in STOP_WORDS:
@@ -199,10 +207,11 @@ def choose_knights_by_date(master_data):
 		try:
 			index = int(index)
 		except ValueError:
+			# Set the variable to redo the loop.
 			index = -1
 			continue
 
-	return knights_by_date[index]
+	return knights_by_date[dates[index]]
 
 def get_char_module(master_data):
 	"""Gets the text to fill in a character module.
@@ -236,10 +245,6 @@ def get_char_module(master_data):
 		output_text = master_data.get_char_module(name_or_id)
 	elif method == 2:
 		knights = choose_knights_by_date(master_data)
-		# TODO: Finish this function.
-		print('Sorry, but this function is incomplete.')
-		return ''
-		print(knights)
 		output_text = '\n'.join([master_data.get_char_module(knight) for \
 			knight in knights])
 	elif method == 3:
