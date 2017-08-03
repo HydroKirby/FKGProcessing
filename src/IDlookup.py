@@ -165,6 +165,45 @@ class UnitTest(object):
 		vals, success, actual_count = split_and_check_count(oracle_str, 6)
 		test_print(vals, success, actual_count, len(oracle_str))
 
+def choose_knights_by_date(master_data):
+	"""Gets a list of FlowerKnight instances based on their date.
+
+	@param master_data: An instance of MasterData.
+
+	@returns A list of FlowerKnight instances. It can be empty.
+	"""
+
+	# Get the list of knights sorted by date.
+	knights_by_date = sorted(master_data.get_knights_by_date(), reverse=True)
+	if not knights_by_date:
+		print('Error: No list was compiled.')
+		return []
+
+	# State what options are available.
+	print('Some of the available dates are as follows.')
+	for i in range(min(len(knights_by_date), 3)):
+		print('{0}: {1}'.format(i, knights_by_date[i]))
+
+	# Get the option from the user.
+	STOP_WORDS = ['exit', 'quit', 'stop', 'cancel', 'end']
+	index = -1
+	while index < 0 or index >= len(knights_by_date):
+		index = input('Choose a date from 0 to {0} (exit to end): '.format(
+			len(knights_by_date)))
+
+		# Stop if the user decided to quit.
+		if index.lower() in STOP_WORDS:
+			return []
+
+		# Turn the inputted string into an integer.
+		try:
+			index = int(index)
+		except ValueError:
+			index = -1
+			continue
+
+	return knights_by_date[index]
+
 def get_char_module(master_data):
 	"""Gets the text to fill in a character module.
 
@@ -196,8 +235,13 @@ def get_char_module(master_data):
 		name_or_id = input('>>> Input the character\'s Japanese name or ID: ')
 		output_text = master_data.get_char_module(name_or_id)
 	elif method == 2:
-		# TODO
-		print('Not implemented yet!')
+		knights = choose_knights_by_date(master_data)
+		# TODO: Finish this function.
+		print('Sorry, but this function is incomplete.')
+		return ''
+		print(knights)
+		output_text = '\n'.join([master_data.get_char_module(knight) for \
+			knight in knights])
 	elif method == 3:
 		print('Cancelled.')
 	return output_text
@@ -313,7 +357,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_HELP:
 			list_actions()
 		elif user_input == ACT_UNIT_TEST:
-			UnitTest.run_tests()
+			UnitTest().run_tests()
 		elif user_input == ACT_WRITE_CHAR_NAME_LIST:
 			output_text = master_data.get_char_list_page()
 		elif user_input == ACT_GET_CHAR_TEMPLATE:
@@ -323,7 +367,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_WRITE_SKILL_LIST:
 			output_text = master_data.get_skill_list_page()
 		elif user_input == ACT_WRITE_ABILITY_LIST:
-			output_text = master_data.get_ability_list_page()
+			output_text = master_data.get_base_ability_list_page()
 		elif user_input == ACT_FIND_CHAR:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			print('\n\n'.join([entry.getlua() for entry in

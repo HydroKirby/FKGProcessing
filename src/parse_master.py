@@ -80,7 +80,7 @@ def split_and_check_count(data_entry_csv, expected_count):
 	"""
 
 	data_entry_csv = data_entry_csv.rstrip()
-	entries = data_entry_csv.split(',')
+	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
 	if data_entry_csv.endswith(','):
 		# The last data entry is empty and unnecessary.
 		entries = entries[:-1]
@@ -96,13 +96,13 @@ def split_and_check_count(data_entry_csv, expected_count):
 	return (entries, expected_count == actual_count, actual_count)
 
 def remove_quotes(text):
-	"""Removes double-quotes around strings."""
+	"""Removes pairs of double-quotes around strings."""
 	if text.startswith('"') and text.endswith('"'):
 		return text[1:-1]
 	return text
 
 def add_quotes(text):
-	"""Puts double-quotes around strings."""
+	"""Puts pairs of double-quotes around strings."""
 	if text.startswith('"') and text.endswith('"'):
 		return text
 	return '"' + text + '"'
@@ -113,6 +113,47 @@ def get_float(val):
 		return float(val)
 	except ValueError:
 		return None
+
+def quotify_non_number(text):
+	"""Surrounds a non-numerical string in double quotes.
+
+	This function is intended for outputting strings for Lua.
+	Hence, numbers should be strings or numbers in Python, but
+	strings themselves should be surrounded in double quotes.
+
+	For example, this is a valid Lua table.
+	sample_table = {val1=5, val2="cat"}
+	If the passed "text" for this function is 5 or cat, it would be
+	processed in that fashion.
+
+	@param text: String. Intended to be a Lua table value.
+	@returns: String. The value which gets double quotes if it is a string.
+	"""
+
+	try:
+		float(text)
+	except ValueError:
+		return add_quotes(text)
+	return text
+
+def get_quotify_or_do_nothing_func(quoted):
+	"""Gets a function that double-quotes strings or does nothing.
+
+	The returned function can be used to make Lua tables.
+	See "quotify_non_number" for more info.
+
+	@param quoted: Boolean. Whether or not to add quotes.
+	@returns: Function. It transforms strings.
+	"""
+
+	if quoted:
+		string_transformer = quotify_non_number
+	else:
+		def asis(val):
+			"""Returns the value as-is."""
+			return val
+		string_transformer = asis
+	return string_transformer
 
 class FlowerKnight(object):
 	"""Class for storing all of a flower knight's info.
@@ -315,23 +356,13 @@ class BaseEntry(object):
 		# indirectly using my._named_values. The latter is done through
 		# the class instance's getval() function.
 		my.values = values
-		my.enclose_string_values(entry_type)
 
-		# Store a list of names to relate to the values.
-		# This should be created in the child class.
-		my._named_values = {}
-
-	def enclose_string_values(my, entry_type=INVALID_ENTRY_TYPE):
-		"""Surrounds all string CSV entries in double-quotes.
-
-		This only needs to be called once per entry.
-		The first call for a given entry will be slower than the rest.
-		"""
-
-		if entry_type == BaseEntry.INVALID_ENTRY_TYPE:
-			raise Exception('Error: Trying to call a method from the base ' \
-				'Entry class instead of a child class.')
-
+		# Determine which values are strings.
+		# It helps to store this because strings need enclosed in double-quotes
+		# in the Lua code.
+		#
+		# NOTE: This list may be unused in the code right now.
+		# Do a string search in the source code.
 		if entry_type not in my._string_valued_indices:
 			# This is the first time assigning double-quotes to strings for
 			# CSV entries of this type of Entry. Make a list of all values
@@ -341,10 +372,12 @@ class BaseEntry(object):
 			# duck-typing and checking for not(value). get_float can return
 			# 0 or 0.0 for valid numbers, but None for non-numbers.
 			my._string_valued_indices[entry_type] = \
-				[i for i in range(len(my.values)) if get_float(my.values[i]) is None]
+				[i for i in range(len(my.values)) if \
+				get_float(my.values[i]) is None]
 
-		for value_index in my._string_valued_indices[entry_type]:
-			my.values[value_index] = add_quotes(my.values[value_index])
+		# Store a list of names to relate to the values.
+		# This should be created in the child class.
+		my._named_values = {}
 
 	def getval(my, name_or_index):
 		"""Returns a stored value by its name or index in the CSV."""
@@ -353,24 +386,33 @@ class BaseEntry(object):
 		# The name_or_index is a string.
 		return my.values[my._named_values[name_or_index]]
 
-	def getlua(my):
+	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list.
 
-		This is the base class' implementation.
-		It only provides a boilerplate for the kind of code you would make.
-		From a child class, pass the named entries dict for nicer output.
+		@param quoted: Boolean. When True, encloses string values
+			of this class' variables in double-quotes.
+
+		@returns: String. All variables of the class in Lua table format.
 		"""
 
+		string_transformer = get_quotify_or_do_nothing_func(quoted)
+
+		# Generate the Lua table.
 		if my._named_values:
 			# Relate the named entries to their value.
 			# This relies on how Python maintains order in dicts.
 			# Example output: {name="Bob", type="cat", hairs=5},
-			return '{' + u', '.join([u'{0}={1}'.format(k, my.values[v]) \
-				for k, v in sorted(my._named_values.items())]) + '},'
-		# There's no dict of named entries-to-indices.
-		# Just output all of the values separated by commas.
-		# Example output: {"Bob", "cat", 5},
-		return '{' + u', '.join([v for v in my.values]) + '},'
+			lua_table = u', '.join([u'{0}={1}'.format(
+				k, string_transformer(my.values[v])) \
+				for k, v in sorted(my._named_values.items())])
+		else:
+			# There's no dict of named entries-to-indices.
+			# Just output all of the values separated by commas.
+			# Example output: {"Bob", "cat", 5},
+			lua_table = u', '.join([string_transformer(v) for v in my.values])
+
+		# Surround the Lua table in angle brackets.
+		return u'{{{0}}}'.format(lua_table)
 
 	def __str__(my):
 		"""Gets a succinct string describing this instance."""
@@ -444,15 +486,13 @@ class CharacterEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(CharacterEntry.__NAMED_ENTRIES))))
 
-	def getlua(my, named_values={}):
-		"""Returns the stored data as a Lua list."""
-		return super(CharacterEntry, my).getlua()
-
 	def getlua_name_to_id(my):
-		return u'[{0}] = {1},'.format(my.getval('fullName'), my.getval('id0'))
+		return u'[{0}] = {1},'.format(
+			add_quotes(my.getval('fullName')), my.getval('id0'))
 
 	def getlua_id_to_name(my):
-		return u'[{0}] = {1},'.format(my.getval('id0'), my.getval('fullName'))
+		return u'[{0}] = {1},'.format(
+			my.getval('id0'), add_quotes(my.getval('fullName')))
 
 	def __repr__(my):
 		"""Gets a string stating nearly everything about this instance."""
@@ -493,9 +533,9 @@ class SkillEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(SkillEntry.__NAMED_ENTRIES))))
 
-	def getlua(my):
-		return u'[{0}] = '.format(my.getval('uniqueID')) + \
-			super(SkillEntry, my).getlua()
+	def getlua(my, quoted=False):
+		return u'[{0}] = {1},'.format(my.getval('uniqueID'),
+			super(SkillEntry, my).getlua(quoted))
 
 class AbilityEntry(BaseEntry):
 	"""Stores one line of data from the ability section.
@@ -528,13 +568,16 @@ class AbilityEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(AbilityEntry.__NAMED_ENTRIES))))
 
-	def getlua(my):
+	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
 		# Copy our dict of named values. Then remove the unneeded elements.
 		named_values = dict(my._named_values)
 		named_values.pop('shortDescJapanese')
+		# Get a function that double-quotes strings if requested.
+		string_transformer = get_quotify_or_do_nothing_func(quoted)
 		# Compile a list of variable names-values pairs.
-		lua_list = u', '.join([u'{0}={1}'.format(k, my.values[v]) \
+		lua_list = u', '.join([u'{0}={1}'.format(
+			k, string_transformer(my.values[v])) \
 			for k, v in sorted(named_values.items())])
 		# Relate the list of values to the unique ID.
 		return u'[{0}] = {{{1}}},'.format(my.getval('uniqueID'), lua_list)
@@ -556,9 +599,9 @@ class EquipmentEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(EquipmentEntry.__NAMED_ENTRIES))))
 
-	def getlua(my):
+	def getlua(my, quoted=False):
 		return u'[{0}] = '.format(my.getval('uniqueID')) + \
-			super(EquipmentEntry, my).getlua()
+			super(EquipmentEntry, my).getlua(quoted)
 
 class MasterData(object):
 	"""Handles various info from the master data."""
@@ -729,8 +772,12 @@ class MasterData(object):
 		for knight in my.knights.values():
 			date = knight.tiers['preEvo']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
 			date = knight.tiers['preEvo']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
-			date = knight.tiers['evo']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
-			date = knight.tiers['evo']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+			try:
+				date = knight.tiers['evo']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+				date = knight.tiers['evo']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
+			except KeyError:
+				# This must be a skin-only flower knight. They do not evolve.
+				pass
 			if knight.bloomability != FlowerKnight.NO_BLOOM:
 				date = knight.tiers['bloom']['date0']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
 				date = knight.tiers['bloom']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
@@ -749,7 +796,7 @@ class MasterData(object):
 			'local p = {',
 
 			# Write the page body.
-			'\t' +  u'\n\t'.join([entry.getlua() for entry in
+			'\t' +  u'\n\t'.join([entry.getlua(True) for entry in
 				sorted(my.skills.values(), key=getid)]),
 
 			# Write the page footer.
@@ -770,7 +817,7 @@ class MasterData(object):
 			'local p = {',
 
 			# Write the page body.
-			'\t' + u'\n\t'.join([entry.getlua() for entry in
+			'\t' + u'\n\t'.join([entry.getlua(True) for entry in
 				sorted(my.abilities.values(), key=getid)]),
 
 			# Write the page footer.
@@ -819,11 +866,12 @@ class MasterData(object):
 			if char_id in my.characters:
 				fullName = my.characters[char_id].getval('fullName')
 			else:
-				print('Warning: No character by that ID exists.')
+				print('Warning: No character by this ID exists: ' + \
+					str(char_name_or_id))
 				return []
 
 		# Either we found the full name based on the ID or it was passed in.
-		fullName = add_quotes(fullName or char_name_or_id)
+		fullName = fullName or str(char_name_or_id)
 		# Search for all evolution tiers for the character.
 		def same_name(entry):
 			return entry.getval('fullName') == fullName
@@ -860,7 +908,7 @@ class MasterData(object):
 		masterData = ''.join([
 			'p.masterData = {\n'
 			'\tid = ', knight.tiers['preEvo']['id'], ',\n',
-			'\tname = {japanese = ', knight.fullName, ', romaji = ', knight.romajiName, ',},\n',
+			'\tname = {japanese = ', add_quotes(knight.fullName), ', romaji = ', knight.romajiName, ',},\n',
 			'\ttype = ', knight.type, ',\n',
 			'\trarity = ', knight.rarity, ',\n',
 			'\tlikes = ', knight.gift, ',\n',
