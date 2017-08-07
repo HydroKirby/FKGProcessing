@@ -220,9 +220,9 @@ def choose_knights(master_data):
 	@returns: A list of FlowerKnight instances. May be empty.
 	"""
 
-	_METHODS = ['By using the embedded "findID" in the source code.',
-		'By inputting the character name or ID.',
-		'By getting all of the newly updated/added characters.',
+	_METHODS = ["By inputting a character's name or ID.",
+		'By getting all characters on some date.',
+		'By using the embedded "findID" in the source code.',
 		'Cancel.']
 
 	# Determine how the user wants to look up the character.
@@ -239,12 +239,12 @@ def choose_knights(master_data):
 	# The method is determined. Look up the character.
 	knights = []
 	if method == 0:
-		knights = [master_data.get_knight(id) for id in findID]
-	elif method == 1:
 		name_or_id = input('>>> Input the character\'s Japanese name or ID: ')
 		knights = [master_data.get_knight(name_or_id)]
-	elif method == 2:
+	elif method == 1:
 		knights = choose_knights_by_date(master_data)
+	elif method == 2:
+		knights = [master_data.get_knight(id) for id in findID]
 	elif method == 3:
 		print('Cancelled.')
 	return knights
@@ -257,8 +257,27 @@ def get_char_module(master_data):
 	@returns The full text for a character module.
 	"""
 	knights = choose_knights(master_data)
-	return u'\n\n'.join([master_data.get_char_module(knight) \
-		for knight in knights if knight])
+	return u'\n\n==========================\n\n'.join(
+		[master_data.get_char_module(knight) for knight in knights if knight])
+
+def get_char_template(master_data):
+	"""Gets the text to fill in a character template.
+
+	If the user chooses to abort the operation, an empty string is returned.
+
+	@returns The full text for a character template.
+	"""
+	knights = choose_knights(master_data)
+	output_text = ''
+	for knight in knights:
+		print('Going to make template for {0}'.format(knight))
+		name = input('Input her English name: ')
+		template = master_data.get_char_template(knight, name)
+		if output_text:
+			# Add a separator.
+			output_text += '\n\n==========================\n\n'
+		output_text += template
+	return output_text
 
 def introspect(master_data, imaging):
 	"""Allows real-time introspection of the program and data."""
@@ -351,7 +370,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_WRITE_CHAR_NAME_LIST:
 			output_text = master_data.get_char_list_page()
 		elif user_input == ACT_GET_CHAR_TEMPLATE:
-			output_template(master_data.get_char_template(input_name_or_id, english_name))
+			output_text = get_char_template(master_data)
 		elif user_input == ACT_GET_CHAR_MODULE:
 			output_text = get_char_module(master_data)
 		elif user_input == ACT_WRITE_SKILL_LIST:
