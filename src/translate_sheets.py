@@ -9,8 +9,8 @@ except ImportError:
 	print('Error: BeautifulSoup 4 is not installed.')
 
 DEFAULT_INFILENAME = 'src.php'
-DEFAULT_OUTFILENAME = 'out.txt'
-SRC_URL = u'http://フラワーナイトガール.攻略wiki.com/index.php?緊急任務　走れ！スカネの大交流戦/カードめくり'
+DEFAULT_OUTFILENAME = 'result.txt'
+SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E5%BF%8D%E3%81%B3%E3%81%A8%E8%BF%B7%E5%AD%90%E3%81%A8%E7%A5%AD%E3%82%8A%E8%8A%B1%E7%81%AB/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
 
 __doc__ = u"""Mass translates card flip cheat sheets for Flower Knight Girl.
 
@@ -124,6 +124,9 @@ translations = [
 (u'コマチソウの技花', "Sweet William Catchfly's Skill Flower", 'SweetWilliamCatchfly_SkillFlower.png'),
 (u'コマチソウの装花', "Sweet William Catchfly's Equipment Flower", 'SweetWilliamCatchfly_EquipFlower.png'),
 (u'コマチソウ', 'Sweet William Catchfly', 'SweetWilliamCatchfly_icon00.png'),
+(u'エケベリアの技花', "Echeveria's Skill Flower", 'Echeveria_SkillFlower.png'),
+(u'エケベリアの装花', "Echeveria's Equipment Flower", 'Echeveria_EquipFlower.png'),
+(u'エケベリア', 'Echeveria', 'icon_128101.png'),
 
 (u'レイニーシーソー', 'Rainy Seesaw', ''),
 (u'ﾚｲﾆｰｽﾌﾟﾘﾝｸﾞｻﾝﾎﾞﾝ', 'Rainy Spring Sanbon', ''),
@@ -154,6 +157,11 @@ translations = [
 (u'栄光の首輪', 'Glory Necklace', 'Glory necklace.png'),
 (u'栄光の耳飾', 'Glory Earrings', 'Glory earrings.png'),
 (u'栄光の腕輪', 'Glory Bracelet', 'Glory bracelet.png'),
+# Event 66
+(u'飴細工の指輪', 'Shaped Candy Ring', 'Shaped candy ring.png'),
+(u'飴細工の首輪', 'Shaped Candy Necklace', 'Shaped candy necklace.png'),
+(u'飴細工の耳飾', 'Shaped Candy Earrings', 'Shaped candy earrings.png'),
+(u'飴細工の腕輪', 'Shaped Candy Bracelet', 'Shaped candy bracelet.png'),
 
 (u'？ゴールド', '? gold', 'gold.jpg'),
 (u'1000ゴールド', '1,000 gold', 'gold1k.jpg'),
@@ -271,6 +279,10 @@ translations = [
 (u'セルリア', 'Blushing Bride', 'BlushingBride_icon00.png'),
 (u'パキラ', 'Money Tree', 'MoneyTree_icon00.png'),
 (u'リシマキア', 'Creeping Jenny', 'CreepingJenny_icon00.png'),
+# Event 66
+(u'オミナエシ', u'Golden Lace', 'icon_148401.png'),
+(u'ヘリオトロープ（浴衣）', u'Heliotrope', 'icon_145103.png'),
+(u'ハゼラン', u'Coral Flower', 'icon_148201.png'),
 ]
 
 def translate_text(text):
@@ -355,10 +367,10 @@ def parse_soup(soup):
 	"""
 
 	sheets = {}
-	sheets['Sweet William Catchfly'] = get_sheets_for_id('koma_01', soup)
-	sheets['Blushing Bride'] = get_sheets_for_id('seru_01', soup)
-	sheets['Money Tree'] = get_sheets_for_id('paki_01', soup)
-	sheets['Creeping Jenny'] = get_sheets_for_id('rishi_01', soup)
+	sheets['Echeveria'] = get_sheets_for_id('ekebe_01', soup)
+	sheets['Golden Lace'] = get_sheets_for_id('omi_01', soup)
+	sheets['Heliotrope'] = get_sheets_for_id('heri_01', soup)
+	sheets['Coral Flower'] = get_sheets_for_id('hazera_01', soup)
 	sheets['Bonus'] = get_sheets_for_id('Extra_01', soup, False)
 	return sheets
 
@@ -369,8 +381,8 @@ def output_to_file(text, filename=DEFAULT_OUTFILENAME):
 def process_sheets_dict(all_sheets):
 	"""Gets the sheets data as a full string ready to be printed."""
 	text = ''
-	display_order = ['Sweet William Catchfly', 'Blushing Bride',
-		'Money Tree', 'Creeping Jenny', 'Bonus']
+	display_order = ['Echeveria', 'Golden Lace', 'Heliotrope',
+		'Coral Flower', 'Bonus']
 	char_num = 0
 	for sheet_owner in display_order:
 		# Write the header for one character's sheets.
