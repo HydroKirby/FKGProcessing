@@ -52,6 +52,7 @@ typo_fixes = [
 ('5,000', '5000'),
 ('10,000', '10000'),
 ('20,000', '20000'),
+('25,000', '25000'),
 ('50,000', '50000'),
 ('g', 'G'),
 # For gacha seeds
@@ -90,6 +91,7 @@ typo_fixes = [
 (u'(中)', u'中'),
 (u'(大)', u'大'),
 (u'ナズナ特製ケーキ', u'ナズナケーキ'),
+(u'贈り物ランダム', u'贈り物'),
 # Gacha seeds
 (u'中級装備種', u'中級装備ガチャ種'),
 (u'中級ガチャ種', u'中級装備ガチャ種'),
@@ -167,15 +169,18 @@ translations = [
 (u'1000ゴールド', '1,000 gold', 'gold1k.jpg'),
 (u'5000ゴールド', '5,000 gold', 'gold5k.jpg'),
 (u'10000ゴールド', '10,000 gold', 'gold10k.jpg'),
+# Big amounts of gold go first.
+('10000G', '10,000 gold', 'gold10k.jpg'),
+('20000G', '20,000 gold', 'gold-20k.jpg'),
+('25000G', '25,000 gold', 'gold-25k.jpg'),
+('50000G', '50,000 gold', 'gold50k.jpg'),
+
 ('1000G', '1,000 gold', 'gold1k.jpg'),
 ('1500G', '1,500 gold', 'gold-1,500.jpg'),
 ('2000G', '2,000 gold', 'gold2k.png'),
 ('2500G', '2,500 gold', 'gold-2,500.jpg'),
 ('4500G', '4,500 gold', 'gold-4,500.jpg'),
 ('5000G', '5,000 gold', 'gold5k.jpg'),
-('10000G', '10,000 gold', 'gold10k.jpg'),
-('20000G', '20,000 gold', 'gold-20k.jpg'),
-('50000G', '50,000 gold', 'gold50k.jpg'),
 
 # Small gold amounts go last.
 ('100G', '100 gold', 'gold100.jpg'),
@@ -206,8 +211,8 @@ translations = [
 (u'黄進化竜100才', '100 year old Yellow Dragon', 'small yellow blum 100.jpg'),
 
 (u'ナズナケーキ', "Nazuna's Cake", '500405.png'),
-(u'贈り物小', 'Gift (Small) ', '500101.png'),
-(u'贈り物中', 'Gift (Mid) ', '500102.png'),
+(u'贈り物小', 'Gift (Small) ', 'Random gift small.png'),
+(u'贈り物中', 'Gift (Mid) ', 'Random gift mid.png'),
 (u'贈り物大', 'Gift (Big) ', '500103.png'),
 (u'贈り物', 'Gift', '500101.png'), # Lack of info
 
