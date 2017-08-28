@@ -376,13 +376,14 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_WRITE_SKILL_LIST:
 			output_text = master_data.get_skill_list_page()
 		elif user_input == ACT_WRITE_ABILITY_LIST:
-			output_text = master_data.get_base_ability_list_page()
+			output_text = master_data.get_bundled_ability_list_page()
 		elif user_input == ACT_FIND_CHAR:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			print('\n\n'.join([entry.getlua() for entry in
 				master_data.get_char_entries(char_name_or_id)]))
 		elif user_input == ACT_SEE_ABILITIES:
 			# Note: You may optionally do something with the return value.
+			# TODO: Remove this command when I feel like it is no longer needed. 
 			ability_list = master_data.find_referenced_abilities()
 		elif user_input == ACT_FRAME_ICONS:
 			apply_frames(master_data, imaging)

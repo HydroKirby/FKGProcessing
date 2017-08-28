@@ -74,7 +74,7 @@ def split_and_check_count(data_entry_csv, expected_count):
 		the available CSV are returned and the parts that were unavailable
 		become empty strings. success = False.
 	If the actual count > the expected count,
-		as many CSV as can fit into "entries" will be returned. succss = False.
+		as many CSV as can fit into "entries" will be returned. success = False.
 
 	Returns (entries, success, actual_count)
 	"""
@@ -331,6 +331,37 @@ class FlowerKnight(object):
 			return id in (my.tiers['preEvo']['id'], my.tiers['evo']['id'],
 				my.tiers['bloom']['id'])
 
+	def get_lua(my, quoted=False):
+		"""Returns the stored data as a Lua list.
+
+		@param quoted: Boolean. When True, encloses string values
+			of this class' variables in double-quotes.
+
+		@returns: String. All variables of the class in Lua table format.
+		"""
+
+		string_transformer = get_quotify_or_do_nothing_func(quoted)
+		raise Exception('FlowerKnight.get_lua() is not coded up yet.')
+
+		# Generate the Lua table.
+		if my._named_values:
+			# Relate the named entries to their value.
+			# This relies on how Python maintains order in dicts.
+			# Example output: {name="Bob", type="cat", hairs=5},
+			lua_table = u', '.join([u'{0}={1}'.format(
+				k, string_transformer(my.values[v])) \
+				for k, v in sorted(my._named_values.items())])
+		else:
+			# There's no dict of named entries-to-indices.
+			# Just output all of the values separated by commas.
+			# Example output: {"Bob", "cat", 5},
+			lua_table = u', '.join([string_transformer(v) for v in my.values])
+
+		lua_table = ', '
+
+		# Surround the Lua table in angle brackets.
+		return u'{{{0}}}'.format(lua_table)
+
 	def __str__(my):
 		return 'FlowerKnight: {0} who is a {1}* {2} type with pre-evo ID {3}.'.format(
 			remove_quotes(my.fullName), my.rarity, attribList[my.type],
@@ -517,6 +548,9 @@ class CharacterEntry(BaseEntry):
 		return u'[{0}] = {1},'.format(
 			my.getval('id0'), add_quotes(my.getval('fullName')))
 
+	def __lt__(my, other):
+		return my.getval('id0') < other.getval('id0')
+
 	def __repr__(my):
 		"""Gets a string stating nearly everything about this instance."""
 		return 'CSV fields by index, name, value:\n' + \
@@ -556,6 +590,9 @@ class SkillEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(SkillEntry.__NAMED_ENTRIES))))
 
+	def __lt__(my, other):
+		return my.getval('uniqueID') < other.getval('uniqueID')
+
 	def getlua(my, quoted=False):
 		return u'[{0}] = {1},'.format(my.getval('uniqueID'),
 			super(SkillEntry, my).getlua(quoted))
@@ -576,6 +613,10 @@ class AbilityEntry(BaseEntry):
 		'ability2Val0',
 		'ability2Val1',
 		'ability2Val2',
+		'ability3ID',
+		'ability3Val0',
+		'ability3Val1',
+		'ability3Val2',
 		'descJapanese',
 		'date00',
 		'date01',
@@ -590,6 +631,9 @@ class AbilityEntry(BaseEntry):
 			# my._named_values['id'] = 0
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(AbilityEntry.__NAMED_ENTRIES))))
+
+	def __lt__(my, other):
+		return my.getval('uniqueID') < other.getval('uniqueID')
 
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
@@ -830,10 +874,10 @@ class MasterData(object):
 			])
 		return output
 
-	def get_base_ability_list_page(my):
-		"""Outputs the table of ability IDs and their related ability info."""
+	def get_bundled_ability_list_page(my):
+		"""Outputs the table of bundled ability IDs and their related ability info."""
 		# Write the page header.
-		module_name = 'Module:UniqueAbilityList'
+		module_name = 'Module:BundledAbilityList'
 		def getid(entry):
 			return int(entry.getval('uniqueID'))
 		output = u'\n'.join([
@@ -864,6 +908,34 @@ class MasterData(object):
 			'-- This page is auto-generated.\n',
 			'local p = {}\n',
 			'p.namesToIDs = {',
+
+			# Write the page body.
+			'\t' + u'\n\t'.join([entry.getlua_name_to_id() for entry in
+				sorted(my.pre_evo_chars.values(), key=getname)]),
+			'}\n',
+			'p.idsToNames = {',
+			'\t' + u'\n\t'.join([entry.getlua_id_to_name() for entry in
+				sorted(my.pre_evo_chars.values(), key=getid)]),
+
+			# Write the page footer.
+			'}\n',
+			'return p',
+			])
+		return output
+
+	def get_all_char_data_page(my):
+		"""Outputs the table of every char's data and their related IDs."""
+		# Write the page header.
+		module_name = 'Module:AllCharacterData'
+		def getname(entry):
+			return entry.getval('fullName')
+		def getid(entry):
+			return int(entry.getval('id0'))
+		output = '\n'.join([
+			'-- Relates character names to their IDs.',
+			'-- This page is auto-generated.\n',
+			'local p = {}\n',
+			'p.dataByIDs = {',
 
 			# Write the page body.
 			'\t' + u'\n\t'.join([entry.getlua_name_to_id() for entry in
@@ -962,33 +1034,34 @@ class MasterData(object):
 			'\tlikes = ', knight.gift, ',\n',
 			'\tnation = ', knight.nation, ',\n',
 			'\t--Stat { HP , ATK , DEF },\n',
-			'\tpreEvoLv1 = {{ {0}, {1}, {2} }},\n'.format(      knight.tiers['preEvo']['lvlOne'][HP], knight.tiers['preEvo']['lvlOne'][ATK], knight.tiers['preEvo']['lvlOne'][DEF]),
-			'\tpreEvoLvMax = {{ {0}, {1}, {2} }},\n'.format(    knight.tiers['preEvo']['lvlMax'][HP], knight.tiers['preEvo']['lvlMax'][ATK], knight.tiers['preEvo']['lvlMax'][DEF]),
-			'\tevoLv1 = {{ {0}, {1}, {2} }},\n'.format(         knight.tiers['evo']['lvlOne'][HP],    knight.tiers['evo']['lvlOne'][ATK],    knight.tiers['evo']['lvlOne'][DEF]),
-			'\tevoLvMax = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['evo']['lvlMax'][HP],    knight.tiers['evo']['lvlMax'][ATK],    knight.tiers['evo']['lvlMax'][DEF]),
+			'\ttier1Lv1 = {{ {0}, {1}, {2} }},\n'.format(      knight.tiers['preEvo']['lvlOne'][HP], knight.tiers['preEvo']['lvlOne'][ATK], knight.tiers['preEvo']['lvlOne'][DEF]),
+			'\ttier1LvMax = {{ {0}, {1}, {2} }},\n'.format(    knight.tiers['preEvo']['lvlMax'][HP], knight.tiers['preEvo']['lvlMax'][ATK], knight.tiers['preEvo']['lvlMax'][DEF]),
+			'\ttier2Lv1 = {{ {0}, {1}, {2} }},\n'.format(         knight.tiers['evo']['lvlOne'][HP],    knight.tiers['evo']['lvlOne'][ATK],    knight.tiers['evo']['lvlOne'][DEF]),
+			'\ttier2LvMax = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['evo']['lvlMax'][HP],    knight.tiers['evo']['lvlMax'][ATK],    knight.tiers['evo']['lvlMax'][DEF]),
 		])
 		if bloomable:
 			masterData += \
-			'\tbloomLv1 = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['bloom']['lvlOne'][HP],  knight.tiers['bloom']['lvlOne'][ATK],  knight.tiers['bloom']['lvlOne'][DEF]) +\
-			'\tbloomLvMax = {{ {0}, {1}, {2} }},\n'.format(     knight.tiers['bloom']['lvlMax'][HP],  knight.tiers['bloom']['lvlMax'][ATK],  knight.tiers['bloom']['lvlMax'][DEF])
+			'\ttier3Lv1 = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['bloom']['lvlOne'][HP],  knight.tiers['bloom']['lvlOne'][ATK],  knight.tiers['bloom']['lvlOne'][DEF]) +\
+			'\ttier3LvMax = {{ {0}, {1}, {2} }},\n'.format(     knight.tiers['bloom']['lvlMax'][HP],  knight.tiers['bloom']['lvlMax'][ATK],  knight.tiers['bloom']['lvlMax'][DEF])
 		masterData += ''.join([
-			'\tpreEvoAff1Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff1'][HP],   knight.tiers['preEvo']['aff1'][ATK],   knight.tiers['preEvo']['aff1'][DEF]),
-			'\tpreEvoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
-			'\tevoAff2Bonus = {{ {0}, {1}, {2} }},\n'.format(   knight.tiers['evo']['aff2'][HP],      knight.tiers['evo']['aff2'][ATK],      knight.tiers['evo']['aff2'][DEF]),
+			'\ttier1Aff1Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff1'][HP],   knight.tiers['preEvo']['aff1'][ATK],   knight.tiers['preEvo']['aff1'][DEF]),
+			'\ttier1Aff2Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
+			'\ttier2Aff2Bonus = {{ {0}, {1}, {2} }},\n'.format(   knight.tiers['evo']['aff2'][HP],      knight.tiers['evo']['aff2'][ATK],      knight.tiers['evo']['aff2'][DEF]),
+			'\t-- Tier 1 ability, Tier 2 added/replacement ability, both Tier 3 abilities.\n',
 		])
 		if bloomable:
 			masterData +=\
-			'\tbloomAff2Bonus = {{ {0}, {1}, {2} }},\n'.format( knight.tiers['bloom']['aff2'][HP],    knight.tiers['bloom']['aff2'][ATK],    knight.tiers['bloom']['aff2'][DEF])
+			'\ttier3Aff2Bonus = {{ {0}, {1}, {2} }},\n'.format( knight.tiers['bloom']['aff2'][HP],    knight.tiers['bloom']['aff2'][ATK],    knight.tiers['bloom']['aff2'][DEF])
 		masterData += ''.join([
 			'\tspeed = ', knight.spd, ',\n',
 			'\tskill = ', knight.skill, ',\n',
-			'\tability1 = ', ability1, ',\n',
-			'\tability2 = ', ability2, ',\n',
 		])
 		if bloomable:
-			masterData += \
-			'\tability3 = {ability3},\n'.format(ability3=ability3) +\
-			'\tability4 = {ability4},\n'.format(ability4=ability4)
+			masterData += '\tabilities = {{{ability1}, {ability2}, {ability3}, {ability4}}},\n'.format(
+				ability1=ability1, ability2=ability2, ability3=ability3, ability4=ability4)
+		else:
+			masterData += '\tabilities = {{{ability1}, {ability2}}},\n'.format(
+				ability1=ability1, ability2=ability2)
 		masterData += ''.join([
 			'\n',
 			'\tpersonalEquipNameJapanese = "', blank, '",\n',
@@ -1183,12 +1256,12 @@ class MasterData(object):
 			"\n|SkillLv1Trigger = ",skill.getval('triggerRateLv1'),
 			"\n|SkillLv5Trigger = ",skillLv5Calc(skill.getval('triggerRateLv1'),skill.getval('triggerRateLvUp'),skill.getval('unknown00')),
 			"\n|SkillDescription = ", skill.getval('descJapanese'),
-			"\n|Passive1Description = ", ability1.getval('descJapanese'),
-			"\n|Passive2Description = ", ability2.getval('descJapanese'),])
+			"\n|Passive1Description = ", ability1.getval('uniqueID'),
+			"\n|Passive2Description = ", ability2.getval('uniqueID'),])
 		if knight.bloomability != FlowerKnight.NO_BLOOM:
 			template_text = ''.join([template_text,
-				"\n|Passive3Description = ", ability3.getval('descJapanese'),
-				"\n|Passive4Description = ", ability4.getval('descJapanese')])
+				"\n|Passive3Description = ", ability3.getval('uniqueID'),
+				"\n|Passive4Description = ", ability4.getval('uniqueID')])
 		else:
 			template_text += "\n|Passive3Description = \n|Passive4Description = "
 		template_text += "\n|EvoEquipAbilityDescription = "
