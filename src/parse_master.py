@@ -57,6 +57,39 @@ maxLevel = {
 	'6':['60','70','80'],
 }
 
+def lua_indentify(text):
+	"""Creates consistent indentation for Lua code.
+
+	This removes all indentation and then adds indents after curly braces.
+	It is intended to be used with triple-quoted strings.
+
+	For example, this Lua code:
+	p = {
+		name="Foo",
+		age=5,
+	}
+
+	... will have this type of indentation style, but "p" and "}" will
+	have no indentation.
+
+	@param text: A multi-line string.
+	@returns: A string of the beautified text.
+	"""
+
+	num_indents = 0
+	lines = []
+	for line in text.splitlines():
+		increment_indents = False
+		if line.endswith('{'):
+			increment_indents = True
+		elif line.endswith('}'):
+			num_indents = min(0, num_indents - 1)
+		line = '\t' * num_indents + line.strip()
+		if increment_indents:
+			num_indents += 1
+		lines += [line]
+	return '\n'.join(lines)
+
 def split_and_check_count(data_entry_csv, expected_count):
 	"""Splits a line of CSV and verifies the number of entries is correct.
 
@@ -341,23 +374,111 @@ class FlowerKnight(object):
 		"""
 
 		string_transformer = get_quotify_or_do_nothing_func(quoted)
-		raise Exception('FlowerKnight.get_lua() is not coded up yet.')
 
-		# Generate the Lua table.
-		if my._named_values:
-			# Relate the named entries to their value.
-			# This relies on how Python maintains order in dicts.
-			# Example output: {name="Bob", type="cat", hairs=5},
-			lua_table = u', '.join([u'{0}={1}'.format(
-				k, string_transformer(my.values[v])) \
-				for k, v in sorted(my._named_values.items())])
+		blank = ''
+		formatDict = {
+			'id':my.tiers['preEvo']['id'],
+			'type':my.type,
+			'rarity':my.rarity,
+			'gift':my.gift,
+			'nation':my.nation,
+			'japanese':string_transformer(my.fullName),
+			'romaji':string_transformer(my.romajiName),
+			# Stats
+			'speed':my.spd,
+			'tier1Lv1HP':my.tiers['preEvo']['lvlOne'][HP],
+			'tier1Lv1Atk':my.tiers['preEvo']['lvlOne'][ATK],
+			'tier1Lv1Def':my.tiers['preEvo']['lvlOne'][DEF],
+			'tier1LvMaxHP':my.tiers['preEvo']['lvlMax'][HP],
+			'tier1LvMaxAtk':my.tiers['preEvo']['lvlMax'][ATK],
+			'tier1LvMaxDef':my.tiers['preEvo']['lvlMax'][DEF],
+			'tier2Lv1HP':my.tiers['evo']['lvlOne'][HP],
+			'tier2Lv1Atk':my.tiers['evo']['lvlOne'][ATK],
+			'tier2Lv1Def':my.tiers['evo']['lvlOne'][DEF],
+			'tier2LvMaxHP':my.tiers['evo']['lvlMax'][HP],
+			'tier2LvMaxAtk':my.tiers['evo']['lvlMax'][ATK],
+			'tier2LvMaxDef':my.tiers['evo']['lvlMax'][DEF],
+			'tier3Lv1HP':my.tiers['bloom']['lvlOne'][HP],
+			'tier3Lv1Atk':my.tiers['bloom']['lvlOne'][ATK],
+			'tier3Lv1Def':my.tiers['bloom']['lvlOne'][DEF],
+			'tier3LvMaxHP':my.tiers['bloom']['lvlMax'][HP],
+			'tier3LvMaxAtk':my.tiers['bloom']['lvlMax'][ATK],
+			'tier3LvMaxDef':my.tiers['bloom']['lvlMax'][DEF],
+			# Bonus stats
+			'tier1Aff1BonusHP':my.tiers['preEvo']['aff1'][HP],
+			'tier1Aff1BonusAtk':my.tiers['preEvo']['aff1'][ATK],
+			'tier1Aff1BonusDef':my.tiers['preEvo']['aff1'][DEF],
+			'tier1Aff2BonusHP':my.tiers['preEvo']['aff2'][HP],
+			'tier1Aff2BonusAtk':my.tiers['preEvo']['aff2'][ATK],
+			'tier1Aff2BonusDef':my.tiers['preEvo']['aff2'][DEF],
+			'tier2Aff2BonusHP':my.tiers['evo']['aff2'][HP],
+			'tier2Aff2BonusAtk':my.tiers['evo']['aff2'][ATK],
+			'tier2Aff2BonusDef':my.tiers['evo']['aff2'][DEF],
+			# Abilities
+			# Skill
+			'skill':my.skill,
+			}
+
+		lua_table = '''
+			id = {id},
+			name = {{japanese = {japanese}, romaji = {romaji},}},
+			type = {type},
+			rarity = {rarity},
+			likes = {gift},
+			nation = {nation},
+			--Stat {{ HP , ATK , DEF }},
+			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
+			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
+			tier2Lv1 = {{ {tier2Lv1HP}, {tier2Lv1Atk}, {tier2Lv1Def} }},
+			tier2LvMax = {{ {tier2LvMaxHP}, {tier2LvMaxAtk}, {tier2LvMaxDef} }},'''.format(**formatDict)
+		if my.bloomability != FlowerKnight.NO_BLOOM:
+			lua_table += '''
+			tier3Lv1 = {{ {tier3Lv1HP}, {tier3Lv1Atk}, {tier3Lv1Def} }},
+			tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},'''.format(**formatDict)
+
+		# Add affection bonuses.
+		lua_table += '''
+			tier1Aff1Bonus = {{ {tier1Aff1BonusHP}, {tier1Aff1BonusAtk}, {tier1Aff1BonusDef} }},
+			tier1Aff2Bonus = {{ {tier1Aff2BonusHP}, {tier1Aff2BonusAtk}, {tier1Aff2BonusDef} }},
+			tier2Aff2Bonus = {{ {tier2Aff2BonusHP}, {tier2Aff2BonusAtk}, {tier2Aff2BonusDef} }},
+			-- Tier 1 ability, Tier 2 added/replacement ability, both Tier 3 abilities.
+			'''.format(**formatDict)
+		if my.bloomability != FlowerKnight.NO_BLOOM:
+			lua_table += 'tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},'.format(**{
+				'tier3Aff2HP':my.tiers['bloom']['aff2'][HP],
+				'tier3Aff2Atk':my.tiers['bloom']['aff2'][ATK],
+				'tier3Aff2Def':my.tiers['bloom']['aff2'][DEF],
+			})
+
+		# Done with stats. Add other info.
+		lua_table += '''
+			speed = {speed},
+			skill = {skill},
+			'''.format(**formatDict)
+		if my.bloomability != FlowerKnight.NO_BLOOM:
+			lua_table += 'abilities = {{{ability1}, {ability2}, {ability3}, {ability4}}},'.format(**{
+				'ability1':my.tiers['preEvo']['abilities'][0],
+				'ability2':my.tiers['evo']['abilities'][1],
+				'ability3':my.tiers['bloom']['abilities'][0],
+				'ability4':my.tiers['bloom']['abilities'][1]})
 		else:
-			# There's no dict of named entries-to-indices.
-			# Just output all of the values separated by commas.
-			# Example output: {"Bob", "cat", 5},
-			lua_table = u', '.join([string_transformer(v) for v in my.values])
+			lua_table += 'abilities = {{{ability1}, {ability2}}},'.format(**{
+				'ability1':my.tiers['preEvo']['abilities'][0],
+				'ability2':my.tiers['preEvo']['abilities'][1],})
 
-		lua_table = ', '
+		# Add equipment info. TODO
+		lua_table += '''
+
+			# TODO
+			personalEquipNameJapanese = "",
+			personalEvoEquipNameJapanese = "",
+			personalEquipStatsLv1= { 0, 0, 0 },
+			personalEquipStatsLvMax = { 0, 0, 0 },
+			personalEvoEquipStatsLv1 = { 0, 0, 0 },
+			personalEvoEquipStatsLvMax = { 0, 0, 0 },
+			'''
+
+		lua_table = lua_indentify(lua_table)
 
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)
@@ -1024,73 +1145,26 @@ class MasterData(object):
 		# TODO: Sanitize user data. It needs to start with a new line and end with }.
 		userData = ''
 
-		blank = ''
-		masterData = ''.join([
-			'p.masterData = {\n'
-			'\tid = ', knight.tiers['preEvo']['id'], ',\n',
-			'\tname = {japanese = ', add_quotes(knight.fullName), ', romaji = ', knight.romajiName, ',},\n',
-			'\ttype = ', knight.type, ',\n',
-			'\trarity = ', knight.rarity, ',\n',
-			'\tlikes = ', knight.gift, ',\n',
-			'\tnation = ', knight.nation, ',\n',
-			'\t--Stat { HP , ATK , DEF },\n',
-			'\ttier1Lv1 = {{ {0}, {1}, {2} }},\n'.format(      knight.tiers['preEvo']['lvlOne'][HP], knight.tiers['preEvo']['lvlOne'][ATK], knight.tiers['preEvo']['lvlOne'][DEF]),
-			'\ttier1LvMax = {{ {0}, {1}, {2} }},\n'.format(    knight.tiers['preEvo']['lvlMax'][HP], knight.tiers['preEvo']['lvlMax'][ATK], knight.tiers['preEvo']['lvlMax'][DEF]),
-			'\ttier2Lv1 = {{ {0}, {1}, {2} }},\n'.format(         knight.tiers['evo']['lvlOne'][HP],    knight.tiers['evo']['lvlOne'][ATK],    knight.tiers['evo']['lvlOne'][DEF]),
-			'\ttier2LvMax = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['evo']['lvlMax'][HP],    knight.tiers['evo']['lvlMax'][ATK],    knight.tiers['evo']['lvlMax'][DEF]),
-		])
-		if bloomable:
-			masterData += \
-			'\ttier3Lv1 = {{ {0}, {1}, {2} }},\n'.format(       knight.tiers['bloom']['lvlOne'][HP],  knight.tiers['bloom']['lvlOne'][ATK],  knight.tiers['bloom']['lvlOne'][DEF]) +\
-			'\ttier3LvMax = {{ {0}, {1}, {2} }},\n'.format(     knight.tiers['bloom']['lvlMax'][HP],  knight.tiers['bloom']['lvlMax'][ATK],  knight.tiers['bloom']['lvlMax'][DEF])
-		masterData += ''.join([
-			'\ttier1Aff1Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff1'][HP],   knight.tiers['preEvo']['aff1'][ATK],   knight.tiers['preEvo']['aff1'][DEF]),
-			'\ttier1Aff2Bonus = {{ {0}, {1}, {2} }},\n'.format(knight.tiers['preEvo']['aff2'][HP],   knight.tiers['preEvo']['aff2'][ATK],   knight.tiers['preEvo']['aff2'][DEF]),
-			'\ttier2Aff2Bonus = {{ {0}, {1}, {2} }},\n'.format(   knight.tiers['evo']['aff2'][HP],      knight.tiers['evo']['aff2'][ATK],      knight.tiers['evo']['aff2'][DEF]),
-			'\t-- Tier 1 ability, Tier 2 added/replacement ability, both Tier 3 abilities.\n',
-		])
-		if bloomable:
-			masterData +=\
-			'\ttier3Aff2Bonus = {{ {0}, {1}, {2} }},\n'.format( knight.tiers['bloom']['aff2'][HP],    knight.tiers['bloom']['aff2'][ATK],    knight.tiers['bloom']['aff2'][DEF])
-		masterData += ''.join([
-			'\tspeed = ', knight.spd, ',\n',
-			'\tskill = ', knight.skill, ',\n',
-		])
-		if bloomable:
-			masterData += '\tabilities = {{{ability1}, {ability2}, {ability3}, {ability4}}},\n'.format(
-				ability1=ability1, ability2=ability2, ability3=ability3, ability4=ability4)
-		else:
-			masterData += '\tabilities = {{{ability1}, {ability2}}},\n'.format(
-				ability1=ability1, ability2=ability2)
-		masterData += ''.join([
-			'\n',
-			'\tpersonalEquipNameJapanese = "', blank, '",\n',
-			'\tpersonalEvoEquipNameJapanese = "', blank, '",\n',
-			# TODO
-			'\tpersonalEquipStatsLv1= {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
-			'\tpersonalEquipStatsLvMax = {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
-			'\tpersonalEvoEquipStatsLv1 = {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
-			'\tpersonalEvoEquipStatsLvMax = {{ {0}, {1}, {2} }},\n'.format(0, 0, 0),
-			'}\n'
-		])
+		output = '''-- Character module for {fullName}
+			-- WARNING: This character's affection data is wrong.
+			local p = {{}},
 
-		output = '\n'.join([
-			# Write the page header.
-			'-- Character module for ' + knight.fullName,
-			'local p = {}\n',
+			-- Wikia editors can and should edit the userData table.
+			p.userData = {{
+				{userData}
+			}}
 
-			# Write the page body.
-			'-- Wikia editors can and should edit the userData table.',
-			'p.userData = {',
-			userData,
-			'}\n\n' \
-			'-- DO NOT EDIT!',
-			'-- The master data comes from the game\'s data itself.',
-			masterData,
+			-- DO NOT EDIT!
+			-- The master data comes from the game's data itself.
+			p.masterData = {masterData}
 
-			# Write the page footer.
-			'return p\n',
-			])
+			return p
+
+			'''.format(fullName=knight.fullName, userData=userData,
+				masterData=knight.get_lua(quoted=True))
+
+		output = lua_indentify(output)
+
 		return output
 
 	def find_referenced_abilities(my):
