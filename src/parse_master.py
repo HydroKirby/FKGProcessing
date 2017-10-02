@@ -404,13 +404,18 @@ class FlowerKnight(object):
 			'tier3LvMaxHP':my.tiers['bloom']['lvlMax'][HP],
 			'tier3LvMaxAtk':my.tiers['bloom']['lvlMax'][ATK],
 			'tier3LvMaxDef':my.tiers['bloom']['lvlMax'][DEF],
-			# Bonus stats
+			# Bonus stats from affection 1 and 2.
+			# Pre-evolution affection bonuses.
 			'tier1Aff1BonusHP':my.tiers['preEvo']['aff1'][HP],
 			'tier1Aff1BonusAtk':my.tiers['preEvo']['aff1'][ATK],
 			'tier1Aff1BonusDef':my.tiers['preEvo']['aff1'][DEF],
 			'tier1Aff2BonusHP':my.tiers['preEvo']['aff2'][HP],
 			'tier1Aff2BonusAtk':my.tiers['preEvo']['aff2'][ATK],
 			'tier1Aff2BonusDef':my.tiers['preEvo']['aff2'][DEF],
+			# Evolution affection bonuses.
+			'tier2Aff1BonusHP':my.tiers['evo']['aff1'][HP],
+			'tier2Aff1BonusAtk':my.tiers['evo']['aff1'][ATK],
+			'tier2Aff1BonusDef':my.tiers['evo']['aff1'][DEF],
 			'tier2Aff2BonusHP':my.tiers['evo']['aff2'][HP],
 			'tier2Aff2BonusAtk':my.tiers['evo']['aff2'][ATK],
 			'tier2Aff2BonusDef':my.tiers['evo']['aff2'][DEF],
@@ -440,11 +445,15 @@ class FlowerKnight(object):
 		lua_table += '''
 			tier1Aff1Bonus = {{ {tier1Aff1BonusHP}, {tier1Aff1BonusAtk}, {tier1Aff1BonusDef} }},
 			tier1Aff2Bonus = {{ {tier1Aff2BonusHP}, {tier1Aff2BonusAtk}, {tier1Aff2BonusDef} }},
-			tier2Aff2Bonus = {{ {tier2Aff2BonusHP}, {tier2Aff2BonusAtk}, {tier2Aff2BonusDef} }},
-			-- Tier 1 ability, Tier 2 added/replacement ability, both Tier 3 abilities.
-			'''.format(**formatDict)
+			tier2Aff1Bonus = {{ {tier2Aff1BonusHP}, {tier2Aff1BonusAtk}, {tier2Aff1BonusDef} }},
+			tier2Aff2Bonus = {{ {tier2Aff2BonusHP}, {tier2Aff2BonusAtk}, {tier2Aff2BonusDef} }},'''.format(**formatDict)
 		if my.bloomability != FlowerKnight.NO_BLOOM:
-			lua_table += 'tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},'.format(**{
+			lua_table += '''
+			tier3Aff2Bonus = {{ {tier3Aff1HP}, {tier3Aff1Atk}, {tier3Aff1Def} }},
+			tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},'''.format(**{
+				'tier3Aff1HP':my.tiers['bloom']['aff1'][HP],
+				'tier3Aff1Atk':my.tiers['bloom']['aff1'][ATK],
+				'tier3Aff1Def':my.tiers['bloom']['aff1'][DEF],
 				'tier3Aff2HP':my.tiers['bloom']['aff2'][HP],
 				'tier3Aff2Atk':my.tiers['bloom']['aff2'][ATK],
 				'tier3Aff2Def':my.tiers['bloom']['aff2'][DEF],
@@ -454,6 +463,7 @@ class FlowerKnight(object):
 		lua_table += '''
 			speed = {speed},
 			skill = {skill},
+			-- Tier 1 ability, Tier 2 added/replacement ability, both Tier 3 abilities.
 			'''.format(**formatDict)
 		if my.bloomability != FlowerKnight.NO_BLOOM:
 			lua_table += 'abilities = {{{ability1}, {ability2}, {ability3}, {ability4}}},'.format(**{
