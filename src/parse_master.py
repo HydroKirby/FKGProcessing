@@ -994,8 +994,9 @@ class MasterData(object):
 		def getid(entry):
 			return int(entry.getval('uniqueID'))
 		output = u'\n'.join([
-			'-- Relates skill IDs with their accompanying data.',
-			'-- This page is auto-generated.\n',
+			'--[[Category:Flower Knight description modules]]',
+			'--[[Category:Automatically updated modules]]',
+			'-- Relates skill IDs with their accompanying data.\n',
 			'local p = {',
 
 			# Write the page body.
@@ -1015,8 +1016,9 @@ class MasterData(object):
 		def getid(entry):
 			return int(entry.getval('uniqueID'))
 		output = u'\n'.join([
-			'-- Relates ability IDs with their accompanying data.',
-			'-- This page is auto-generated.\n',
+			'--[[Category:Flower Knight description modules]]',
+			'--[[Category:Automatically updated modules]]',
+			'-- Relates ability IDs with their accompanying data.\n',
 			'local p = {',
 
 			# Write the page body.
@@ -1038,8 +1040,9 @@ class MasterData(object):
 		def getid(entry):
 			return int(entry.getval('id0'))
 		output = '\n'.join([
-			'-- Relates character names to their IDs.',
-			'-- This page is auto-generated.\n',
+			'--[[Category:Flower Knight description modules]]',
+			'--[[Category:Automatically updated modules]]',
+			'-- Relates character names to their IDs.\n',
 			'local p = {}\n',
 			'p.namesToIDs = {',
 
@@ -1060,14 +1063,15 @@ class MasterData(object):
 	def get_all_char_data_page(my):
 		"""Outputs the table of every char's data and their related IDs."""
 		# Write the page header.
-		module_name = 'Module:AllCharacterData'
+		module_name = 'Module:MasterCharacterData'
 		def getname(entry):
 			return entry.getval('fullName')
 		def getid(entry):
 			return int(entry.getval('id0'))
 		output = '\n'.join([
-			'-- Relates character names to their IDs.',
-			'-- This page is auto-generated.\n',
+			'--[[Category:Flower Knight description modules]]',
+			'--[[Category:Automatically updated modules]]',
+			'-- Relates character names to their IDs.\n',
 			'local p = {}\n',
 			'p.dataByIDs = {',
 
@@ -1158,7 +1162,8 @@ class MasterData(object):
 		# TODO: Sanitize user data. It needs to start with a new line and end with }.
 		userData = ''
 
-		output = '''-- Character module for {fullName}
+		output = '''--[[Category:Flower Knight data modules]]
+			-- Character module for {fullName}
 			-- WARNING: This character's affection data is wrong.
 			local p = {{}},
 
