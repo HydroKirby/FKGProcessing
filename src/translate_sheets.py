@@ -10,7 +10,7 @@ except ImportError:
 
 DEFAULT_INFILENAME = 'src.php'
 DEFAULT_OUTFILENAME = 'result.txt'
-SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E5%BF%8D%E3%81%B3%E3%81%A8%E8%BF%B7%E5%AD%90%E3%81%A8%E7%A5%AD%E3%82%8A%E8%8A%B1%E7%81%AB/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
+SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E3%82%AC%E3%83%A9%E3%82%B9%E9%A4%A8%E3%81%AE%E6%80%AA%E4%BA%8B%E4%BB%B6/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
 
 __doc__ = u"""Mass translates card flip cheat sheets for Flower Knight Girl.
 
@@ -82,10 +82,14 @@ typo_fixes = [
 (u'(金)', u'金'),
 (u'オキタエール', u'オキタ'),
 (u'キタエール', u'オキタ'),
-(u'★4', u''),
+(u'★2 ', u'2*'),
+(u'★2', u'2*'),
+(u'★3 ', u'3*'),
+(u'★3', u'3*'),
 (u'★4 ', u''),
-(u'★5', u''),
+(u'★4', u''),
 (u'★5 ', u''),
+(u'★5', u''),
 # For gifts
 (u'(小)', u'小'),
 (u'(中)', u'中'),
@@ -126,9 +130,19 @@ translations = [
 (u'コマチソウの技花', "Sweet William Catchfly's Skill Flower", 'SweetWilliamCatchfly_SkillFlower.png'),
 (u'コマチソウの装花', "Sweet William Catchfly's Equipment Flower", 'SweetWilliamCatchfly_EquipFlower.png'),
 (u'コマチソウ', 'Sweet William Catchfly', 'SweetWilliamCatchfly_icon00.png'),
+# Event 66
 (u'エケベリアの技花', "Echeveria's Skill Flower", 'Echeveria_SkillFlower.png'),
 (u'エケベリアの装花', "Echeveria's Equipment Flower", 'Echeveria_EquipFlower.png'),
 (u'エケベリア', 'Echeveria', 'icon_128101.png'),
+# Event 71
+(u'メギの技花', "Japanese Barberry's Skill Flower", 'Japanese_Barberry_SkillFlower.png'),
+(u'メギの装花', "Japanese Barberry's Equipment Flower", 'Japanese_Barberry_EquipFlower.png'),
+(u'メギ', 'Japanese Barberry', 'icon_137801.png'),
+(u'2*ミツガシワ', 'Buckbean', 'icon_160007.png'),
+(u'3*ニワゼキショウ', 'Annual Blue-eyed Grass', 'icon_160405.png'),
+(u'ミツガシワ', 'Buckbean', 'icon_160007.png'),
+(u'ニワゼキショウ', 'Annual Blue-eyed Grass', 'icon_160405.png'),
+(u'アサザ', 'Water Fringe', 'icon_160005.png'),
 
 (u'レイニーシーソー', 'Rainy Seesaw', ''),
 (u'ﾚｲﾆｰｽﾌﾟﾘﾝｸﾞｻﾝﾎﾞﾝ', 'Rainy Spring Sanbon', ''),
@@ -164,6 +178,11 @@ translations = [
 (u'飴細工の首輪', 'Shaped Candy Necklace', 'Shaped candy necklace.png'),
 (u'飴細工の耳飾', 'Shaped Candy Earrings', 'Shaped candy earrings.png'),
 (u'飴細工の腕輪', 'Shaped Candy Bracelet', 'Shaped candy bracelet.png'),
+# Event 71
+(u'指針の指輪', 'Compass Needle Ring', 'Compass needle ring.png'),
+(u'指針の首輪', 'Compass Needle Necklace', 'Compass needle necklace.png'),
+(u'指針の耳飾', 'Compass Needle Earrings', 'Compass needle earrings.png'),
+(u'指針の腕輪', 'Compass Needle Bracelet', 'Compass needle bracelet.png'),
 
 (u'？ゴールド', '? gold', 'gold.jpg'),
 (u'1000ゴールド', '1,000 gold', 'gold1k.jpg'),
@@ -218,7 +237,7 @@ translations = [
 
 (u'マニュ20才ランダム', 'Random 20 year old Manyu', 'Kyouka_rei_20_year_red_random_icon.jpg'),
 (u'マニュ20才', '20 year old Manyu', 'Kyouka_rei_20_year_red_random_icon.jpg'), # lack of info
-(u'★3ランダム', 'Random 3 Star', '910000.png'),
+(u'3*ランダム', 'Random 3 Star', '910000.png'),
 
 (u'耳飾オキタ銅', 'Earrings Forge Spirit (Copper)', 'small bronze earrings forge spirit.jpg'),
 (u'首輪オキタ銅', 'Necklace Forge Spirit (Copper)', 'small bronze necklace forge spirit.jpg'),
@@ -288,6 +307,11 @@ translations = [
 (u'オミナエシ', u'Golden Lace', 'icon_148401.png'),
 (u'ヘリオトロープ（浴衣）', u'Heliotrope', 'icon_145103.png'),
 (u'ハゼラン', u'Coral Flower', 'icon_148201.png'),
+# Event 71
+(u'ストレプトカーパス', u'Streptocarpus', 'icon_140501.png'),
+(u'ワルナスビ', u'Nightshade', 'icon_125605.png'),
+(u'ラークスパー', u'Larkspur', 'icon_152905.png'),
+(u'メギ', u'Japanese Barberry', 'icon_137801.png')
 ]
 
 def translate_text(text):
@@ -372,10 +396,10 @@ def parse_soup(soup):
 	"""
 
 	sheets = {}
-	sheets['Echeveria'] = get_sheets_for_id('ekebe_01', soup)
-	sheets['Golden Lace'] = get_sheets_for_id('omi_01', soup)
-	sheets['Heliotrope'] = get_sheets_for_id('heri_01', soup)
-	sheets['Coral Flower'] = get_sheets_for_id('hazera_01', soup)
+	sheets['Streptocarpus'] = get_sheets_for_id('stre_01', soup)
+	sheets['Nightshade'] = get_sheets_for_id('waru_01', soup)
+	sheets['Larkspur'] = get_sheets_for_id('lark_01', soup)
+	sheets['Japanese Barberry'] = get_sheets_for_id('megi_01', soup)
 	sheets['Bonus'] = get_sheets_for_id('Extra_01', soup, False)
 	return sheets
 
@@ -385,9 +409,30 @@ def output_to_file(text, filename=DEFAULT_OUTFILENAME):
 
 def process_sheets_dict(all_sheets):
 	"""Gets the sheets data as a full string ready to be printed."""
-	text = ''
-	display_order = ['Echeveria', 'Golden Lace', 'Heliotrope',
-		'Coral Flower', 'Bonus']
+	text = u'''__NOTOC__
+These are the card sheets for [[{title}]]. The set of cards sheets a player will have will be based on which of the four featured girls appears on card flipping screen. Bonus Sheets have the same pattern for all players. Mouse over icons to display their meaning. All data comes directly from the [{wiki} Japanese Wiki] with great gratitude.
+{{| style="text-align: center"
+|-
+|{{{{CImage|{char1_jp}|icon|center|link=#{char1_en}_Sheets}}}}
+|{{{{CImage|{char2_jp}|icon|center|link=#{char2_en}_Sheets}}}}
+|{{{{CImage|{char3_jp}|icon|center|link=#{char3_en}_Sheets}}}}
+|{{{{CImage|{char4_jp}|icon|center|link=#{char4_en}_Sheets}}}}
+| rowspan="2"| [[#Bonus Sheets|Bonus Sheets]]
+|-
+|[[#{char1_en} Sheets|{char1_en}]]
+|[[#{char2_en} Sheets|{char2_en}]]
+|[[#{char3_en} Sheets|{char3_en}]]
+|[[#{char4_en} Sheets|{char4_en}]]
+|}}
+
+'''.format(title=u'The Mystery Case of the Glass Mansion',
+	wiki=SRC_URL,
+	char1_jp=u'ストレプトカーパス', char1_en=u'Streptocarpus',
+	char2_jp=u'ワルナスビ', char2_en=u'Nightshade',
+	char3_jp=u'ラークスパー', char3_en=u'Larkspur',
+	char4_jp=u'メギ', char4_en=u'Japanese Barberry')
+	display_order = ['Streptocarpus', 'Nightshade', 'Larkspur',
+		'Japanese Barberry', 'Bonus']
 	char_num = 0
 	for sheet_owner in display_order:
 		# Write the header for one character's sheets.
