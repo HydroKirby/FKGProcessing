@@ -1,0 +1,1 @@
+pwb.py update_lists.py --card

@@ -3,6 +3,7 @@
 import pywikibot
 from pywikibot import i18n
 import IDlookup
+import sys
 
 class ListUpdaterBot(object):
     def __init__(my):
@@ -63,14 +64,27 @@ class ListUpdaterBot(object):
         text = my.master_data.get_bundled_ability_list_page()
         my.save(text, page)
 
+    def update_card_sheets(my):
+        import translate_sheets
+        page = pywikibot.Page(my.site, u'The_Mystery_Case_of_the_Glass_Mansion/Card_Flip')
+        text = translate_sheets.get_sheets_page(infilename=None, outfilename=None, quiet=False)
+        my.save(text, page)
+
     def update(my):
         my.update_char_list()
         my.update_skill_list()
         my.update_ability_list()
 
-def main():
+def main(argv=[]):
     bot = ListUpdaterBot()
-    bot.update()
+    if '-h' in argv or '--help' in argv:
+        print('Updates the Wikia with these scripts and logging into a bot.')
+        print('-h / --help: Prints this message.')
+        print('-c / --card: Updates the card sheets translations instead.')
+    elif '-c' in argv or '--card' in argv:
+        bot.update_card_sheets()
+    else:
+        bot.update()
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

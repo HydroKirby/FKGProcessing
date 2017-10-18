@@ -470,7 +470,19 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 			text += '\n\n'
 	return text
 
-def main(url=SRC_URL, infilename=u'', outfilename=DEFAULT_OUTFILENAME):
+def get_sheets_page(url=SRC_URL, infilename=u'', outfilename=None, quiet=True):
+	"""Gets the full Wikia page for card sheets.
+
+	@param: url: String. Where in the Japanese Wikia to scrape data from.
+	@param infilename: String. If empty, uses the url for reading data.
+		If assigned, ignores the url and instead parses the input file.
+	@param outfilename: String or None. If it's a string, the output goes
+		to the file with that name and the page's text is returned.
+		If None, the page's text is returned only.
+	@param quiet: Boolean. If True, suppresses diagnostic messages.
+	@returns: The full page text for the 
+	"""
+
 	full_text = u''
 
 	if infilename:
@@ -482,16 +494,21 @@ def main(url=SRC_URL, infilename=u'', outfilename=DEFAULT_OUTFILENAME):
 			full_text.encode('utf-8')
 	else:
 		# We are given a source URL. Download the web page as input.
-		print('Retrieving the webpage content.')
+		if not quiet:
+			print('Retrieving the webpage content.')
 		response = requests.get(url)
 		full_text = response.content
-	print('Parsing the data.')
+	if not quiet:
+		print('Parsing the data.')
 	soup = BeautifulSoup(full_text, 'html.parser')
 	sheets = parse_soup(soup)
 	printable_tables = process_sheets_dict(sheets)
-	output_to_file(printable_tables)
-	print('Parsing completed. Please see ' + outfilename)
-	input('Press Enter to end the script.')
+	if outfilename:
+		output_to_file(printable_tables)
+		if not quiet:
+			print('Parsing completed. Please see ' + outfilename)
+	return printable_tables
 
 if __name__ == '__main__':
-	main()
+	get_sheets_page(outfilename=DEFAULT_OUTFILENAME, quiet=False)
+	input('Press Enter to end the script.')
