@@ -386,24 +386,13 @@ class FlowerKnight(object):
 			'romaji':string_transformer(my.romajiName),
 			# Stats
 			'speed':my.spd,
+			# Pre-evolution stats.
 			'tier1Lv1HP':my.tiers['preEvo']['lvlOne'][HP],
 			'tier1Lv1Atk':my.tiers['preEvo']['lvlOne'][ATK],
 			'tier1Lv1Def':my.tiers['preEvo']['lvlOne'][DEF],
 			'tier1LvMaxHP':my.tiers['preEvo']['lvlMax'][HP],
 			'tier1LvMaxAtk':my.tiers['preEvo']['lvlMax'][ATK],
 			'tier1LvMaxDef':my.tiers['preEvo']['lvlMax'][DEF],
-			'tier2Lv1HP':my.tiers['evo']['lvlOne'][HP],
-			'tier2Lv1Atk':my.tiers['evo']['lvlOne'][ATK],
-			'tier2Lv1Def':my.tiers['evo']['lvlOne'][DEF],
-			'tier2LvMaxHP':my.tiers['evo']['lvlMax'][HP],
-			'tier2LvMaxAtk':my.tiers['evo']['lvlMax'][ATK],
-			'tier2LvMaxDef':my.tiers['evo']['lvlMax'][DEF],
-			'tier3Lv1HP':my.tiers['bloom']['lvlOne'][HP],
-			'tier3Lv1Atk':my.tiers['bloom']['lvlOne'][ATK],
-			'tier3Lv1Def':my.tiers['bloom']['lvlOne'][DEF],
-			'tier3LvMaxHP':my.tiers['bloom']['lvlMax'][HP],
-			'tier3LvMaxAtk':my.tiers['bloom']['lvlMax'][ATK],
-			'tier3LvMaxDef':my.tiers['bloom']['lvlMax'][DEF],
 			# Bonus stats from affection 1 and 2.
 			# Pre-evolution affection bonuses.
 			'tier1Aff1BonusHP':my.tiers['preEvo']['aff1'][HP],
@@ -412,17 +401,28 @@ class FlowerKnight(object):
 			'tier1Aff2BonusHP':my.tiers['preEvo']['aff2'][HP],
 			'tier1Aff2BonusAtk':my.tiers['preEvo']['aff2'][ATK],
 			'tier1Aff2BonusDef':my.tiers['preEvo']['aff2'][DEF],
-			# Evolution affection bonuses.
-			'tier2Aff1BonusHP':my.tiers['evo']['aff1'][HP],
-			'tier2Aff1BonusAtk':my.tiers['evo']['aff1'][ATK],
-			'tier2Aff1BonusDef':my.tiers['evo']['aff1'][DEF],
-			'tier2Aff2BonusHP':my.tiers['evo']['aff2'][HP],
-			'tier2Aff2BonusAtk':my.tiers['evo']['aff2'][ATK],
-			'tier2Aff2BonusDef':my.tiers['evo']['aff2'][DEF],
 			# Abilities
 			# Skill
 			'skill':my.skill,
 			}
+
+		if my.tiers['evo']:
+			formatDict.update({
+				# Evolution stats.
+				'tier2Lv1HP':my.tiers['evo']['lvlOne'][HP],
+				'tier2Lv1Atk':my.tiers['evo']['lvlOne'][ATK],
+				'tier2Lv1Def':my.tiers['evo']['lvlOne'][DEF],
+				'tier2LvMaxHP':my.tiers['evo']['lvlMax'][HP],
+				'tier2LvMaxAtk':my.tiers['evo']['lvlMax'][ATK],
+				'tier2LvMaxDef':my.tiers['evo']['lvlMax'][DEF],
+				# Evolution affection bonuses.
+				'tier2Aff1BonusHP':my.tiers['evo']['aff1'][HP],
+				'tier2Aff1BonusAtk':my.tiers['evo']['aff1'][ATK],
+				'tier2Aff1BonusDef':my.tiers['evo']['aff1'][DEF],
+				'tier2Aff2BonusHP':my.tiers['evo']['aff2'][HP],
+				'tier2Aff2BonusAtk':my.tiers['evo']['aff2'][ATK],
+				'tier2Aff2BonusDef':my.tiers['evo']['aff2'][DEF],
+			})
 
 		lua_table = '''
 			id = {id},
@@ -437,6 +437,15 @@ class FlowerKnight(object):
 			tier2Lv1 = {{ {tier2Lv1HP}, {tier2Lv1Atk}, {tier2Lv1Def} }},
 			tier2LvMax = {{ {tier2LvMaxHP}, {tier2LvMaxAtk}, {tier2LvMaxDef} }},'''.format(**formatDict)
 		if my.bloomability != FlowerKnight.NO_BLOOM:
+			formatDict.update({
+				# Bloom stats.
+				'tier3Lv1HP':my.tiers['bloom']['lvlOne'][HP],
+				'tier3Lv1Atk':my.tiers['bloom']['lvlOne'][ATK],
+				'tier3Lv1Def':my.tiers['bloom']['lvlOne'][DEF],
+				'tier3LvMaxHP':my.tiers['bloom']['lvlMax'][HP],
+				'tier3LvMaxAtk':my.tiers['bloom']['lvlMax'][ATK],
+				'tier3LvMaxDef':my.tiers['bloom']['lvlMax'][DEF],
+			})
 			lua_table += '''
 			tier3Lv1 = {{ {tier3Lv1HP}, {tier3Lv1Atk}, {tier3Lv1Def} }},
 			tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},'''.format(**formatDict)
@@ -477,16 +486,6 @@ class FlowerKnight(object):
 				'ability2':my.tiers['preEvo']['abilities'][1],})
 
 		# Add equipment info. TODO
-		lua_table += '''
-
-			# TODO
-			personalEquipNameJapanese = "",
-			personalEvoEquipNameJapanese = "",
-			personalEquipStatsLv1= { 0, 0, 0 },
-			personalEquipStatsLvMax = { 0, 0, 0 },
-			personalEvoEquipStatsLv1 = { 0, 0, 0 },
-			personalEvoEquipStatsLvMax = { 0, 0, 0 },
-			'''
 
 		lua_table = lua_indentify(lua_table)
 
@@ -599,6 +598,19 @@ class BaseEntry(object):
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)
 
+	def __lt__(my, other):
+		return my.tiers['preEvo']['id'] < other.tiers['preEvo']['id']
+
+	def __repr__(my, named_entries=[]):
+		"""Gets a string stating nearly everything about this instance."""
+		if named_entries:
+			return 'CSV fields by index, name, value:\n' + \
+				'\n'.join(['{0:02}: {1} = {2}'.format(
+					i, named_entries[i], my.getval(i)) \
+				for i in range(len(my.values))])
+		else:
+			return my.__str__()
+
 	def __str__(my):
 		"""Gets a succinct string describing this instance."""
 		return my.getlua()
@@ -683,11 +695,7 @@ class CharacterEntry(BaseEntry):
 		return my.getval('id0') < other.getval('id0')
 
 	def __repr__(my):
-		"""Gets a string stating nearly everything about this instance."""
-		return 'CSV fields by index, name, value:\n' + \
-			'\n'.join(['{0:02}: {1} = {2}'.format(
-				i, my.__NAMED_ENTRIES[i], my.getval(i)) \
-			for i in range(len(my.values))])
+		return super(CharacterEntry, my).__repr__(my.__NAMED_ENTRIES)
 
 	def __str__(my):
 		return 'CharacterEntry for {0} at evolution tier {1}: '.format(
@@ -751,7 +759,6 @@ class AbilityEntry(BaseEntry):
 		'ability3Val1',
 		'ability3Val2',
 		'ability3Val3',
-		'descJapanese',
 		'date00',
 		'date01',
 		'unknown00',]
@@ -768,6 +775,9 @@ class AbilityEntry(BaseEntry):
 
 	def __lt__(my, other):
 		return my.getval('uniqueID') < other.getval('uniqueID')
+
+	def __repr__(my):
+		return super(AbilityEntry, my).__repr__(my.__NAMED_ENTRIES)
 
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
@@ -852,8 +862,7 @@ class MasterData(object):
 		ability_entries = [AbilityEntry(entry) for entry in my.masterTexts['masterAbility']]
 		# Remove abilities related to Strengthening Synthesis.
 		ability_entries = [entry for entry in ability_entries if
-			u'合成' not in entry.getval('shortDescJapanese') and
-			u'合成' not in entry.getval('descJapanese')]
+			u'合成' not in entry.getval('shortDescJapanese')]
 		my.abilities = {a.getval('uniqueID'):a for a in ability_entries}
 		
 	def _parse_equipment_entries(my):
@@ -1060,7 +1069,7 @@ class MasterData(object):
 			])
 		return output
 
-	def get_all_char_data_page(my):
+	def get_master_char_data_page(my):
 		"""Outputs the table of every char's data and their related IDs."""
 		# Write the page header.
 		module_name = 'Module:MasterCharacterData'
@@ -1068,25 +1077,32 @@ class MasterData(object):
 			return entry.getval('fullName')
 		def getid(entry):
 			return int(entry.getval('id0'))
-		output = '\n'.join([
-			'--[[Category:Flower Knight description modules]]',
-			'--[[Category:Automatically updated modules]]',
-			'-- Relates character names to their IDs.\n',
-			'local p = {}\n',
-			'p.dataByIDs = {',
+		if False:
+			output = '\n'.join([
+				'--[[Category:Flower Knight description modules]]',
+				'--[[Category:Automatically updated modules]]',
+				'-- Relates character names to their IDs.\n',
+				'return {',
 
-			# Write the page body.
-			'\t' + u'\n\t'.join([entry.getlua_name_to_id() for entry in
-				sorted(my.pre_evo_chars.values(), key=getname)]),
-			'}\n',
-			'p.idsToNames = {',
-			'\t' + u'\n\t'.join([entry.getlua_id_to_name() for entry in
-				sorted(my.pre_evo_chars.values(), key=getid)]),
+				# Write the page body.
+				'\t' + u'\n\t'.join([entry.get_lua() for entry in
+					sorted(my.knights.values())]),
+				'}\n',
 
-			# Write the page footer.
-			'}\n',
-			'return p',
-			])
+				# Write the page footer.
+				'}\n',
+				'return p',
+				])
+		else:
+			output = lua_indentify('''--[[Category:Flower Knight description modules]]
+				--[[Category:Automatically updated modules]]
+				-- Relates character names to their IDs.
+				
+				return {{
+					{0},
+				}}
+				''').format(u'\n\t'.join([my.knights[name].get_lua() for name in
+					sorted(my.knights)]))
 		return output
 
 	def get_char_entries(my, char_name_or_id):
