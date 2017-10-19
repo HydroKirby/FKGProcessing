@@ -793,6 +793,49 @@ class AbilityEntry(BaseEntry):
 		# Relate the list of values to the unique ID.
 		return u'[{0}] = {{{1}}},'.format(my.getval('uniqueID'), lua_list)
 
+class AbilityDescEntry(BaseEntry):
+	"""Stores one line of data from the ability description section.
+
+	In the master data, this section is named masterCharacterLeaderSkillDescription.
+	"""
+
+	__NAMED_ENTRIES = [
+		'id0',
+		'id1',
+		'ability1icon',
+		'ability1desc',
+		'ability2icon',
+		'ability2desc',
+		'ability3icon',
+		'ability3desc',
+		'ability4icon',
+		'ability4desc',]
+
+	def __init__(my, data_entry_csv):
+		super(AbilityDescEntry, my).__init__(data_entry_csv, 'ability description',
+			my.__NAMED_ENTRIES)
+		if not my._named_values:
+			# Create a dict that gives descriptive names to indices in the CSV.
+			# As an example of what this does, it could set
+			# my._named_values['id'] = 0
+			my._named_values = dict(zip(my.__NAMED_ENTRIES,
+				range(len(AbilityDescEntry.__NAMED_ENTRIES))))
+
+	def is_synthesis_ability(my):
+		"""Returns True if the ability ID is for synthesis materials."""
+		return '合成' in my.getval('ability1desc')
+
+	def __lt__(my, other):
+		return my.getval('id0') < other.getval('id0')
+
+	def __repr__(my):
+		return super(AbilityDescEntry, my).__repr__(my.__NAMED_ENTRIES)
+
+	def getlua(my, quoted=False):
+		"""Returns the stored data as a Lua list."""
+		return u'[{0}] = '.format(my.getval('uniqueID')) + \
+			super(AbilityDescEntry, my).getlua(quoted)
+
 class EquipmentEntry(BaseEntry):
 	__NAMED_ENTRIES = [
 		# TODO: Fill out this list with names of variables.
@@ -823,6 +866,7 @@ class MasterData(object):
 		my.pre_evo_chars = {}
 		my.skills = {}
 		my.abilities = {}
+		my.ability_descs = {}
 		my.equipment_entries = []
 		if infilename: my.load_getMaster(infilename)
 
@@ -846,7 +890,9 @@ class MasterData(object):
 		for char in character_entries:
 			name = remove_quotes(char.getval('fullName'))
 			if char.getval('isFlowerKnight1') != '1':
-				continue
+				# This is not a flower knight. Remove its ability.
+				if char.getval('ability1ID') in my.abilities:
+					my.abilities.pop(char.getval('ability1ID'))
 			elif name not in knights:
 				knights[name] = FlowerKnight(char)
 			else:
@@ -864,6 +910,15 @@ class MasterData(object):
 		ability_entries = [entry for entry in ability_entries if
 			u'合成' not in entry.getval('shortDescJapanese')]
 		my.abilities = {a.getval('uniqueID'):a for a in ability_entries}
+
+	def _parse_ability_desc_entries(my):
+		"""Creates a list of ability description entries from the master data.
+
+		It comes from masterCharacterLeaderSkillDescription.
+		"""
+
+		ability_desc_entries = [AbilityDescEntry(entry) for entry in my.masterTexts['masterAbilityDescs']]
+		my.ability_descs = {a.getval('id0'):a for a in ability_desc_entries}
 		
 	def _parse_equipment_entries(my):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
@@ -884,15 +939,19 @@ class MasterData(object):
 		my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', api_data)
 		my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', api_data)
 		my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', api_data)
+		my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', api_data)
 		my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', api_data)
 		my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', api_data)
 		my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', api_data)
-		
-		#Parse character and equipment entries
-		my._parse_character_entries()
+
+		# Parse character and equipment entries
 		my._parse_skill_entries()
 		my._parse_ability_entries()
+		my._parse_ability_desc_entries()
 		my._parse_equipment_entries()
+		# Parse character entries AFTER ability and ability descriptions.
+		# We need to remove abilities that belong to non-flower knights.
+		my._parse_character_entries()
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.
