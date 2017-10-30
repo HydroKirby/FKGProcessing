@@ -762,8 +762,7 @@ class AbilityEntry(BaseEntry):
 		'ability3Val3',
 		'date00',
 		'date01',
-		'unknown00',
-		'unknown01',]
+		'unknown00',]
 
 	def __init__(my, data_entry_csv):
 		super(AbilityEntry, my).__init__(data_entry_csv, 'ability',
