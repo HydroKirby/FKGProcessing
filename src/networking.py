@@ -32,7 +32,8 @@ class Networking(object):
 
     getCharaURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/character/"
     imgPreLink  = { IMG_ICON:'i/',      IMG_STAND:'s/' }
-    imgTypeName = { IMG_ICON:'_icon0',  IMG_STAND:'_chara0'}
+    imgTypeNameOld = { IMG_ICON:'_icon0',  IMG_STAND:'_chara0'}
+    imgTypeName = { IMG_ICON:'icon_{0}.png',  IMG_STAND:'portrait_{0}.png'}
     imgType     = { IMG_ICON:'icon_l_', IMG_STAND:'stand_s_' }
 
     def __init__(my):
@@ -69,14 +70,8 @@ class Networking(object):
         dl_state = my.DL_OK
         
         for tier in tiers:
-            if tier == Networking.BLOOM and knight.bloomability == FlowerKnight.BLOOMABLE:
-                dl_state = my.downloadCharaImage(knight,inputID,my.IMG_ICON,tier,dl_state)
-                #if dl_state == my.DL_OK: dl_state = my.imaging.get_framed_icon(rarity, charType)
-                dl_state = my.downloadCharaImage(knight,inputID,my.IMG_STAND,tier,dl_state)
-            elif tier in [Networking.PRE_EVO, Networking.EVO]:
-                dl_state = my.downloadCharaImage(knight,inputID,my.IMG_ICON,tier,dl_state)
-                #if dl_state == my.DL_OK: dl_state = my.imaging.get_framed_icon(rarity, charType)
-                dl_state = my.downloadCharaImage(knight,inputID,my.IMG_STAND,tier,dl_state)
+            dl_state = my.downloadCharaImage(knight,inputID,my.IMG_ICON,tier,dl_state)
+            dl_state = my.downloadCharaImage(knight,inputID,my.IMG_STAND,tier,dl_state)
             if dl_state != my.DL_OK:
                 break
         return dl_state
@@ -96,7 +91,8 @@ class Networking(object):
         
         #Define the image link and filename.
         imgFileLink = my.getCharaURL + my.imgPreLink[iconType] + linkHash + ".bin"
-        imgFileName = knight.fullName + my.imgTypeName[iconType] + str(stage) + ".png"
+        #imgFileName = knight.fullName + my.imgTypeName[iconType] + str(stage) + ".png"
+        imgFileName = my.imgTypeName[iconType].format(inputID)
         if not os.path.exists(my.out_dir):
             os.makedirs(my.out_dir)
         outputPath = os.path.join(my.out_dir, imgFileName)
