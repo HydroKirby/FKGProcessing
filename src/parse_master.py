@@ -848,6 +848,7 @@ class EquipmentEntry(BaseEntry):
 		'lvlMaxHP',
 		'lvlMaxAtk',
 		'lvlMaxDef',
+		'baseAbilityID',
 		'unknown00',
 		'unknown01',
 		'unknown02',
@@ -856,10 +857,10 @@ class EquipmentEntry(BaseEntry):
 		'unknown05',
 		'unknown06',
 		'unknown07',
-		'equipType',
+		'equipType', # Unverified
 		'unknown08',
 		'unknown09',
-		'equipLock',
+		'owners',
 		'unknown10',
 		'unknown11',
 		'unknown12',
@@ -869,8 +870,7 @@ class EquipmentEntry(BaseEntry):
 		'unknown15',
 		'dateMade',
 		'dateChanged',
-		'zero',
-		'empty',]
+		'zero',]
 
 	def __init__(my, data_entry_csv):
 		super(EquipmentEntry, my).__init__(data_entry_csv, 'equipment',
@@ -885,6 +885,13 @@ class EquipmentEntry(BaseEntry):
 	def __lt__(my, other):
 		return my.getval('id0') < other.getval('id0')
 
+	def __repr__(my):
+		return super(EquipmentEntry, my).__repr__(my.__NAMED_ENTRIES)
+
+	def __str__(my):
+		return 'EquipmentEntry ID {0} named {1} owned by {2}.'.format(
+			my.getval('id0'), my.getval('name'), my.getval('owners') or 'nobody')
+
 	def get_owner_ids(my):
 		"""Gets the IDs of flower knights that own this equipment.
 
@@ -894,15 +901,15 @@ class EquipmentEntry(BaseEntry):
 		Two or more elements means it's a special personal equipment
 			awarded to all base forms of some flower knight.
 
-		The equipLock value separates multiple flower knights with
+		The owners value separates multiple flower knights with
 			pipe | characters.
 
-		@returns A list of 0 or more stringly-typed integers.
+		@returns A list of 0 or more integers.
 		"""
 
-		if not my.getval('equipLock'):
+		if not my.getval('owners'):
 			return []
-		return my.getval('equipLock').split(u'|')
+		return [int(id) for id in my.getval('owners').split(u'|')]
 
 	def getlua(my, quoted=False):
 		return u'[{0}] = '.format(my.getval('id0')) + \
@@ -1114,6 +1121,18 @@ class MasterData(object):
 				date = knight.tiers['bloom']['date1']; knights_by_date[date] = add_to_set(knights_by_date, knight, date)
 
 		return knights_by_date
+
+	def get_personal_equipments(my, knight):
+		"""Finds all equipment IDs tied to a FlowerKnight.
+
+		@param knight: A FlowerKnight entity or an ID number.
+		@returns EquipmentEntry list. May be empty.
+		"""
+
+		knight_id = int(knight)
+		if type(knight) is FlowerKnight:
+			knight_id = int(knight.charID1)
+		return [equip for equip in my.equipment if knight_id in equip.get_owner_ids()]
 
 	def choose_knights_by_date(my):
 		"""Gets a list of FlowerKnight instances based on their date.
