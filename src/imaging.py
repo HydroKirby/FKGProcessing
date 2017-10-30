@@ -27,13 +27,15 @@ class Imaging(object):
 	'../res/rarity-bg2.png',
 	'../res/rarity-bg3.png',
 	'../res/rarity-bg4.png',
-	'../res/rarity-bg5.png']
+	'../res/rarity-bg5.png',
+	'../res/rarity-bg6.png']
 	ICON_FRAMES = [
 	'../res/rarity-frame1.png',
 	'../res/rarity-frame2.png',
 	'../res/rarity-frame3.png',
 	'../res/rarity-frame4.png',
-	'../res/rarity-frame5.png']
+	'../res/rarity-frame5.png',
+	'../res/rarity-frame6.png']
 	ICON_TYPES = [
 	'../res/type-slash.png',
 	'../res/type-blunt.png',

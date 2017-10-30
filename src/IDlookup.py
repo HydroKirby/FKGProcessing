@@ -3,6 +3,7 @@
 from __future__ import print_function
 import os, sys, math, re, random, zlib, hashlib
 from textwrap import dedent
+import networking
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -23,18 +24,12 @@ __doc__ = """Checks the getMaster Data to generate the template data"""
 
 DEFAULT_INFILENAME = 'getMaster_latest.txt'
 DEFAULT_OUTFILENAME = 'result.txt'
-DEFAULT_ASSETPATH = 'asset'
-DL_OUTPUT_FOLDER = 'dl'
 
 # Specify the Flower Knight ID and their English name (which is not available in getMaster)
 # Note: Always make sure findID and english_nameList are list types!
-findID = [158101]
-english_nameList = ["Aizoon Stonecrop"]
+findID = [142001]
+english_nameList = ["Nerine"]
 ImgDownload = False
-
-# Character image types.
-(IMG_ICON,
-IMG_STAND) = range(2)
 
 def output_template(text, outfilename=DEFAULT_OUTFILENAME, append=True):
 	has_data = append and os.path.exists(outfilename) and os.path.getsize(outfilename) > 0
@@ -46,88 +41,6 @@ def output_template(text, outfilename=DEFAULT_OUTFILENAME, append=True):
 		else:
 			print("Creating new file: " + outfilename)
 		outfile.write(text)
-	
-def downloadImageFunction(inputID,IconName,Bloom,EquipImgID,PowerOnly,imaging=None):
-	
-	#Create directory path if non-existant.
-	if not os.path.exists(DEFAULT_ASSETPATH): os.makedirs(DEFAULT_ASSETPATH)
-
-	dl_state = DL_OK
-	
-	if (Bloom and (PowerOnly == "0")):
-		#download bloomed images only
-		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_ICON,2)
-		#if dl_state == DL_OK and imaging: dl_state = imaging.get_framed_icon(IconName, imaging, rarity, charType)
-		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_STAND,2)
-	else:
-		#download basic and evolved images, plus equipment images
-		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_ICON,0)
-		#if dl_state == DL_OK and imaging: dl_state = imaging.get_framed_icon(IconName, imaging, rarity, charType)
-		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_STAND,0)
-		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_ICON,1)
-		#if dl_state == DL_OK and imaging: dl_state = imaging.get_framed_icon(IconName, imaging, rarity, charType)
-		if dl_state == DL_OK: dl_state = downloadCharaImage(inputID,IconName,IMG_STAND,1)
-		try:
-			if dl_state == DL_OK:
-				dl_state = downloadEquipImage(IconName,EquipImgID,"1")
-		except KeyboardInterrupt: dl_state = DL_QUIT
-		except: print(IconName + "'s personal equip is unavailable")
-	return dl_state
-	
-getCharaURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/character/"
-imgPreLink  = { IMG_ICON:'i/',      IMG_STAND:'s/' }
-imgTypeName = { IMG_ICON:'_icon0',  IMG_STAND:'_chara0'}
-imgType     = { IMG_ICON:'icon_l_', IMG_STAND:'stand_s_' }
-def downloadCharaImage(inputID,IconName,iconType,stage,imaging=None,rarity=0,charType=0):
-
-	#Check the Flower Knight's evolution stage, and refactor the ID appropriately.
-	if (stage == 2): inputID += 300000
-	else: inputID += stage
-	
-	#Calculate the hashed filename of the character images.
-	KeyName = imgType[iconType] + str(inputID)
-	linkHash = hashlib.md5(KeyName.encode('utf-8')).hexdigest()
-	
-	#Define the image link and filename.
-	ImgFileLink = getCharaURL + imgPreLink[iconType] + linkHash + ".bin"
-	ImgFileName = IconName + imgTypeName[iconType] + str(stage) + ".png"
-	
-	#Pass the variables to download function call.
-	dl_state = downloadImage(ImgFileLink,ImgFileName,True)
-	if dl_state == DL_OK and iconType == IMG_ICON:
-		#For icons, apply the background, frame, and typing to the image.
-		#Note: For this function, downloadCharaImage, it'd be better put it
-		#into a Class because of all the involved variables.
-		if not imaging.get_framed_icon(ImgFileName, ImgFileName, rarity, charType):
-			dl_state = DL_FAIL
-	return dl_state
-
-def downloadEquipImage(ENName,imgID,stage):
-	getEquipURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/item/100x100/"
-	
-	ImgFileLink = getEquipURL + imgID + ".png"
-	ImgFileName = ENName + "_equip0" + stage + ".png"
-
-	return downloadImage(ImgFileLink,ImgFileName,False)
-	
-
-def downloadImage(inputLink,outputImageName,decflag):
-	dl_state = DL_FAIL
-	outputFile = os.path.join(DEFAULT_ASSETPATH, outputImageName)
-	
-	with open(outputFile,'wb') as imgFile:
-		try:
-			imgBuffer = urlopen(inputLink).read()
-			if decflag: imgBuffer = zlib.decompress(imgBuffer)
-		except KeyboardInterrupt:
-			dl_state = DL_QUIT
-		except:
-			print("Unable to download " + outputImageName)
-		else:
-			imgFile.write(imgBuffer)
-			print("Downloaded " + outputImageName)
-			dl_state = DL_OK
-	return dl_state
 
 #def UploadImage(Image):
 
@@ -260,8 +173,8 @@ def get_char_module(master_data):
 	return u'\n\n==========================\n\n'.join(
 		[master_data.get_char_module(knight) for knight in knights if knight])
 
-def get_char_template(master_data):
-	"""Gets the text to fill in a character template.
+def get_char_images(master_data):
+	"""Gets all images for selected characters.
 
 	If the user chooses to abort the operation, an empty string is returned.
 
@@ -278,6 +191,17 @@ def get_char_template(master_data):
 			output_text += '\n\n==========================\n\n'
 		output_text += template
 	return output_text
+
+def get_char_module(master_data):
+	"""Gets the text to fill in a character module.
+
+	If the user chooses to abort the operation, an empty string is returned.
+
+	@returns The full text for a character module.
+	"""
+	knights = choose_knights(master_data)
+	return u'\n\n==========================\n\n'.join(
+		[master_data.get_char_module(knight) for knight in knights if knight])
 
 def introspect(master_data, imaging):
 	"""Allows real-time introspection of the program and data."""
@@ -315,6 +239,12 @@ def apply_frames(master_data, imaging):
 			int(entry.getval('rarity')), int(entry.getval('type')))
 		print('Completed the processing for {0}.'.format(remove_quotes(entry.getval('fullName'))))
 
+def download_character_images(master_data, networking):
+	"""Downloads all images for a character."""
+	knights = choose_knights(master_data)
+	for knight in knights:
+		networking.dowload_flower_knight_pics(knight)
+
 def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	"""Asks the user which function they want to use."""
 	# Make the list of potential actions.
@@ -326,9 +256,11 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	ACT_SEE_ABILITIES = 'see abilities'
 	ACT_GET_CHAR_TEMPLATE = 'char template'
 	ACT_GET_CHAR_MODULE = 'char module'
+	ACT_DL_CHAR_IMAGES = 'dl char images'
 	ACT_WRITE_SKILL_LIST = 'skill list'
 	ACT_WRITE_ABILITY_LIST = 'ability list'
 	ACT_WRITE_CHAR_NAME_LIST = 'char list'
+	ACT_WRITE_MASTER_CHAR_LIST = 'master char list'
 	ACT_FRAME_ICONS = 'frame'
 	action_list = {
 		ACT_EXIT:'Exit and return the parsed master data.',
@@ -339,10 +271,12 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_SEE_ABILITIES:'See the list of unique abilities.',
 		ACT_GET_CHAR_TEMPLATE:'Output a Character template.',
 		ACT_GET_CHAR_MODULE:'Output a Character module.',
+		ACT_DL_CHAR_IMAGES:'Download all images for a character.',
 		ACT_WRITE_SKILL_LIST:'Write the Skill list (Skill ID:Skill Info).',
 		ACT_WRITE_ABILITY_LIST:'Write the Ability list (Ability ID:Ability Info).',
 		ACT_WRITE_CHAR_NAME_LIST:'Write the Character list (FKG ID:JP Name).',
-		ACT_FRAME_ICONS:'Puts frames on all character icons in the "dl" folder.'
+		ACT_WRITE_MASTER_CHAR_LIST:'Write the Master Character List (FKG ID:All Data).',
+		ACT_FRAME_ICONS:'Puts frames on all character icons in the "dl" folder.',
 	}
 	def list_actions():
 		for key, action in action_list.items():
@@ -350,6 +284,8 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 
 	from imaging import Imaging
 	imaging = Imaging()
+	from networking import Networking
+	networking = Networking()
 
 	# Begin the prompt loop for which action to take.
 	list_actions()
@@ -373,10 +309,14 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			output_text = get_char_template(master_data)
 		elif user_input == ACT_GET_CHAR_MODULE:
 			output_text = get_char_module(master_data)
+		elif user_input == ACT_DL_CHAR_IMAGES:
+			output_text = download_character_images(master_data, networking)
 		elif user_input == ACT_WRITE_SKILL_LIST:
 			output_text = master_data.get_skill_list_page()
 		elif user_input == ACT_WRITE_ABILITY_LIST:
 			output_text = master_data.get_bundled_ability_list_page()
+		elif user_input == ACT_WRITE_MASTER_CHAR_LIST:
+			output_text = master_data.get_master_char_data_page()
 		elif user_input == ACT_FIND_CHAR:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			print('\n\n'.join([entry.getlua() for entry in

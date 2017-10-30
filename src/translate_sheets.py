@@ -43,6 +43,8 @@ typo_fixes = [
 (u'Ｇ', 'G'),
 (u'ｇ', 'G'),
 (u'×', 'x'),
+(u'，', ''),
+(u'、', ''),
 # For gold
 ('1,000', '1000'),
 ('1,500', '1500'),
@@ -234,10 +236,13 @@ translations = [
 (u'贈り物中', 'Gift (Mid) ', 'Random gift mid.png'),
 (u'贈り物大', 'Gift (Big) ', '500103.png'),
 (u'贈り物', 'Gift', '500101.png'), # Lack of info
+(u'特別功労賞「銅」', 'Special Services Award (Copper)', '500500.png'),
+(u'特別功労賞「銀」', 'Special Services Award (Silver)', '500501.png'),
 
 (u'マニュ20才ランダム', 'Random 20 year old Manyu', 'Kyouka_rei_20_year_red_random_icon.jpg'),
 (u'マニュ20才', '20 year old Manyu', 'Kyouka_rei_20_year_red_random_icon.jpg'), # lack of info
 (u'3*ランダム', 'Random 3 Star', '910000.png'),
+(u'団長メダル', 'Leader Medal', 'danchou_medal.png'),
 
 (u'耳飾オキタ銅', 'Earrings Forge Spirit (Copper)', 'small bronze earrings forge spirit.jpg'),
 (u'首輪オキタ銅', 'Necklace Forge Spirit (Copper)', 'small bronze necklace forge spirit.jpg'),
@@ -272,6 +277,7 @@ translations = [
 (u'赤フルル', 'Red Fururu', 'Small red fururu.jpg'),
 (u'紫フルル', 'Purple Fururu', 'Small purple fururu.jpg'),
 (u'黄フルル', 'Yellow Fururu', 'Small yellow fururu.jpg'),
+(u'プレミアムガチャチケット', 'Premium Gacha Ticket', 'Premium_gacha_ticket.png'),
 
 (u'深い森の花びら', 'Petal of Deep Forest', 'Lily_wood_petal_icon.png'),
 (u'常夏の花びら', 'Petal of Everlasting Summer', 'Banana_ocean_petal_icon.png'),

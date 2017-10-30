@@ -604,8 +604,8 @@ class BaseEntry(object):
 	def __repr__(my, named_entries=[]):
 		"""Gets a string stating nearly everything about this instance."""
 		if named_entries:
-			return 'CSV fields by index, name, value:\n' + \
-				'\n'.join(['{0:02}: {1} = {2}'.format(
+			return u'CSV fields by index, name, value:\n' + \
+				u'\n'.join([u'{0:02}: {1} = {2}'.format(
 					i, named_entries[i], my.getval(i)) \
 				for i in range(len(my.values))])
 		else:
@@ -761,7 +761,8 @@ class AbilityEntry(BaseEntry):
 		'ability3Val3',
 		'date00',
 		'date01',
-		'unknown00',]
+		'unknown00',
+		'unknown01',]
 
 	def __init__(my, data_entry_csv):
 		super(AbilityEntry, my).__init__(data_entry_csv, 'ability',
@@ -823,7 +824,7 @@ class AbilityDescEntry(BaseEntry):
 
 	def is_synthesis_ability(my):
 		"""Returns True if the ability ID is for synthesis materials."""
-		return '合成' in my.getval('ability1desc')
+		return u'合成' in my.getval('ability1desc')
 
 	def __lt__(my, other):
 		return my.getval('id0') < other.getval('id0')
@@ -833,17 +834,45 @@ class AbilityDescEntry(BaseEntry):
 
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
-		return u'[{0}] = '.format(my.getval('uniqueID')) + \
+		return u'[{0}] = '.format(my.getval('id0')) + \
 			super(AbilityDescEntry, my).getlua(quoted)
 
 class EquipmentEntry(BaseEntry):
 	__NAMED_ENTRIES = [
-		# TODO: Fill out this list with names of variables.
-		]
+		'id0',
+		'name',
+		'equipID',
+		'lvlOneHP',
+		'lvlOneAtk',
+		'lvlOneDef',
+		'lvlMaxHP',
+		'lvlMaxAtk',
+		'lvlMaxDef',
+		'unknown00',
+		'unknown01',
+		'unknown02',
+		'unknown03',
+		'unknown04',
+		'unknown05',
+		'unknown06',
+		'unknown07',
+		'equipType',
+		'unknown08',
+		'unknown09',
+		'equipLock',
+		'unknown10',
+		'unknown11',
+		'unknown12',
+		'desc',
+		'unknown13',
+		'unknown14',
+		'unknown15',
+		'dateMade',
+		'dateChanged',
+		'zero',
+		'empty',]
 
-	def __init__(my):
-		raise Exception('Error: EquipmentEntry is not implemented yet!')
-
+	def __init__(my, data_entry_csv):
 		super(EquipmentEntry, my).__init__(data_entry_csv, 'equipment',
 			my.__NAMED_ENTRIES)
 		if not my._named_values:
@@ -853,21 +882,49 @@ class EquipmentEntry(BaseEntry):
 			my._named_values = dict(zip(my.__NAMED_ENTRIES,
 				range(len(EquipmentEntry.__NAMED_ENTRIES))))
 
+	def __lt__(my, other):
+		return my.getval('id0') < other.getval('id0')
+
+	def get_owner_ids(my):
+		"""Gets the IDs of flower knights that own this equipment.
+
+		Returns a list of 0 or more stringly-typed integers.
+		No elements means this equipment can be publicly used.
+		One element means it's a personal equipment.
+		Two or more elements means it's a special personal equipment
+			awarded to all base forms of some flower knight.
+
+		The equipLock value separates multiple flower knights with
+			pipe | characters.
+
+		@returns A list of 0 or more stringly-typed integers.
+		"""
+
+		if not my.getval('equipLock'):
+			return []
+		return my.getval('equipLock').split(u'|')
+
 	def getlua(my, quoted=False):
-		return u'[{0}] = '.format(my.getval('uniqueID')) + \
+		return u'[{0}] = '.format(my.getval('id0')) + \
 			super(EquipmentEntry, my).getlua(quoted)
 
 class MasterData(object):
 	"""Handles various info from the master data."""
+	# Debugging variables.
+	# When True, only store flower knights.
+	remove_characters = False
+
 	def __init__(my, infilename=''):
 		my.masterTexts = {}
 		my.characters = {}
 		my.knights = {}
 		my.pre_evo_chars = {}
+		my.unique_characters = {}
 		my.skills = {}
 		my.abilities = {}
 		my.ability_descs = {}
 		my.equipment_entries = []
+		my.equipment = {}
 		if infilename: my.load_getMaster(infilename)
 
 	def _extract_section(my, section, rawdata):
@@ -887,12 +944,14 @@ class MasterData(object):
 		my.knights = {}
 		# Dereference the dict for faster access.
 		knights = my.knights
+		unique_characters = my.unique_characters
 		for char in character_entries:
 			name = remove_quotes(char.getval('fullName'))
 			if char.getval('isFlowerKnight1') != '1':
 				# This is not a flower knight. Remove its ability.
 				if char.getval('ability1ID') in my.abilities:
 					my.abilities.pop(char.getval('ability1ID'))
+				unique_characters[name] = char
 			elif name not in knights:
 				knights[name] = FlowerKnight(char)
 			else:
@@ -923,6 +982,7 @@ class MasterData(object):
 	def _parse_equipment_entries(my):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
 		my.equipment_entries = [entry.split(',')[:-1] for entry in my.masterTexts['masterEquipment']]
+		my.equipment = [EquipmentEntry(entry) for entry in my.masterTexts['masterEquipment']]
 
 	def load_getMaster(my, infilename):
 		"""Loads and parses getMaster.
