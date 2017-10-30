@@ -2,6 +2,7 @@
 # coding=utf-8
 from __future__ import print_function
 import os, sys, math, re, random, zlib, hashlib
+from common import *
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -1115,6 +1116,87 @@ class MasterData(object):
 
 		return knights_by_date
 
+	def choose_knights_by_date(my):
+		"""Gets a list of FlowerKnight instances based on their date.
+
+		@returns A list of FlowerKnight instances. It can be empty.
+		"""
+
+		# Get the list of knights sorted by date.
+		knights_by_date = my.get_knights_by_date()
+		dates = sorted(knights_by_date, reverse=True)
+		if not knights_by_date:
+			print('Error: No list was compiled.')
+			return []
+
+		# State what options are available.
+		print('Some of the available dates are as follows.')
+		for i in range(min(len(dates), 3)):
+			# Connect the names of the knights related to this date.
+			names = ', '.join([k.fullName for k in knights_by_date[dates[i]]])
+			# Make the description string.
+			display_str = '{0}: {1} with {2}'.format(i, dates[i], names)
+			# Crop the display string to fit in 80 characters.
+			if len(display_str) > 80:
+				display_str = display_str[:77] + u'...'
+			print(display_str)
+
+		# Get the option from the user.
+		STOP_WORDS = ['exit', 'quit', 'stop', 'cancel', 'end']
+		index = -1
+		while index < 0 or index >= len(dates):
+			index = input('Choose a date index from 0 to {0} (exit to end): '.format(
+				len(dates)))
+
+			# Stop if the user decided to quit.
+			if index.lower() in STOP_WORDS:
+				return []
+
+			# Turn the inputted string into an integer.
+			try:
+				index = int(index)
+			except ValueError:
+				# Set the variable to redo the loop.
+				index = -1
+				continue
+
+		return knights_by_date[dates[index]]
+
+	def choose_knights(my):
+		"""Prompts the user for which flower knights to work with.
+
+		@returns: A list of FlowerKnight instances. May be empty.
+		"""
+
+		_METHODS = ["By inputting a character's name or ID.",
+			'By getting all characters on some date.',
+			'By using the embedded "findID" in the source code.',
+			'Cancel.']
+
+		# Determine how the user wants to look up the character.
+		method = -1
+		print('How do you want to look up the character?')
+		for m in range(len(_METHODS)):
+			print('{0}: {1}'.format(m, _METHODS[m]))
+		while method < 0 or method >= len(_METHODS):
+			try:
+				method = int(input('>>> Input the method number: '))
+			except ValueError:
+				pass
+
+		# The method is determined. Look up the character.
+		knights = []
+		if method == 0:
+			name_or_id = input('>>> Input the character\'s Japanese name or ID: ')
+			knights = [my.get_knight(name_or_id)]
+		elif method == 1:
+			knights = my.choose_knights_by_date()
+		elif method == 2:
+			knights = [my.get_knight(id) for id in findID]
+		elif method == 3:
+			print('Cancelled.')
+		return knights
+
 	def get_skill_list_page(my):
 		"""Outputs the table of skill IDs and their related skill info."""
 		# Write the page header.
@@ -1379,8 +1461,10 @@ class MasterData(object):
 		# Ability 2 is used by evo and bloom tiers.
 		ability2 = my.abilities[knight.tiers['evo']['abilities'][1]]
 		# Abilities 3 and 4 replace abilities 1 and 2 after blooming.
-		ability3 = my.abilities[knight.tiers['bloom']['abilities'][0]]
-		ability4 = my.abilities[knight.tiers['bloom']['abilities'][1]]
+		ability3 = ability4 = ''
+		if knight.bloomability != FlowerKnight.NO_BLOOM:
+			ability3 = my.abilities[knight.tiers['bloom']['abilities'][0]]
+			ability4 = my.abilities[knight.tiers['bloom']['abilities'][1]]
 		
 		#Lookup character equip
 		dataEquipBase = dataEquipEvolved = []

@@ -19,17 +19,9 @@ elif sys.version_info.major < 3:
 	input = raw_input
 
 from parse_master import *
+from common import *
 
 __doc__ = """Checks the getMaster Data to generate the template data"""
-
-DEFAULT_INFILENAME = 'getMaster_latest.txt'
-DEFAULT_OUTFILENAME = 'result.txt'
-
-# Specify the Flower Knight ID and their English name (which is not available in getMaster)
-# Note: Always make sure findID and english_nameList are list types!
-findID = [142001]
-english_nameList = ["Nerine"]
-ImgDownload = False
 
 def output_template(text, outfilename=DEFAULT_OUTFILENAME, append=True):
 	has_data = append and os.path.exists(outfilename) and os.path.getsize(outfilename) > 0
@@ -78,109 +70,14 @@ class UnitTest(object):
 		vals, success, actual_count = split_and_check_count(oracle_str, 6)
 		test_print(vals, success, actual_count, len(oracle_str))
 
-def choose_knights_by_date(master_data):
-	"""Gets a list of FlowerKnight instances based on their date.
-
-	@param master_data: An instance of MasterData.
-
-	@returns A list of FlowerKnight instances. It can be empty.
-	"""
-
-	# Get the list of knights sorted by date.
-	knights_by_date = master_data.get_knights_by_date()
-	dates = sorted(knights_by_date, reverse=True)
-	if not knights_by_date:
-		print('Error: No list was compiled.')
-		return []
-
-	# State what options are available.
-	print('Some of the available dates are as follows.')
-	for i in range(min(len(dates), 3)):
-		# Connect the names of the knights related to this date.
-		names = ', '.join([k.fullName for k in knights_by_date[dates[i]]])
-		# Make the description string.
-		display_str = '{0}: {1} with {2}'.format(i, dates[i], names)
-		# Crop the display string to fit in 80 characters.
-		if len(display_str) > 80:
-			display_str = display_str[:77] + u'...'
-		print(display_str)
-
-	# Get the option from the user.
-	STOP_WORDS = ['exit', 'quit', 'stop', 'cancel', 'end']
-	index = -1
-	while index < 0 or index >= len(dates):
-		index = input('Choose a date index from 0 to {0} (exit to end): '.format(
-			len(dates)))
-
-		# Stop if the user decided to quit.
-		if index.lower() in STOP_WORDS:
-			return []
-
-		# Turn the inputted string into an integer.
-		try:
-			index = int(index)
-		except ValueError:
-			# Set the variable to redo the loop.
-			index = -1
-			continue
-
-	return knights_by_date[dates[index]]
-
-def choose_knights(master_data):
-	"""Prompts the user for which flower knights to work with.
-
-	@param master_data: An instance of MasterData
-	@returns: A list of FlowerKnight instances. May be empty.
-	"""
-
-	_METHODS = ["By inputting a character's name or ID.",
-		'By getting all characters on some date.',
-		'By using the embedded "findID" in the source code.',
-		'Cancel.']
-
-	# Determine how the user wants to look up the character.
-	method = -1
-	print('How do you want to look up the character?')
-	for m in range(len(_METHODS)):
-		print('{0}: {1}'.format(m, _METHODS[m]))
-	while method < 0 or method >= len(_METHODS):
-		try:
-			method = int(input('>>> Input the method number: '))
-		except ValueError:
-			pass
-
-	# The method is determined. Look up the character.
-	knights = []
-	if method == 0:
-		name_or_id = input('>>> Input the character\'s Japanese name or ID: ')
-		knights = [master_data.get_knight(name_or_id)]
-	elif method == 1:
-		knights = choose_knights_by_date(master_data)
-	elif method == 2:
-		knights = [master_data.get_knight(id) for id in findID]
-	elif method == 3:
-		print('Cancelled.')
-	return knights
-
-def get_char_module(master_data):
-	"""Gets the text to fill in a character module.
-
-	If the user chooses to abort the operation, an empty string is returned.
-
-	@returns The full text for a character module.
-	"""
-	knights = choose_knights(master_data)
-	return u'\n\n==========================\n\n'.join(
-		[master_data.get_char_module(knight) for knight in knights if knight])
-
-def get_char_images(master_data):
-	"""Gets all images for selected characters.
+def get_char_template(master_data):
+	"""Gets the text to fill in a character template.
 
 	If the user chooses to abort the operation, an empty string is returned.
 
 	@returns The full text for a character template.
 	"""
-	knights = choose_knights(master_data)
+	knights = master_data.choose_knights()
 	output_text = ''
 	for knight in knights:
 		print('Going to make template for {0}'.format(knight))
@@ -199,7 +96,7 @@ def get_char_module(master_data):
 
 	@returns The full text for a character module.
 	"""
-	knights = choose_knights(master_data)
+	knights = master_data.choose_knights()
 	return u'\n\n==========================\n\n'.join(
 		[master_data.get_char_module(knight) for knight in knights if knight])
 
@@ -241,7 +138,7 @@ def apply_frames(master_data, imaging):
 
 def download_character_images(master_data, networking):
 	"""Downloads all images for a character."""
-	knights = choose_knights(master_data)
+	knights = master_data.choose_knights()
 	for knight in knights:
 		networking.dowload_flower_knight_pics(knight)
 
