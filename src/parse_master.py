@@ -2,6 +2,7 @@
 # coding=utf-8
 from __future__ import print_function
 import os, sys, math, re, random, zlib, hashlib
+from textwrap import dedent
 from common import *
 
 if sys.version_info.major >= 3:
@@ -1286,6 +1287,27 @@ class MasterData(object):
 			'}\n',
 			'return p',
 			])
+		return output
+
+	def get_equipment_list_page(my):
+		"""Outputs the table of equipment IDs and their related info."""
+		# Write the page header.
+		module_name = 'Module:Equipment/Data'
+		def getid(entry):
+			return int(entry.getval('id0'))
+		equips = u',\n\t'.join([entry.getlua(True) for entry in
+			sorted(my.equipment, key=getid)])
+		output = dedent(u'''
+			--[[Category:Equipment modules]]
+			--[[Category:Automatically updated modules]]
+			-- Relates equipment IDs with accompanying data.
+
+			local EquipmentData = {{
+				{0}
+			}}
+
+			return EquipmentData
+			''').lstrip().format(equips)
 		return output
 
 	def get_master_char_data_page(my):

@@ -157,6 +157,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	ACT_WRITE_SKILL_LIST = 'skill list'
 	ACT_WRITE_ABILITY_LIST = 'ability list'
 	ACT_WRITE_CHAR_NAME_LIST = 'char list'
+	ACT_WRITE_EQUIP_LIST = 'equip list'
 	ACT_WRITE_MASTER_CHAR_LIST = 'master char list'
 	ACT_FRAME_ICONS = 'frame'
 	action_list = {
@@ -172,6 +173,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_WRITE_SKILL_LIST:'Write the Skill list (Skill ID:Skill Info).',
 		ACT_WRITE_ABILITY_LIST:'Write the Ability list (Ability ID:Ability Info).',
 		ACT_WRITE_CHAR_NAME_LIST:'Write the Character list (FKG ID:JP Name).',
+		ACT_WRITE_EQUIP_LIST:'Write the Equipment list (Equip ID:Equip Info).',
 		ACT_WRITE_MASTER_CHAR_LIST:'Write the Master Character List (FKG ID:All Data).',
 		ACT_FRAME_ICONS:'Puts frames on all character icons in the "dl" folder.',
 	}
@@ -214,6 +216,8 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			output_text = master_data.get_bundled_ability_list_page()
 		elif user_input == ACT_WRITE_MASTER_CHAR_LIST:
 			output_text = master_data.get_master_char_data_page()
+		elif user_input == ACT_WRITE_EQUIP_LIST:
+			output_text = master_data.get_equipment_list_page()
 		elif user_input == ACT_FIND_CHAR:
 			char_name_or_id = input("Input the character's Japanese name or ID: ")
 			print('\n\n'.join([entry.getlua() for entry in

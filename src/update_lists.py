@@ -64,6 +64,19 @@ class ListUpdaterBot(object):
         text = my.master_data.get_bundled_ability_list_page()
         my.save(text, page)
 
+    def update_equipment_list(my):
+        page = pywikibot.Page(my.site, u'Module:Equipment/Data')
+        text = my.master_data.get_equipment_list_page()
+        my.save(text, page)
+
+    def update_character_images(my, auto=False):
+        if auto:
+            print('Not implemented yet!')
+        else:
+            knights = my.master_data.choose_knights()
+            for knight in knights:
+                networking.dowload_flower_knight_pics(knight)
+
     def update_card_sheets(my):
         import translate_sheets
         page = pywikibot.Page(my.site, u'The_Mystery_Case_of_the_Glass_Mansion/Card_Flip')
@@ -74,6 +87,7 @@ class ListUpdaterBot(object):
         my.update_char_list()
         my.update_skill_list()
         my.update_ability_list()
+        my.update_equipment_list()
 
 def main(argv=[]):
     bot = ListUpdaterBot()
@@ -81,8 +95,11 @@ def main(argv=[]):
         print('Updates the Wikia with these scripts and logging into a bot.')
         print('-h / --help: Prints this message.')
         print('-c / --card: Updates the card sheets translations instead.')
+        print('-i / --image: Updates character images.')
     elif '-c' in argv or '--card' in argv:
         bot.update_card_sheets()
+    elif '-i' in argv or '--image' in argv:
+        bot.update_character_images()
     else:
         bot.update()
 

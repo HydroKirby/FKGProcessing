@@ -31,6 +31,7 @@ class Networking(object):
     ) = range(3)
 
     getCharaURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/character/"
+    getEquipURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/item/100x100"
     imgPreLink  = { IMG_ICON:'i/',      IMG_STAND:'s/' }
     imgTypeNameOld = { IMG_ICON:'_icon0',  IMG_STAND:'_chara0'}
     imgTypeName = { IMG_ICON:'icon_{0}.png',  IMG_STAND:'portrait_{0}.png'}
@@ -62,7 +63,16 @@ class Networking(object):
         @returns Networking.DL_OK on success, or Networking.DL_FAIL otherwise.
         """
 
-        my.downloadCharacterImages(knight)
+        return my.downloadCharacterImages(knight)
+
+    def download_flower_knight_equip_pics(my, knight):
+        """Downloads all person equipment images for a flower knight.
+
+        @param knight: A FlowerKnight entity.
+        @returns Networking.DL_OK on success, or Networking.DL_FAIL otherwise.
+        """
+
+        pass
 
     def downloadCharacterImages(my,knight,tiers=[PRE_EVO,EVO,BLOOM]):
         inputID = int(knight.tiers['preEvo']['id'])
@@ -110,7 +120,7 @@ class Networking(object):
                 dl_state = my.DL_FAIL
         return dl_state
 
-    def downloadEquipImage(my,imgID,stage):
+    def downloadEquipImage(my, equip_id_or_csv):
         #### This was the old way to call this function.
         #### It was called from downloadCharaImage().
         # try:
@@ -119,12 +129,16 @@ class Networking(object):
         # except KeyboardInterrupt: dl_state = my.DL_QUIT
         # except: print("Personal equip for {0} is unavailable".format(knight.fullName))
 
-        getEquipURL = "http://dugrqaqinbtcq.cloudfront.net/product/images/item/100x100/"
-        
-        imgFileLink = getEquipURL + imgID + ".png"
-        #imgFileName = ENName + "_equip0" + stage + ".png"
-        imgFileName = 'equip_{0}.png'.format(imgID)
+        # Determine the ID.
+        equip_id = equip_id_or_csv
+        if type(equip_id_or_csv) is EquipmentEntry:
+            equip_id = equip_id_or_csv.getval('equipID')
 
+        # Setup the download location.
+        imgFileLink = "{0}/{1}.png".format(Networking.getEquipURL, equip_id)
+        imgFileName = 'equip_{0}.png'.format(equip_id)
+
+        # Download the image.
         return my.downloadImage(imgFileLink,imgFileName,False)
 
     def downloadImage(my,inputLink,outputImageName,decompress):
