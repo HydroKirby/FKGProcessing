@@ -913,8 +913,28 @@ class EquipmentEntry(BaseEntry):
 		return [int(id) for id in my.getval('owners').split(u'|')]
 
 	def getlua(my, quoted=False):
-		return u'[{0}] = '.format(my.getval('id0')) + \
-			super(EquipmentEntry, my).getlua(quoted)
+		def string_transformer(key, val, quoted):
+			if key == 'owners':
+				# Change the format of owners from a stringly-type,
+				# pipe-separated list of integers to a Lua list.
+				# ex: owners=71|341 becomes owners={71, 341}
+				return '{{{0}}}'.format( ', '.join(val.split('|')) )
+			elif quoted:
+				return quotify_non_number(val)
+			return val
+
+		# Generate the Lua table.
+		# Relate the named entries to their value.
+		# Example output: {name="Bob", type="cat", hairs=5},
+		lua_table = u'[{0}] = {{'.format(my.getval('id0'))
+		pairs = []
+		for k, v in sorted(my._named_values.items()):
+			v = string_transformer(k, my.values[v], quoted)
+			pairs.append([k, v])
+		lua_table += u', '.join([u'{0}={1}'.format(
+			pair[0], pair[1]) for pair in pairs])
+		lua_table += '}'
+		return lua_table
 
 class MasterData(object):
 	"""Handles various info from the master data."""
