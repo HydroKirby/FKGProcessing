@@ -140,7 +140,7 @@ def download_character_images(master_data, networking):
 	"""Downloads all images for a character."""
 	knights = master_data.choose_knights()
 	for knight in knights:
-		networking.dowload_flower_knight_pics(knight)
+		networking.dowload_flower_knight_pics(master_data, knight)
 
 def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	"""Asks the user which function they want to use."""

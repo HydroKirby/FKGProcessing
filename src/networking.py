@@ -3,7 +3,7 @@
 import os, zlib, time, hashlib, random
 import requests
 from imaging import Imaging
-from parse_master import FlowerKnight
+from parse_master import FlowerKnight, EquipmentEntry
 
 __doc__ = """Handles all downloading of assets from FKG's servers.
 
@@ -56,14 +56,14 @@ class Networking(object):
             print('Sleeping for {0:3} seconds.'.format(duration))
         time.sleep(duration)
 
-    def dowload_flower_knight_pics(my, knight):
+    def dowload_flower_knight_pics(my, master_data, knight):
         """Downloads all images for a flower knight.
 
         @param knight: A FlowerKnight entity.
         @returns Networking.DL_OK on success, or Networking.DL_FAIL otherwise.
         """
 
-        return my.downloadCharacterImages(knight)
+        return my.downloadCharacterImages(master_data, knight)
 
     def download_flower_knight_equip_pics(my, knight):
         """Downloads all person equipment images for a flower knight.
@@ -74,16 +74,20 @@ class Networking(object):
 
         pass
 
-    def downloadCharacterImages(my,knight,tiers=[PRE_EVO,EVO,BLOOM]):
+    def downloadCharacterImages(my,master_data,knight,tiers=[PRE_EVO,EVO,BLOOM]):
         inputID = int(knight.tiers['preEvo']['id'])
 
         dl_state = my.DL_OK
         
+        #Download the portrait and icon for each evolution tier.
         for tier in tiers:
             dl_state = my.downloadCharaImage(knight,inputID,my.IMG_ICON,tier,dl_state)
             dl_state = my.downloadCharaImage(knight,inputID,my.IMG_STAND,tier,dl_state)
             if dl_state != my.DL_OK:
                 break
+        #Download the equipment pics.
+        for equip in master_data.get_personal_equipments(knight):
+            my.downloadEquipImage(equip)
         return dl_state
     downloadImageFunction = downloadCharacterImages
 
@@ -103,12 +107,10 @@ class Networking(object):
         imgFileLink = my.getCharaURL + my.imgPreLink[iconType] + linkHash + ".bin"
         #imgFileName = knight.fullName + my.imgTypeName[iconType] + str(stage) + ".png"
         imgFileName = my.imgTypeName[iconType].format(inputID)
+
         if not os.path.exists(my.out_dir):
             os.makedirs(my.out_dir)
         outputPath = os.path.join(my.out_dir, imgFileName)
-        if os.path.exists(outputPath):
-            print(outputPath + ' already exists. Skipping.')
-            return dl_state
         
         #Download the image.
         dl_state = my.downloadImage(imgFileLink,outputPath,True)
@@ -138,11 +140,20 @@ class Networking(object):
         imgFileLink = "{0}/{1}.png".format(Networking.getEquipURL, equip_id)
         imgFileName = 'equip_{0}.png'.format(equip_id)
 
+        if not os.path.exists(my.out_dir):
+            os.makedirs(my.out_dir)
+        outputPath = os.path.join(my.out_dir, imgFileName)
+
         # Download the image.
-        return my.downloadImage(imgFileLink,imgFileName,False)
+        return my.downloadImage(imgFileLink,outputPath,False)
 
     def downloadImage(my,inputLink,outputImageName,decompress):
         dl_state = my.DL_FAIL
+
+        if os.path.exists(outputImageName):
+            print(outputImageName + ' already exists. Skipping.')
+            return my.DL_OK
+
         response = requests.get(inputLink)
         if response.ok:
             content = response.content

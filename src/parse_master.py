@@ -1146,13 +1146,16 @@ class MasterData(object):
 	def get_personal_equipments(my, knight):
 		"""Finds all equipment IDs tied to a FlowerKnight.
 
+		The ID number is the shorter ID which does NOT change w/evolution.
+
 		@param knight: A FlowerKnight entity or an ID number.
 		@returns EquipmentEntry list. May be empty.
 		"""
 
-		knight_id = int(knight)
 		if type(knight) is FlowerKnight:
 			knight_id = int(knight.charID1)
+		else:
+			knight_id = int(knight)
 		return [equip for equip in my.equipment if knight_id in equip.get_owner_ids()]
 
 	def choose_knights_by_date(my):
