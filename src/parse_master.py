@@ -1527,7 +1527,9 @@ class MasterData(object):
 		ability3 = ability4 = ''
 		if knight.bloomability != FlowerKnight.NO_BLOOM:
 			ability3 = my.abilities[knight.tiers['bloom']['abilities'][0]]
-			ability4 = my.abilities[knight.tiers['bloom']['abilities'][1]]
+			ability4_id = knight.tiers['bloom']['abilities'][1]
+			if ability4_id != '0':
+				ability4 = my.abilities[ability4_id]
 		
 		#Lookup character equip
 		dataEquipBase = dataEquipEvolved = []
@@ -1635,7 +1637,7 @@ class MasterData(object):
 		if knight.bloomability != FlowerKnight.NO_BLOOM:
 			template_text = ''.join([template_text,
 				"\n|Passive3Description = ", ability3.getval('uniqueID'),
-				"\n|Passive4Description = ", ability4.getval('uniqueID')])
+				"\n|Passive4Description = ", '0' if not ability4 else ability4.getval('uniqueID')])
 		else:
 			template_text += "\n|Passive3Description = \n|Passive4Description = "
 		template_text += "\n|EvoEquipAbilityDescription = "
