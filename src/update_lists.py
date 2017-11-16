@@ -69,6 +69,11 @@ class ListUpdaterBot(object):
         text = my.master_data.get_equipment_list_page()
         my.save(text, page)
 
+    def update_ingame_char_data(my):
+        page = pywikibot.Page(my.site, u'Module:MasterCharacterData')
+        text = my.master_data.get_master_char_data_page()
+        my.save(text, page)
+
     def update_character_images(my, auto=False):
         if auto:
             print('Not implemented yet!')
@@ -88,6 +93,7 @@ class ListUpdaterBot(object):
         my.update_skill_list()
         my.update_ability_list()
         my.update_equipment_list()
+        my.update_ingame_char_data()
 
 def main(argv=[]):
     bot = ListUpdaterBot()
