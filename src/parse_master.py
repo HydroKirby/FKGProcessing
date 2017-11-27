@@ -388,11 +388,13 @@ class FlowerKnight(object):
 		#Fill out a string format table with descriptive variable names.
 		formatDict = {
 			'id':my.tiers['preEvo']['id'],
+			'charID':my.charID1,
 			'type':my.type,
 			'rarity':my.rarity,
 			'gift':my.gift,
 			'nation':my.nation,
 			'japanese':quotify_non_number(my.fullName),
+			'dateAdded':quotify_non_number(my.tiers['preEvo']['date0']),
 			# Stats
 			'speed':my.spd,
 			# Pre-evolution stats.
@@ -458,10 +460,12 @@ class FlowerKnight(object):
 		if my.can_evolve():
 			tier2StatsString = dedent('''
 				tier2Lv1 = {{ {tier2Lv1HP}, {tier2Lv1Atk}, {tier2Lv1Def} }},
-				tier2LvMax = {{ {tier2LvMaxHP}, {tier2LvMaxAtk}, {tier2LvMaxDef} }},''').lstrip().format(**formatDict)
+				tier2LvMax = {{ {tier2LvMaxHP}, {tier2LvMaxAtk}, {tier2LvMaxDef} }},
+				''').lstrip().format(**formatDict)
 			tier2AffString = dedent('''
 				tier2Aff1Bonus = {{ {tier2Aff1HP}, {tier2Aff1Atk}, {tier2Aff1Def} }},
-				tier2Aff2Bonus = {{ {tier2Aff2HP}, {tier2Aff2Atk}, {tier2Aff2Def} }},''').lstrip().format(**formatDict)
+				tier2Aff2Bonus = {{ {tier2Aff2HP}, {tier2Aff2Atk}, {tier2Aff2Def} }},
+				''').lstrip().format(**formatDict)
 			my.tiers['preEvo']['abilities'][0],
 			if my.tiers['evo']['abilities'][1]:
 				ability2 = my.tiers['evo']['abilities'][1]
@@ -470,10 +474,12 @@ class FlowerKnight(object):
 		if my.can_bloom():
 			tier3StatsString = dedent('''
 				tier3Lv1 = {{ {tier3Lv1HP}, {tier3Lv1Atk}, {tier3Lv1Def} }},
-				tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},''').lstrip().format(**formatDict)
+				tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},
+				''').lstrip().format(**formatDict)
 			tier3AffString = dedent('''
 				tier3Aff1Bonus = {{ {tier3Aff1HP}, {tier3Aff1Atk}, {tier3Aff1Def} }},
-				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},''').lstrip().format(**formatDict)
+				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},
+				''').lstrip().format(**formatDict)
 			if my.tiers['bloom']['abilities'][0]:
 				ability3 = my.tiers['bloom']['abilities'][0]
 			if my.tiers['bloom']['abilities'][1]:
@@ -498,22 +504,21 @@ class FlowerKnight(object):
 
 		lua_table = dedent(u'''
 			{{id = {id},
+			charID = {charID},
 			name = {japanese},
 			type = {type},
 			rarity = {rarity},
 			likes = {gift},
 			nation = {nation},
+			dateAdded = {dateAdded},
 			skill = {skill},
 			ability = {abilityString},
 			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
 			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
-			{tier2StatsString}
-			{tier3StatsString}
-			speed = {speed},
+			{tier2StatsString}{tier3StatsString}speed = {speed},
 			tier1Aff1Bonus = {{ {tier1Aff1HP}, {tier1Aff1Atk}, {tier1Aff1Def} }},
 			tier1Aff2Bonus = {{ {tier1Aff2HP}, {tier1Aff2Atk}, {tier1Aff2Def} }},
-			{tier2AffString}
-			{tier3AffString}}}''').lstrip().format(**formatDict)
+			{tier2AffString}{tier3AffString}}}''').lstrip().format(**formatDict)
 
 		return lua_table
 
@@ -1357,7 +1362,7 @@ class MasterData(object):
 		return output
 
 	def get_master_char_data_page(my):
-		"""Outputs the table of every char's data and their related IDs."""
+		"""Outputs the table of every char's data and their related names."""
 		module_name = 'Module:MasterCharacterData'
 		def getname(entry):
 			return entry.getval('fullName')
@@ -1365,8 +1370,8 @@ class MasterData(object):
 			return int(entry.getval('id0'))
 		knights = u''
 		for name in sorted(my.knights):
-			knights += '[{0}] =\n{1},\n'.format(
-				my.knights[name].tiers['preEvo']['id'],
+			knights += '["{0}"] =\n{1},\n'.format(
+				my.knights[name].fullName,
 				indent(my.knights[name].get_lua(), '    '))
 		output = dedent(u'''
 			--[[Category:Flower Knight description modules]]
