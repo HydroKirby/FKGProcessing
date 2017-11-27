@@ -256,7 +256,6 @@ class FlowerKnight(object):
 		my.type = entry.getval('type')
 		my.nation = entry.getval('nation')
 		my.gift = entry.getval('gift')
-		my.charID1 = entry.getval('charID1')
 		my._determine_romaji()
 
 	def _add_pre_evo_entry(my, entry):
@@ -278,6 +277,9 @@ class FlowerKnight(object):
 		my.tiers['preEvo']['date0'] = entry.getval('date0')
 		my.tiers['preEvo']['date1'] = entry.getval('date1')
 		my.tiers['preEvo']['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
+		# Only the pre-evolved entry has a sort ID because evolved/bloomed
+		# pics aren't used in the library / 図鑑.
+		my.charID1 = entry.getval('sortID')
 
 	def _add_evo_entry(my, entry):
 		"""Stores the CharacterEntry's data as the evolved info."""
@@ -676,7 +678,7 @@ class CharacterEntry(BaseEntry):
 		'ampuleBonusDef',
 		'goldSellValue',
 		'sortCategory', # Unverified
-		'evolutionKeyValue', # Unverified
+		'sortID', # Used when viewing the library and sorting by "図鑑No"
 		'isNotPreEvo',
 		'isFlowerKnight1',
 		'aff1MultHP',
