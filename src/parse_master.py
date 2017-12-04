@@ -700,6 +700,7 @@ class CharacterEntry(BaseEntry):
 		'variant',
 		'reading',
 		'libararyID',
+		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
 		'date0',
 		'date1',
 		'unknown06',
