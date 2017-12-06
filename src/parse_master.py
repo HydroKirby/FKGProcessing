@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # coding=utf-8
 from __future__ import print_function
-import os, sys, math, re, random, zlib, hashlib, json, binascii
+import os, sys, math, re, random, zlib, hashlib, json, binascii, time
 from base64 import b64decode
 import six
 from io import open
@@ -1093,6 +1093,7 @@ class MasterData(object):
 		if output_result:
 			outfilename = DEFAULT_GETMASTER_OUTFILENAME
 			with open(outfilename, 'w', encoding='utf-8') as outfile:
+				outfile.write(time.strftime('Timestamp: %a, %m-%d-%Y\n', time.gmtime()))
 				outfile.write(out)
 			if diagnostics:
 				print('Wrote the output to {0}.'.format(outfilename))
