@@ -236,7 +236,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 
 def main(input_name_or_id=None, english_name=''):
 	# Open and parse the master database
-	master_data = MasterData(DEFAULT_INFILENAME)
+	master_data = MasterData()
 
 	# Choose how to process the data.
 	# Someday, it would be nice to turn this into a GUI.

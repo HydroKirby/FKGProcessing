@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 # coding=utf-8
 from __future__ import print_function
-import os, sys, math, re, random, zlib, hashlib
+import os, sys, math, re, random, zlib, hashlib, json, binascii
+from base64 import b64decode
+import six
+from io import open
 from textwrap import dedent, indent
 from common import *
 
@@ -12,9 +15,6 @@ elif sys.version_info.major < 3:
 	# The script is being run under Python 2.
 	from urllib2 import urlopen
 	# Make some changes so that the code looks and acts like Python 3.
-	# Use the codecs library for files.
-	import codecs
-	open = codecs.open
 	range = xrange
 	input = raw_input
 
@@ -985,7 +985,7 @@ class MasterData(object):
 		my.ability_descs = {}
 		my.equipment_entries = []
 		my.equipment = {}
-		if infilename: my.load_getMaster(infilename)
+		my.load_getMaster(infilename)
 
 	def _extract_section(my, section, rawdata):
 		"""Gets all text from one section of the master data."""
@@ -1044,7 +1044,61 @@ class MasterData(object):
 		my.equipment_entries = [entry.split(',')[:-1] for entry in my.masterTexts['masterEquipment']]
 		my.equipment = [EquipmentEntry(entry) for entry in my.masterTexts['masterEquipment']]
 
-	def load_getMaster(my, infilename):
+	def _decode_getMaster(my, infilename='', diagnostics=False, output_result=False):
+		"""Gets getMaster's data.
+
+		@param infilename: The raw or decoded getMaster file's name.
+			If unset, defaults to DEFAULT_GETMASTER_INFILENAME from common.py .
+		@param diagnostics: If True, prints what the function is doing.
+			Defaults to False.
+		@param output_result: If True, also outputs the decoded data to
+			DEFAULT_GETMASTER_OUTFILENAME from common.py . Defaults to False.
+		@returns A string of the decoded data.
+		"""
+		if not infilename:
+			infilename = DEFAULT_GETMASTER_INFILENAME
+
+		try:
+			# Assume it is the pre-decoded data.
+			with open(infilename, 'rt', encoding='utf-8') as infile:
+				bin_data = infile.read()
+			if diagnostics:
+				print('Loaded {0} as plain text.'.format(infilename))
+			return bin_data
+		except UnicodeDecodeError:
+			# It was actually the zlib compressed data.
+			with open(infilename, 'rb') as infile:
+				bin_data = infile.read()
+
+		bin_data_bytes = zlib.decompress(bin_data)
+		bin_data_str = bin_data_bytes.decode("utf-8")
+		jlist = json.loads(bin_data_str)
+		out = u"";
+
+		for key in jlist:
+			element = jlist[key]
+			try:
+				if element:
+					content = b64decode(element).decode('utf-8')
+				else:
+					content = u'nil'
+				out += u'\n{0}\n\n{1}'.format(key, content)
+			except (binascii.Error, TypeError):
+				# This element might not be encrypted.
+				content = element
+				out += u'\n{0}\n\n{1}'.format(key, content)
+
+		if diagnostics:
+			print('Loaded {0} as zlib-compressed data.'.format(infilename))
+		if output_result:
+			outfilename = DEFAULT_GETMASTER_OUTFILENAME
+			with open(outfilename, 'w', encoding='utf-8') as outfile:
+				outfile.write(out)
+			if diagnostics:
+				print('Wrote the output to {0}.'.format(outfilename))
+		return out
+
+	def load_getMaster(my, infilename=''):
 		"""Loads and parses getMaster.
 
 		This function is called automatically if the constructor is given
@@ -1052,8 +1106,7 @@ class MasterData(object):
 		"""
 
 		# Open the master database
-		with open(infilename, 'r', encoding='utf8') as infile:
-			api_data = infile.read()
+		api_data = my._decode_getMaster(infilename, True, True)
 		
 		# Extract relevant data from master database
 		my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', api_data)

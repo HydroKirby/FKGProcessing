@@ -3,6 +3,8 @@
 
 __doc__ = """Defines the variables and imports used by all scripts."""
 
+DEFAULT_GETMASTER_INFILENAME = 'getMaster'
+DEFAULT_GETMASTER_OUTFILENAME = 'getMasterDecoded.txt'
 DEFAULT_INFILENAME = 'getMaster_latest.txt'
 DEFAULT_OUTFILENAME = 'result.txt'
 
