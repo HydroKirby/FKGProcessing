@@ -396,6 +396,7 @@ class FlowerKnight(object):
 			'rarity':my.rarity,
 			'gift':my.gift,
 			'nation':my.nation,
+			'family':my.family,
 			'japanese':quotify_non_number(my.fullName),
 			'dateAdded':quotify_non_number(my.tiers[1]['date0']),
 			# Stats
@@ -513,6 +514,7 @@ class FlowerKnight(object):
 			rarity = {rarity},
 			likes = {gift},
 			nation = {nation},
+			family = {family},
 			dateAdded = {dateAdded},
 			skill = {skill},
 			ability = {abilityString},
@@ -1416,7 +1418,7 @@ class MasterData(object):
 			}}
 
 			return EquipmentData
-			''').lstrip().format(equips)
+			''').strip().format(equips)
 		return output
 
 	def get_master_char_data_page(my):
@@ -1438,7 +1440,7 @@ class MasterData(object):
 			
 			return {{
 			{0}}}
-			''').lstrip().format(knights)
+			''').strip().format(knights)
 		return output
 
 	def get_char_entries(my, char_name_or_id):
