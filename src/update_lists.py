@@ -7,7 +7,7 @@ import sys
 
 class ListUpdaterBot(object):
     def __init__(my):
-        my.master_data = IDlookup.MasterData(IDlookup.DEFAULT_INFILENAME)
+        my.master_data = IDlookup.MasterData()
         my.site = pywikibot.Site()
         my.default_summary = i18n.twtranslate(my.site, 'basic-changing')
         my.comment = u'Automatic update by bot.'
