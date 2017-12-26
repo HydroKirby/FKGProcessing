@@ -3,6 +3,7 @@ getMaster*
 result.txt
 getMasterDecoded.txt
 dl/
+decodes/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
