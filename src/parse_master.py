@@ -458,9 +458,11 @@ class FlowerKnight(object):
 			})
 
 		#Generate specific portions of the table.
-		ability1 = my.tiers[1]['abilities'][0]
-		ability2 = ability3 = ability4 = ''
+		ability1DEPRECATED = my.tiers[1]['abilities'][0]
+		ability2DEPRECATED = ability3DEPRECATED = ability4DEPRECATED = ''
 		tier2StatsString = tier2AffString = ''
+		abilityString = '{{{0}, {1},}},'.format(
+			my.tiers[1]['abilities'][0], my.tiers[1]['abilities'][1])
 		if my.can_evolve():
 			tier2StatsString = dedent('''
 				tier2Lv1 = {{ {tier2Lv1HP}, {tier2Lv1Atk}, {tier2Lv1Def} }},
@@ -472,7 +474,9 @@ class FlowerKnight(object):
 				''').lstrip().format(**formatDict)
 			my.tiers[1]['abilities'][0],
 			if my.tiers[2]['abilities'][1]:
-				ability2 = my.tiers[2]['abilities'][1]
+				ability2DEPRECATED = my.tiers[2]['abilities'][1]
+			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
+				my.tiers[2]['abilities'][0], my.tiers[2]['abilities'][1])
 
 		tier3StatsString = tier3AffString = ''
 		if my.can_bloom():
@@ -485,13 +489,15 @@ class FlowerKnight(object):
 				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},
 				''').lstrip().format(**formatDict)
 			if my.tiers[3]['abilities'][0]:
-				ability3 = my.tiers[3]['abilities'][0]
+				ability3DEPRECATED = my.tiers[3]['abilities'][0]
 			if my.tiers[3]['abilities'][1]:
-				ability4 = my.tiers[3]['abilities'][1]
+				ability4DEPRECATED = my.tiers[3]['abilities'][1]
+			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
+				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1])
 
 		#Make a comma-separated list of the ability IDs.
-		abilityString = u', '.join([a for a in [ability1, ability2, ability3, ability4] if a])
-		abilityString = '{{ {0} }}'.format(abilityString)
+		abilityStringDEPRECATED = u', '.join([a for a in [ability1DEPRECATED, ability2DEPRECATED, ability3DEPRECATED, ability4DEPRECATED] if a])
+		abilityStringDEPRECATED = '{{ {0} }}'.format(abilityStringDEPRECATED)
 
 		#Add all of the generated strings to the string format table.
 		formatDict.update({
@@ -499,10 +505,7 @@ class FlowerKnight(object):
 			'tier2AffString':tier2AffString,
 			'tier3StatsString':tier3StatsString,
 			'tier3AffString':tier3AffString,
-			'ability1':ability1,
-			'ability2':ability2,
-			'ability3':ability3,
-			'ability4':ability4,
+			'abilityStringDEPRECATED':abilityStringDEPRECATED,
 			'abilityString':abilityString,
 		})
 
@@ -517,7 +520,8 @@ class FlowerKnight(object):
 			family = {family},
 			dateAdded = {dateAdded},
 			skill = {skill},
-			ability = {abilityString},
+			ability = {abilityStringDEPRECATED}, -- Deprecated. Use bundledAbilities.
+			bundledAbilities = {{ {abilityString} }},
 			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
 			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
 			{tier2StatsString}{tier3StatsString}speed = {speed},
@@ -1331,7 +1335,7 @@ class MasterData(object):
 		# Write the page header.
 		module_name = 'Module:SkillList'
 		def getid(entry):
-			return int(entry.getval('uniqueID'))
+			return int(entry.getval('uniqueID') or 0)
 		output = u'\n'.join([
 			'--[[Category:Flower Knight description modules]]',
 			'--[[Category:Automatically updated modules]]',
