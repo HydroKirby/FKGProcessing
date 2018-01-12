@@ -84,7 +84,7 @@ class ListUpdaterBot(object):
 
     def update_card_sheets(my):
         import translate_sheets
-        page = pywikibot.Page(my.site, u'The_Mystery_Case_of_the_Glass_Mansion/Card_Flip')
+        page = pywikibot.Page(my.site, u'Fierce_Fight!_The_Climactic_Snowball_Fight/Card_Flip')
         text = translate_sheets.get_sheets_page(infilename=None, outfilename=None, quiet=False)
         my.save(text, page)
 

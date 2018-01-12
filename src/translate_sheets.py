@@ -10,7 +10,7 @@ except ImportError:
 
 DEFAULT_INFILENAME = 'src.php'
 DEFAULT_OUTFILENAME = 'result.txt'
-SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E3%82%AC%E3%83%A9%E3%82%B9%E9%A4%A8%E3%81%AE%E6%80%AA%E4%BA%8B%E4%BB%B6/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
+SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E6%BF%80%E9%97%98%EF%BC%81%E7%99%BD%E7%86%B1%E3%81%AE%E9%9B%AA%E5%90%88%E6%88%A6/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
 
 __doc__ = u"""Mass translates card flip cheat sheets for Flower Knight Girl.
 
@@ -139,12 +139,9 @@ translations = [
 # Event 71
 (u'メギの技花', "Japanese Barberry's Skill Flower", 'Japanese_Barberry_SkillFlower.png'),
 (u'メギの装花', "Japanese Barberry's Equipment Flower", 'Japanese_Barberry_EquipFlower.png'),
-(u'メギ', 'Japanese Barberry', 'icon_137801.png'),
-(u'2*ミツガシワ', 'Buckbean', 'icon_160007.png'),
-(u'3*ニワゼキショウ', 'Annual Blue-eyed Grass', 'icon_160405.png'),
-(u'ミツガシワ', 'Buckbean', 'icon_160007.png'),
-(u'ニワゼキショウ', 'Annual Blue-eyed Grass', 'icon_160405.png'),
-(u'アサザ', 'Water Fringe', 'icon_160005.png'),
+# Event 77
+(u'ビバーナムの技花', "Viburnum's Skill Flower", 'Viburnum_SkillFlower.png'),
+(u'ビバーナムの装花', "Viburnum's Equipment Flower", 'Viburnum_EquipFlower.png'),
 
 (u'レイニーシーソー', 'Rainy Seesaw', ''),
 (u'ﾚｲﾆｰｽﾌﾟﾘﾝｸﾞｻﾝﾎﾞﾝ', 'Rainy Spring Sanbon', ''),
@@ -185,6 +182,11 @@ translations = [
 (u'指針の首輪', 'Compass Needle Necklace', 'Compass needle necklace.png'),
 (u'指針の耳飾', 'Compass Needle Earrings', 'Compass needle earrings.png'),
 (u'指針の腕輪', 'Compass Needle Bracelet', 'Compass needle bracelet.png'),
+# Event 77
+(u'雪玉モフモフの指輪', 'Fluffly Snowball Ring', 'Fluffy snowball ring.png'),
+(u'雪玉モフモフの首輪', 'Fluffly Snowball Necklace', 'Fluffy snowball necklace.png'),
+(u'雪玉モフモフの耳飾', 'Fluffly Snowball Earrings', 'Fluffy snowball earrings.png'),
+(u'雪玉モフモフの腕輪', 'Fluffly Snowball Bracelet', 'Fluffy snowball bracelet.png'),
 
 (u'？ゴールド', '? gold', 'gold.jpg'),
 (u'1000ゴールド', '1,000 gold', 'gold1k.jpg'),
@@ -317,7 +319,14 @@ translations = [
 (u'ストレプトカーパス', u'Streptocarpus', 'icon_140501.png'),
 (u'ワルナスビ', u'Nightshade', 'icon_125605.png'),
 (u'ラークスパー', u'Larkspur', 'icon_152905.png'),
-(u'メギ', u'Japanese Barberry', 'icon_137801.png')
+(u'メギ', u'Japanese Barberry', 'icon_137801.png'),
+(u'2*ミツガシワ', 'Buckbean', 'icon_160007.png'),
+(u'3*ニワゼキショウ', 'Annual Blue-eyed Grass', 'icon_160405.png'),
+# Event 77
+(u'ビバーナム', "Viburnum", 'icon_160015.png'),
+(u'ペペロミア', 'Peperomia', 'icon_159301.png'),
+(u'レオノチス', "Lion's Ear", 'icon_111107.png'),
+(u'ストック', 'Stock', 'icon_160303.png'),
 ]
 
 def translate_text(text):
@@ -402,10 +411,10 @@ def parse_soup(soup):
 	"""
 
 	sheets = {}
-	sheets['Streptocarpus'] = get_sheets_for_id('stre_01', soup)
-	sheets['Nightshade'] = get_sheets_for_id('waru_01', soup)
-	sheets['Larkspur'] = get_sheets_for_id('lark_01', soup)
-	sheets['Japanese Barberry'] = get_sheets_for_id('megi_01', soup)
+	sheets['Stock'] = get_sheets_for_id('stock_01', soup)
+	sheets["Lion's Ear"] = get_sheets_for_id('lion_01', soup)
+	sheets['Peperomia'] = get_sheets_for_id('pepe_01', soup)
+	sheets['Viburnum'] = get_sheets_for_id('vibur_01', soup)
 	sheets['Bonus'] = get_sheets_for_id('Extra_01', soup, False)
 	return sheets
 
@@ -431,14 +440,14 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 |[[#{char4_en} Sheets|{char4_en}]]
 |}}
 
-'''.format(title=u'The Mystery Case of the Glass Mansion',
+'''.format(title=u'Fierce Fight! The Climactic Snowball Fight',
 	wiki=SRC_URL,
-	char1_jp=u'ストレプトカーパス', char1_en=u'Streptocarpus',
-	char2_jp=u'ワルナスビ', char2_en=u'Nightshade',
-	char3_jp=u'ラークスパー', char3_en=u'Larkspur',
-	char4_jp=u'メギ', char4_en=u'Japanese Barberry')
-	display_order = ['Streptocarpus', 'Nightshade', 'Larkspur',
-		'Japanese Barberry', 'Bonus']
+	char1_jp=u'ストック', char1_en=u'Stock',
+	char2_jp=u'レオノチス', char2_en=u"Lion's Ear",
+	char3_jp=u'ペペロミア', char3_en=u'Peperomia',
+	char4_jp=u'ビバーナム', char4_en=u'Viburnum')
+	display_order = ['Stock', "Lion's Ear", 'Peperomia',
+		'Viburnum', 'Bonus']
 	char_num = 0
 	for sheet_owner in display_order:
 		# Write the header for one character's sheets.

@@ -1,1 +1,1 @@
-pwb.py update_lists.py --card
+C:\Python34\python.exe C:\pywikibot\pwb.py .\update_lists.py --card
