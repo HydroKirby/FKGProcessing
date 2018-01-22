@@ -257,6 +257,7 @@ class FlowerKnight(object):
 		my.type = entry.getval('type')
 		my.nation = entry.getval('nation')
 		my.gift = entry.getval('gift')
+		my.is_event = entry.getval('isEventKnight')
 		my._determine_romaji()
 
 	def _add_pre_evo_entry(my, entry):
@@ -394,6 +395,7 @@ class FlowerKnight(object):
 			'charID':my.charID1,
 			'type':my.type,
 			'rarity':my.rarity,
+			'isEvent':my.is_event,
 			'gift':my.gift,
 			'nation':my.nation,
 			'family':my.family,
@@ -515,6 +517,7 @@ class FlowerKnight(object):
 			name = {japanese},
 			type = {type},
 			rarity = {rarity},
+			isEvent = {isEvent},
 			likes = {gift},
 			nation = {nation},
 			family = {family},
@@ -707,6 +710,7 @@ class CharacterEntry(BaseEntry):
 		'reading',
 		'libararyID',
 		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
+		'isEventKnight', # Added 1/22/2018. When 1, it's an event character of any evolution tier. Doesn't include serial code girls.
 		'date0',
 		'date1',
 		'unknown06',
