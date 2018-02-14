@@ -1378,35 +1378,6 @@ class MasterData(object):
 			])
 		return output
 
-	def get_char_list_page(my):
-		"""Outputs the table of char names and their related ID."""
-		# Write the page header.
-		module_name = 'Module:CharacterList'
-		def getname(entry):
-			return entry.getval('fullName')
-		def getid(entry):
-			return int(entry.getval('id0'))
-		output = '\n'.join([
-			'--[[Category:Flower Knight description modules]]',
-			'--[[Category:Automatically updated modules]]',
-			'-- Relates character names to their IDs.\n',
-			'local p = {}\n',
-			'p.namesToIDs = {',
-
-			# Write the page body.
-			'\t' + u'\n\t'.join([entry.getlua_name_to_id() for entry in
-				sorted(my.pre_evo_chars.values(), key=getname)]),
-			'}\n',
-			'p.idsToNames = {',
-			'\t' + u'\n\t'.join([entry.getlua_id_to_name() for entry in
-				sorted(my.pre_evo_chars.values(), key=getid)]),
-
-			# Write the page footer.
-			'}\n',
-			'return p',
-			])
-		return output
-
 	def get_equipment_list_page(my):
 		"""Outputs the table of equipment IDs and their related info."""
 		# Write the page header.

@@ -49,11 +49,6 @@ class ListUpdaterBot(object):
                         return True
         return False
 
-    def update_char_list(my):
-        page = pywikibot.Page(my.site, u'Module:CharacterList')
-        text = my.master_data.get_char_list_page()
-        my.save(text, page)
-
     def update_skill_list(my):
         page = pywikibot.Page(my.site, u'Module:SkillList')
         text = my.master_data.get_skill_list_page()
@@ -89,7 +84,6 @@ class ListUpdaterBot(object):
         my.save(text, page)
 
     def update(my):
-        my.update_char_list()
         my.update_skill_list()
         my.update_ability_list()
         my.update_equipment_list()
