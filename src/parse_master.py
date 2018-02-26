@@ -686,6 +686,9 @@ class CharacterEntry(BaseEntry):
 		'ampuleBonusHP',
 		'ampuleBonusAtk',
 		'ampuleBonusDef',
+		'ampule2BonusHP',
+		'ampule2BonusAtk',
+		'ampule2BonusDef',
 		'goldSellValue',
 		'sortCategory', # Unverified
 		'sortID', # Used when viewing the library and sorting by "図鑑No"
@@ -758,6 +761,7 @@ class SkillEntry(BaseEntry):
 		'triggerRateLv1',
 		'triggerRateLvUp',
 		'unknown00',
+		'unknown01',
 		'date00',
 		'date01',
 		'unknown01',]
