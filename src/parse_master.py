@@ -711,13 +711,14 @@ class CharacterEntry(BaseEntry):
 		'isBloomedPowersOnly',
 		'variant',
 		'reading',
-		'libararyID',
+		'libraryID',
 		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
 		'isEventKnight', # Added 1/22/2018. When 1, it's an event character of any evolution tier. Doesn't include serial code girls.
 		'date0',
 		'date1',
 		'unknown06',
-		'gameVersionWhenAdded',]
+		'gameVersionWhenAdded',
+		'zero00',] # Added 3/5/2018.
 
 	def __init__(my, data_entry_csv):
 		super(CharacterEntry, my).__init__(data_entry_csv, 'character',
