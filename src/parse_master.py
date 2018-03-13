@@ -1058,19 +1058,60 @@ class MasterData(object):
 		my.equipment_entries = [entry.split(',')[:-1] for entry in my.masterTexts['masterEquipment']]
 		my.equipment = [EquipmentEntry(entry) for entry in my.masterTexts['masterEquipment']]
 
-	def _decode_getMaster(my, infilename='', diagnostics=False, output_result=False):
-		"""Gets getMaster's data.
+	def __decode_getMaster_encoded(my, infilename, diagnostics=False):
+		"""Interprets getMaster's encoded data.
 
-		@param infilename: The raw or decoded getMaster file's name.
-			If unset, defaults to DEFAULT_GETMASTER_INFILENAME from common.py .
+		Only call through _decode_getMaster.
+
+		@param infilename: The raw getMaster file's name.
 		@param diagnostics: If True, prints what the function is doing.
 			Defaults to False.
-		@param output_result: If True, also outputs the decoded data to
-			DEFAULT_GETMASTER_OUTFILENAME from common.py . Defaults to False.
-		@returns A string of the decoded data.
+		@returns On success, a string of the decoded data.
+			On failure, False.
 		"""
-		if not infilename:
-			infilename = DEFAULT_GETMASTER_INFILENAME
+
+		with open(infilename, 'rb') as infile:
+			bin_data = infile.read()
+
+		try:
+			bin_data_bytes = zlib.decompress(bin_data)
+			bin_data_str = bin_data_bytes.decode("utf-8")
+			jlist = json.loads(bin_data_str)
+			out = u"";
+
+			for key in jlist:
+				element = jlist[key]
+				try:
+					if element:
+						content = b64decode(element).decode('utf-8')
+					else:
+						content = u'nil'
+					out += u'\n{0}\n\n{1}'.format(key, content)
+				except (binascii.Error, TypeError):
+					# This element might not be encrypted.
+					content = element
+					out += u'\n{0}\n\n{1}'.format(key, content)
+
+			if diagnostics:
+				print('Loaded {0} as zlib-compressed data.'.format(infilename))
+			return out
+		except:
+			if diagnostics:
+				print('Could not load {0} as zlib-compressed data.'.format(
+					infilename))
+		return False
+
+	def __decode_getMaster_plain_text(my, infilename, diagnostics=False):
+		"""Interprets getMaster's data as a pre-decoded text file.
+
+		Only call through _decode_getMaster.
+
+		@param infilename: The decoded getMaster file's name.
+		@param diagnostics: If True, prints what the function is doing.
+			Defaults to False.
+		@returns On success, a string of the decoded data.
+			On failure, False.
+		"""
 
 		try:
 			# Assume it is the pre-decoded data.
@@ -1080,38 +1121,43 @@ class MasterData(object):
 				print('Loaded {0} as plain text.'.format(infilename))
 			return bin_data
 		except UnicodeDecodeError:
-			# It was actually the zlib compressed data.
-			with open(infilename, 'rb') as infile:
-				bin_data = infile.read()
+			if diagnostics:
+				print('Could not load {0} as plain text.'.format(infilename))
+		return False
 
-		bin_data_bytes = zlib.decompress(bin_data)
-		bin_data_str = bin_data_bytes.decode("utf-8")
-		jlist = json.loads(bin_data_str)
-		out = u"";
+	def _decode_getMaster(my, infilename='', diagnostics=False, output_result=False):
+		"""Gets getMaster's data.
 
-		for key in jlist:
-			element = jlist[key]
-			try:
-				if element:
-					content = b64decode(element).decode('utf-8')
-				else:
-					content = u'nil'
-				out += u'\n{0}\n\n{1}'.format(key, content)
-			except (binascii.Error, TypeError):
-				# This element might not be encrypted.
-				content = element
-				out += u'\n{0}\n\n{1}'.format(key, content)
+		@param infilename: The raw or decoded getMaster file's name.
+			If unset, defaults to DEFAULT_GETMASTER_INFILENAME from common.py .
+		@param diagnostics: If True, prints what the function is doing.
+			Defaults to False.
+		@param output_result: If True, also outputs the decoded data to
+			DEFAULT_GETMASTER_OUTFILENAME from common.py . Defaults to False.
+		@returns On success, a string of the decoded data.
+			On failure, None.
+		"""
+		if not infilename:
+			infilename = DEFAULT_GETMASTER_INFILENAME
 
-		if diagnostics:
-			print('Loaded {0} as zlib-compressed data.'.format(infilename))
+		# Try as encoded (raw) data directly taken from in-game.
+		master_data = my.__decode_getMaster_encoded(infilename, diagnostics)
+		if not master_data:
+			# Try as pre-decoded plain text.
+			master_data = my.__decode_getMaster_plain_text(
+				infilename, diagnostics)
+		if not master_data:
+			# Both methods failed. This isn't the master data file?
+			return None
+
 		if output_result:
 			outfilename = DEFAULT_GETMASTER_OUTFILENAME
 			with open(outfilename, 'w', encoding='utf-8') as outfile:
 				outfile.write(time.strftime('Timestamp: %a, %m-%d-%Y\n', time.gmtime()))
-				outfile.write(out)
+				outfile.write(master_data)
 			if diagnostics:
 				print('Wrote the output to {0}.'.format(outfilename))
-		return out
+		return master_data
 
 	def load_getMaster(my, infilename=''):
 		"""Loads and parses getMaster.
