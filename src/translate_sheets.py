@@ -10,7 +10,7 @@ except ImportError:
 
 DEFAULT_INFILENAME = 'src.php'
 DEFAULT_OUTFILENAME = 'result.txt'
-SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E6%BF%80%E9%97%98%EF%BC%81%E7%99%BD%E7%86%B1%E3%81%AE%E9%9B%AA%E5%90%88%E6%88%A6/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
+SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E3%81%8A%E8%BF%94%E3%81%97%E3%82%B9%E3%82%A4%E3%83%BC%E3%83%84%E5%A4%A7%E4%BD%9C%E6%88%A6/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
 
 __doc__ = u"""Mass translates card flip cheat sheets for Flower Knight Girl.
 
@@ -29,6 +29,8 @@ if major_ver < 3:
 	# This is probably Python 2.
 	# Make input behave like Python3; don't interpret the inputted text.
 	input = raw_input
+
+event_char = u'キヌサヤ'
 
 # Normalize the text to be translated.
 typo_fixes = [
@@ -142,6 +144,9 @@ translations = [
 # Event 77
 (u'ビバーナムの技花', "Viburnum's Skill Flower", 'Viburnum_SkillFlower.png'),
 (u'ビバーナムの装花', "Viburnum's Equipment Flower", 'Viburnum_EquipFlower.png'),
+# Event 81
+(u'キヌサヤの技花', "Snow Pea's Skill Flower", 'Snow_Pea_SkillFlower.png'),
+(u'キヌサヤの装花', "Snow Pea's Equipment Flower", 'Snow_Pea_EquipFlower.png'),
 
 (u'レイニーシーソー', 'Rainy Seesaw', ''),
 (u'ﾚｲﾆｰｽﾌﾟﾘﾝｸﾞｻﾝﾎﾞﾝ', 'Rainy Spring Sanbon', ''),
@@ -187,6 +192,11 @@ translations = [
 (u'雪玉モフモフの首輪', 'Fluffly Snowball Necklace', 'Fluffy snowball necklace.png'),
 (u'雪玉モフモフの耳飾', 'Fluffly Snowball Earrings', 'Fluffy snowball earrings.png'),
 (u'雪玉モフモフの腕輪', 'Fluffly Snowball Bracelet', 'Fluffy snowball bracelet.png'),
+# Event 81
+(u'白い日の指輪', 'White Day Ring', 'White day ring.png'),
+(u'白い日の首輪', 'White Day Necklace', 'White day necklace.png'),
+(u'白い日の耳飾', 'White Day Earrings', 'White day earrings.png'),
+(u'白い日の腕輪', 'White Day Bracelet', 'White day bracelet.png'),
 
 (u'？ゴールド', '? gold', 'gold.jpg'),
 (u'1000ゴールド', '1,000 gold', 'gold1k.jpg'),
@@ -234,9 +244,9 @@ translations = [
 (u'黄進化竜100才', '100 year old Yellow Dragon', 'small yellow blum 100.jpg'),
 
 (u'ナズナケーキ', "Nazuna's Cake", '500405.png'),
-(u'贈り物小', 'Gift (Small) ', 'Random gift small.png'),
-(u'贈り物中', 'Gift (Mid) ', 'Random gift mid.png'),
-(u'贈り物大', 'Gift (Big) ', '500103.png'),
+(u'贈り物小', 'Gift (Small)', 'Random gift small.png'),
+(u'贈り物中', 'Gift (Mid)', 'Random gift mid.png'),
+(u'贈り物大', 'Gift (Big)', '500103.png'),
 (u'贈り物', 'Gift', '500101.png'), # Lack of info
 (u'特別功労賞「銅」', 'Special Services Award (Copper)', '500500.png'),
 (u'特別功労賞「銀」', 'Special Services Award (Silver)', '500501.png'),
@@ -270,6 +280,8 @@ translations = [
 (u'ガチャ種x100', 'Gacha Seeds x100', 'gacha-100.jpg'),
 (u'ガチャ種x250', 'Gacha Seeds x250', 'gacha-250.jpg'),
 (u'ガチャ種', 'Gacha Seeds', '000003.png'),
+(u'絆水晶x10', 'Bond Crystals x10', 'Bond_crystal.png'),
+(u'絆水晶', 'Bond Crystals', 'Bond_crystal.png'),
 
 (u'命アンプルゥ', 'Ampule of Life', 'small life ampule.jpg'),
 (u'攻アンプルゥ', 'Ampule of Attack', 'small attack ampule.jpg'),
@@ -286,47 +298,6 @@ translations = [
 (u'知徳の花びら', 'Petal of Virtue and Knowledge', 'Blossom_hill_petal_icon.png'),
 (u'風谷の花びら', 'Petal of Wind Valley', 'Bergamot_valley_petal_icon.png'),
 (u'雪原の花びら', 'Petal of Snowfield', 'Winter_rose_petal_icon.png'),
-
-# Ambiguous, but it was on purpose.
-(u'種x250', 'Gacha Seeds x250', 'gacha-250.jpg'),
-
-# Add this event's flower knights to translate card sheet owners.
-# Event 39
-(u'エニシダ', 'Scotch Broom', 'ScotchBroom_icon00.png'),
-(u'スイギョク', 'Water Hyacinth', 'WaterHyacinth_icon00.png'),
-(u'イカリソウ', 'Barrenwort', 'Barrenwort_icon00.png'),
-# Event 45
-(u'コキア', 'Fireweed', 'Fireweed_icon00.png'),
-(u'ハゼ', 'Wax Tree', 'WaxTree_icon00.png'),
-(u'シャボンソウ', 'Soapwort', 'Soapwort_icon00.png'),
-# Event 50
-(u'オキザリス', "Lady's Sorrel (New Year)", 'LadysSorrel_shinshun_icon00.png'),
-(u'ユズリハ', 'False Daphne', 'FalseDaphne_icon00.png'),
-(u'アイビー', 'Ivy (New Year)', 'Ivy_shinshun_icon00.png'),
-# Event 55
-(u'フリージア', 'Freesia', 'Freesia_icon00.png'),
-(u'ニチニチソウ', 'Madagascar Periwinkle', 'MadagascarPeriwinkle_icon00.png'),
-(u'ハナイ', 'Flowering Rush', 'FloweringRush_icon00.png'),
-# Event 61
-(u'セルリア', 'Blushing Bride', 'BlushingBride_icon00.png'),
-(u'パキラ', 'Money Tree', 'MoneyTree_icon00.png'),
-(u'リシマキア', 'Creeping Jenny', 'CreepingJenny_icon00.png'),
-# Event 66
-(u'オミナエシ', u'Golden Lace', 'icon_148401.png'),
-(u'ヘリオトロープ（浴衣）', u'Heliotrope', 'icon_145103.png'),
-(u'ハゼラン', u'Coral Flower', 'icon_148201.png'),
-# Event 71
-(u'ストレプトカーパス', u'Streptocarpus', 'icon_140501.png'),
-(u'ワルナスビ', u'Nightshade', 'icon_125605.png'),
-(u'ラークスパー', u'Larkspur', 'icon_152905.png'),
-(u'メギ', u'Japanese Barberry', 'icon_137801.png'),
-(u'2*ミツガシワ', 'Buckbean', 'icon_160007.png'),
-(u'3*ニワゼキショウ', 'Annual Blue-eyed Grass', 'icon_160405.png'),
-# Event 77
-(u'ビバーナム', "Viburnum", 'icon_160015.png'),
-(u'ペペロミア', 'Peperomia', 'icon_159301.png'),
-(u'レオノチス', "Lion's Ear", 'icon_111107.png'),
-(u'ストック', 'Stock', 'icon_160303.png'),
 ]
 
 def translate_text(text):
@@ -348,6 +319,9 @@ def translate_text(text):
 					icon, en_word)
 			text = text.replace(jp_word, full_icon)
 		text = text.replace(jp_word, en_word)
+
+	text = text.replace(event_char,
+		'{{CImage|'+event_char+'|50px}}')
 
 	return text
 
@@ -411,10 +385,10 @@ def parse_soup(soup):
 	"""
 
 	sheets = {}
-	sheets['Stock'] = get_sheets_for_id('stock_01', soup)
-	sheets["Lion's Ear"] = get_sheets_for_id('lion_01', soup)
-	sheets['Peperomia'] = get_sheets_for_id('pepe_01', soup)
-	sheets['Viburnum'] = get_sheets_for_id('vibur_01', soup)
+	sheets['Winter Cosmos'] = get_sheets_for_id('Win_01', soup)
+	sheets["Flat Sea Holly"] = get_sheets_for_id('Ery_01', soup)
+	sheets['Wheat'] = get_sheets_for_id('Kom_01', soup)
+	sheets['Snow Pea'] = get_sheets_for_id('Kin_01', soup)
 	sheets['Bonus'] = get_sheets_for_id('Extra_01', soup, False)
 	return sheets
 
@@ -428,10 +402,10 @@ def process_sheets_dict(all_sheets):
 These are the card sheets for [[{title}]]. The set of cards sheets a player will have will be based on which of the four featured girls appears on card flipping screen. Bonus Sheets have the same pattern for all players. Mouse over icons to display their meaning. All data comes directly from the [{wiki} Japanese Wiki] with great gratitude.
 {{| style="text-align: center"
 |-
-|{{{{CImage|{char1_jp}|icon|center|link=#{char1_en}_Sheets}}}}
-|{{{{CImage|{char2_jp}|icon|center|link=#{char2_en}_Sheets}}}}
-|{{{{CImage|{char3_jp}|icon|center|link=#{char3_en}_Sheets}}}}
-|{{{{CImage|{char4_jp}|icon|center|link=#{char4_en}_Sheets}}}}
+|{{{{CImage|{char1_jp}|center|link=#{char1_en}_Sheets}}}}
+|{{{{CImage|{char2_jp}|center|link=#{char2_en}_Sheets}}}}
+|{{{{CImage|{char3_jp}|center|link=#{char3_en}_Sheets}}}}
+|{{{{CImage|{char4_jp}|center|link=#{char4_en}_Sheets}}}}
 | rowspan="2"| [[#Bonus Sheets|Bonus Sheets]]
 |-
 |[[#{char1_en} Sheets|{char1_en}]]
@@ -442,12 +416,12 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 
 '''.format(title=u'Fierce Fight! The Climactic Snowball Fight',
 	wiki=SRC_URL,
-	char1_jp=u'ストック', char1_en=u'Stock',
-	char2_jp=u'レオノチス', char2_en=u"Lion's Ear",
-	char3_jp=u'ペペロミア', char3_en=u'Peperomia',
-	char4_jp=u'ビバーナム', char4_en=u'Viburnum')
-	display_order = ['Stock', "Lion's Ear", 'Peperomia',
-		'Viburnum', 'Bonus']
+	char1_jp=u'ウィンターコスモス', char1_en=u'Winter Cosmos',
+	char2_jp=u'エリンジウム', char2_en=u"Flat Sea Holly",
+	char3_jp=u'コムギ', char3_en=u'Wheat',
+	char4_jp=u'キヌサヤ', char4_en=u'Snow Pea')
+	display_order = ['Winter Cosmos', 'Flat Sea Holly',
+		'Wheat', 'Snow Pea', 'Bonus']
 	char_num = 0
 	for sheet_owner in display_order:
 		# Write the header for one character's sheets.
