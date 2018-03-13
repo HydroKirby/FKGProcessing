@@ -718,7 +718,12 @@ class CharacterEntry(BaseEntry):
 		'date1',
 		'unknown06',
 		'gameVersionWhenAdded',
-		'zero00',] # Added 3/5/2018.
+		# Added 3/5/2018. When non-zero, points to the character ID of what this
+		# character would become after being rarity grown.
+		'rarityGrownID',
+		'canRarityGrow', # Added 3/12/2018.
+		'isRarityGrown', # Added 3/12/2018.
+		]
 
 	def __init__(my, data_entry_csv):
 		super(CharacterEntry, my).__init__(data_entry_csv, 'character',
