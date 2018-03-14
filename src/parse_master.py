@@ -260,6 +260,9 @@ class FlowerKnight(object):
 		my.fullName = entry.getval('fullName')
 		my.rarity = entry.getval('rarity')
 		my.spd = entry.getval('lvlOneSpd')
+		# TODO: Rely on my.tiers[NUMBER]['skill'] instead.
+		# The skill is no longer the same between all evolution tiers.
+		# It changes if the character undergoes rarity growth.
 		my.skill = entry.getval('skill1ID')
 		my.family = entry.getval('family')
 		my.type = entry.getval('type')
@@ -278,6 +281,7 @@ class FlowerKnight(object):
 		my._add_common_data(entry)
 		my.tiers[1]['id'] = entry.getval('id0')
 		my.tiers[1]['lvlCap'] = maxLevel[my.rarity][0]
+		my.tiers[1]['skill'] = entry.getval('skill1ID')
 		my.tiers[1]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
 		my.tiers[1]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
 		my.tiers[1]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
@@ -295,6 +299,7 @@ class FlowerKnight(object):
 		"""Stores the CharacterEntry's data as the evolved info."""
 		my._add_common_data(entry)
 		my.tiers[2]['id'] = entry.getval('id0')
+		my.tiers[2]['skill'] = entry.getval('skill1ID')
 		my.tiers[2]['lvlCap'] = maxLevel[my.rarity][1]
 		my.tiers[2]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
 		my.tiers[2]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
@@ -317,6 +322,7 @@ class FlowerKnight(object):
 		else:
 			my.bloomability = FlowerKnight.BLOOMABLE
 		my.tiers[3]['id'] = entry.getval('id0')
+		my.tiers[3]['skill'] = entry.getval('skill1ID')
 		my.tiers[3]['lvlCap'] = maxLevel[my.rarity][2]
 		my.tiers[3]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
 		my.tiers[3]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
@@ -338,6 +344,7 @@ class FlowerKnight(object):
 		my.tiers[4]['id'] = entry.getval('id0')
 		# Rarity growth turns the character's rarity into a 6-star.
 		my.tiers[4]['lvlCap'] = maxLevel['6'][2]
+		my.tiers[4]['skill'] = entry.getval('skill1ID')
 		my.tiers[4]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
 		my.tiers[4]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
 		my.tiers[4]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
@@ -469,7 +476,7 @@ class FlowerKnight(object):
 			'tier1Aff2Def':my.tiers[1]['aff2'][DEF],
 			# Abilities
 			# Skill
-			'skill':my.skill,
+			'skill':my.tiers[1]['skill'],
 			}
 
 		if my.can_evolve():
@@ -510,6 +517,7 @@ class FlowerKnight(object):
 
 		if my.can_rarity_grow():
 			formatDict.update({
+				'tier4skill':my.tiers[4]['skill'],
 				# Rarity grown stats.
 				'tier4Lv1HP':my.tiers[4]['lvlOne'][HP],
 				'tier4Lv1Atk':my.tiers[4]['lvlOne'][ATK],
@@ -566,6 +574,7 @@ class FlowerKnight(object):
 				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1])
 
 		tier4StatsString = tier4AffString = ''
+		tier4SkillString = ''
 		if my.can_rarity_grow():
 			tier4StatsString = dedent('''
 				tier4Lv1 = {{ {tier4Lv1HP}, {tier4Lv1Atk}, {tier4Lv1Def} }},
@@ -581,6 +590,9 @@ class FlowerKnight(object):
 				ability4DEPRECATED = my.tiers[4]['abilities'][1]
 			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
 				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1])
+			tier4SkillString = dedent('''
+				tier4skill = {tier4skill},
+				''').lstrip().format(**formatDict)
 
 		# Make a comma-separated list of the ability IDs.
 		abilityStringDEPRECATED = u', '.join([a for a in [ability1DEPRECATED, ability2DEPRECATED, ability3DEPRECATED, ability4DEPRECATED] if a])
@@ -596,6 +608,7 @@ class FlowerKnight(object):
 			'tier4AffString':tier4AffString,
 			'abilityStringDEPRECATED':abilityStringDEPRECATED,
 			'abilityString':abilityString,
+			'tier4skill':tier4SkillString,
 		})
 
 		lua_table = dedent(u'''
@@ -610,7 +623,7 @@ class FlowerKnight(object):
 			family = {family},
 			dateAdded = {dateAdded},
 			skill = {skill},
-			ability = {abilityStringDEPRECATED}, -- Deprecated. Use bundledAbilities.
+			{tier4skill}ability = {abilityStringDEPRECATED}, -- Deprecated. Use bundledAbilities.
 			bundledAbilities = {{ {abilityString} }},
 			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
 			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
