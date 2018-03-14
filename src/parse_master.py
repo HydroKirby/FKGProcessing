@@ -203,6 +203,9 @@ class FlowerKnight(object):
 	(NO_BLOOM,
 	BLOOMABLE,
 	BLOOM_POWERS_ONLY) = range(3)
+	# These are the rarity growth tiers the character is capable of.
+	(NO_RARITY_GROWTH,
+	HAS_RARITY_GROWTH) = range(2)
 
 	def __init__(my, entries=[]):
 		"""Constructor.
@@ -215,9 +218,10 @@ class FlowerKnight(object):
 		my.fullName = ''
 		# Organize the entries based on evolution tier.
 		# They use the Lua list format: Indices start at 1.
-		my.tiers = {1:{}, 2:{}, 3:{}}
-		# Assume the character can't bloom.
+		my.tiers = {1:{}, 2:{}, 3:{}, 4:{}}
+		# Assume the character can't bloom or rarity grow.
 		my.bloomability = FlowerKnight.NO_BLOOM
+		my.growability = FlowerKnight.NO_RARITY_GROWTH
 		# Store the latest date out of all CSV values.
 		# This will be only calculated once on the fly once
 		# get_latest_date is called.
@@ -241,8 +245,12 @@ class FlowerKnight(object):
 			my._add_pre_evo_entry(entry)
 		elif tier == '2':
 			my._add_evo_entry(entry)
-		else:
+		elif tier == '3':
 			my._add_bloom_entry(entry)
+		elif entry.getval('isRarityGrown'):
+			my._add_rarity_grown_entry(entry)
+		else:
+			print('Warning: Tried to add a CharacterEntry w/o an evolution tier.')
 
 	def _add_common_data(my, entry):
 		"""Stores info which should be the same for all evolution tiers."""
@@ -319,6 +327,26 @@ class FlowerKnight(object):
 		my.tiers[3]['date1'] = entry.getval('date1')
 		my.tiers[3]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
 
+	def _add_rarity_grown_entry(my, entry):
+		"""Stores the CharacterEntry's data as the rarity grown info.
+
+		Aa a side-effect of calling this method, the "growability" is set.
+		"""
+
+		my._add_common_data(entry)
+		my.growability = FlowerKnight.HAS_RARITY_GROWTH
+		my.tiers[4]['id'] = entry.getval('id0')
+		# Rarity growth turns the character's rarity into a 6-star.
+		my.tiers[4]['lvlCap'] = maxLevel['6'][2]
+		my.tiers[4]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
+		my.tiers[4]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
+		my.tiers[4]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
+		my.tiers[4]['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
+		my.tiers[4]['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
+		my.tiers[4]['date0'] = entry.getval('date0')
+		my.tiers[4]['date1'] = entry.getval('date1')
+		my.tiers[4]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
+
 	def _determine_romaji(my):
 		"""Determines the romaji spelling of the full name."""
 		# TODO
@@ -334,6 +362,10 @@ class FlowerKnight(object):
 		"""Returns True if the character can bloom."""
 		return my.bloomability != FlowerKnight.NO_BLOOM
 
+	def can_rarity_grow(my):
+		"""Returns True if the character can rarity grow."""
+		return my.growability != FlowerKnight.NO_RARITY_GROWTH
+
 	def get_latest_date(my):
 		"""Gets the latest date in all evolution tiers."""
 		if my.latest_date:
@@ -342,12 +374,14 @@ class FlowerKnight(object):
 			return my.latest_date
 		# Determine the latest date amongst all available dates.
 		if my.bloomability == FlowerKnight.NO_BLOOM:
+			# Cannot bloom or rarity grow.
 			my.latest_date = max([
 				my.tiers[1]['date0'],
 				my.tiers[1]['date1'],
 				my.tiers[2]['date0'],
 				my.tiers[2]['date1'],])
-		else:
+		elif my.growability == FlowerKnight.NO_RARITY_GROWTH:
+			# Can bloom, but not rarity grow.
 			my.latest_date = max([
 				my.tiers[1]['date0'],
 				my.tiers[1]['date1'],
@@ -355,6 +389,17 @@ class FlowerKnight(object):
 				my.tiers[2]['date1'],
 				my.tiers[3]['date0'],
 				my.tiers[3]['date1'],])
+		else:
+			# Can bloom and rarity grow.
+			my.latest_date = max([
+				my.tiers[1]['date0'],
+				my.tiers[1]['date1'],
+				my.tiers[2]['date0'],
+				my.tiers[2]['date1'],
+				my.tiers[3]['date0'],
+				my.tiers[3]['date1'],
+				my.tiers[4]['date0'],
+				my.tiers[4]['date1'],])
 		return my.latest_date
 
 	def has_id(my, id):
@@ -375,10 +420,14 @@ class FlowerKnight(object):
 		elif my.bloomability == FlowerKnight.NO_BLOOM:
 			# This flower knight is evolvable, but not bloomable.
 			return id in (my.tiers[1]['id'], my.tiers[2]['id'])
-		else:
-			# This flower knight can bloom.
+		elif my.growability == FlowerKnight.NO_RARITY_GROWTH:
+			# This flower knight can bloom, but not rarity grow.
 			return id in (my.tiers[1]['id'], my.tiers[2]['id'],
 				my.tiers[3]['id'])
+		else:
+			# This flower knight can bloom and rarity grow.
+			return id in (my.tiers[1]['id'], my.tiers[2]['id'],
+				my.tiers[3]['id'], my.tiers[4]['id'])
 
 	def get_lua(my, quoted=False):
 		"""Returns the stored data as a Lua list.
@@ -459,9 +508,28 @@ class FlowerKnight(object):
 				'tier3Aff2Def':my.tiers[3]['aff2'][DEF],
 			})
 
+		if my.can_rarity_grow():
+			formatDict.update({
+				# Rarity grown stats.
+				'tier4Lv1HP':my.tiers[4]['lvlOne'][HP],
+				'tier4Lv1Atk':my.tiers[4]['lvlOne'][ATK],
+				'tier4Lv1Def':my.tiers[4]['lvlOne'][DEF],
+				'tier4LvMaxHP':my.tiers[4]['lvlMax'][HP],
+				'tier4LvMaxAtk':my.tiers[4]['lvlMax'][ATK],
+				'tier4LvMaxDef':my.tiers[4]['lvlMax'][DEF],
+				# Rarity grown affection bonuses.
+				'tier4Aff1HP':my.tiers[4]['aff1'][HP],
+				'tier4Aff1Atk':my.tiers[4]['aff1'][ATK],
+				'tier4Aff1Def':my.tiers[4]['aff1'][DEF],
+				'tier4Aff2HP':my.tiers[4]['aff2'][HP],
+				'tier4Aff2Atk':my.tiers[4]['aff2'][ATK],
+				'tier4Aff2Def':my.tiers[4]['aff2'][DEF],
+			})
+
 		#Generate specific portions of the table.
 		ability1DEPRECATED = my.tiers[1]['abilities'][0]
 		ability2DEPRECATED = ability3DEPRECATED = ability4DEPRECATED = ''
+
 		tier2StatsString = tier2AffString = ''
 		abilityString = '{{{0}, {1},}},'.format(
 			my.tiers[1]['abilities'][0], my.tiers[1]['abilities'][1])
@@ -497,16 +565,35 @@ class FlowerKnight(object):
 			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
 				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1])
 
-		#Make a comma-separated list of the ability IDs.
+		tier4StatsString = tier4AffString = ''
+		if my.can_rarity_grow():
+			tier4StatsString = dedent('''
+				tier4Lv1 = {{ {tier4Lv1HP}, {tier4Lv1Atk}, {tier4Lv1Def} }},
+				tier4LvMax = {{ {tier4LvMaxHP}, {tier4LvMaxAtk}, {tier4LvMaxDef} }},
+				''').lstrip().format(**formatDict)
+			tier4AffString = dedent('''
+				tier4Aff1Bonus = {{ {tier4Aff1HP}, {tier4Aff1Atk}, {tier4Aff1Def} }},
+				tier4Aff2Bonus = {{ {tier4Aff2HP}, {tier4Aff2Atk}, {tier4Aff2Def} }},
+				''').lstrip().format(**formatDict)
+			if my.tiers[4]['abilities'][0]:
+				ability3DEPRECATED = my.tiers[4]['abilities'][0]
+			if my.tiers[4]['abilities'][1]:
+				ability4DEPRECATED = my.tiers[4]['abilities'][1]
+			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
+				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1])
+
+		# Make a comma-separated list of the ability IDs.
 		abilityStringDEPRECATED = u', '.join([a for a in [ability1DEPRECATED, ability2DEPRECATED, ability3DEPRECATED, ability4DEPRECATED] if a])
 		abilityStringDEPRECATED = '{{ {0} }}'.format(abilityStringDEPRECATED)
 
-		#Add all of the generated strings to the string format table.
+		# Add all of the generated strings to the string format table.
 		formatDict.update({
 			'tier2StatsString':tier2StatsString,
 			'tier2AffString':tier2AffString,
 			'tier3StatsString':tier3StatsString,
 			'tier3AffString':tier3AffString,
+			'tier4StatsString':tier4StatsString,
+			'tier4AffString':tier4AffString,
 			'abilityStringDEPRECATED':abilityStringDEPRECATED,
 			'abilityString':abilityString,
 		})
@@ -527,10 +614,10 @@ class FlowerKnight(object):
 			bundledAbilities = {{ {abilityString} }},
 			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
 			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
-			{tier2StatsString}{tier3StatsString}speed = {speed},
+			{tier2StatsString}{tier3StatsString}{tier4StatsString}speed = {speed},
 			tier1Aff1Bonus = {{ {tier1Aff1HP}, {tier1Aff1Atk}, {tier1Aff1Def} }},
 			tier1Aff2Bonus = {{ {tier1Aff2HP}, {tier1Aff2Atk}, {tier1Aff2Def} }},
-			{tier2AffString}{tier3AffString}}}''').lstrip().format(**formatDict)
+			{tier2AffString}{tier3AffString}{tier4AffString}}}''').lstrip().format(**formatDict)
 
 		return lua_table
 
