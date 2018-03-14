@@ -437,12 +437,13 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 		'Wheat', 'Snow Pea', 'Bonus']
 	char_num = 0
 	for sheet_owner in display_order:
+		table_cols = len(all_sheets[sheet_owner][0][0]) + 1
 		# Write the header for one character's sheets.
 		text += '==={0} Sheets===\n'.format(sheet_owner)
 		text += '{| class="wikitable"\n'
 		text += '|+{0} Card Sheets\n'.format(sheet_owner)
 		text += '|-\n'
-		text += '|colspan="9"|\n'
+		text += '|colspan="{0}" class="sheet-row-sep"|\n'.format(table_cols)
 		text += '|-\n'
 		# Write each sheet.
 		sheet_num = 1
@@ -461,7 +462,7 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 			if sheet_num <= len(all_sheets[sheet_owner]):
 				text += '\n|-' \
 						'\n!colspan="{0}" class="sheet-row-sep"|' \
-						'\n|-\n'.format(8)
+						'\n|-\n'.format(table_cols)
 		# Close off the whole table of sheets.
 		text += '\n|}'
 		# Move on to the next character's sheet.
