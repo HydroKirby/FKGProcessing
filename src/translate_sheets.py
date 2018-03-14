@@ -443,7 +443,7 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 		text += '{| class="wikitable"\n'
 		text += '|+{0} Card Sheets\n'.format(sheet_owner)
 		text += '|-\n'
-		text += '|colspan="{0}" class="sheet-row-sep"|\n'.format(table_cols)
+		text += '|colspan="{0}"|\n'.format(table_cols)
 		text += '|-\n'
 		# Write each sheet.
 		sheet_num = 1
@@ -460,8 +460,8 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 			# Check that we aren't at the end of the sheets, because we
 			# don't want this separator at the end of the table.
 			if sheet_num <= len(all_sheets[sheet_owner]):
-				text += '\n|-' \
-						'\n!colspan="{0}" class="sheet-row-sep"|' \
+				text += '\n|- class="sheet-row-sep"' \
+						'\n!colspan="{0}"|' \
 						'\n|-\n'.format(table_cols)
 		# Close off the whole table of sheets.
 		text += '\n|}'
