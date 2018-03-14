@@ -100,6 +100,8 @@ typo_fixes = [
 (u'(大)', u'大'),
 (u'ナズナ特製ケーキ', u'ナズナケーキ'),
 (u'贈り物ランダム', u'贈り物'),
+(u'「銅」', u'銅'),
+(u'「銀」', u'銀'),
 # Gacha seeds
 (u'中級装備種', u'中級装備ガチャ種'),
 (u'中級ガチャ種', u'中級装備ガチャ種'),
@@ -204,16 +206,24 @@ translations = [
 (u'10000ゴールド', '10,000 gold', 'gold10k.jpg'),
 # Big amounts of gold go first.
 ('10000G', '10,000 gold', 'gold10k.jpg'),
+('10000', '10,000 gold', 'gold10k.jpg'),
 ('20000G', '20,000 gold', 'gold-20k.jpg'),
+('20000', '20,000 gold', 'gold-20k.jpg'),
 ('25000G', '25,000 gold', 'gold-25k.jpg'),
+('25000', '25,000 gold', 'gold-25k.jpg'),
 ('50000G', '50,000 gold', 'gold50k.jpg'),
+('50000', '50,000 gold', 'gold50k.jpg'),
 
 ('1000G', '1,000 gold', 'gold1k.jpg'),
 ('1500G', '1,500 gold', 'gold-1,500.jpg'),
 ('2000G', '2,000 gold', 'gold2k.png'),
+('2000', '2,000 gold', 'gold2k.png'),
 ('2500G', '2,500 gold', 'gold-2,500.jpg'),
+('2500', '2,500 gold', 'gold-2,500.jpg'),
 ('4500G', '4,500 gold', 'gold-4,500.jpg'),
+('4500', '4,500 gold', 'gold-4,500.jpg'),
 ('5000G', '5,000 gold', 'gold5k.jpg'),
+('5000', '5,000 gold', 'gold5k.jpg'),
 
 # Small gold amounts go last.
 ('100G', '100 gold', 'gold100.jpg'),
@@ -248,8 +258,8 @@ translations = [
 (u'贈り物中', 'Gift (Mid)', 'Random gift mid.png'),
 (u'贈り物大', 'Gift (Big)', '500103.png'),
 (u'贈り物', 'Gift', '500101.png'), # Lack of info
-(u'特別功労賞「銅」', 'Special Services Award (Copper)', '500500.png'),
-(u'特別功労賞「銀」', 'Special Services Award (Silver)', '500501.png'),
+(u'特別功労賞銅', 'Special Services Award (Copper)', '500500.png'),
+(u'特別功労賞銀', 'Special Services Award (Silver)', '500501.png'),
 
 (u'マニュ20才ランダム', 'Random 20 year old Manyu', 'Kyouka_rei_20_year_red_random_icon.jpg'),
 (u'マニュ20才', '20 year old Manyu', 'Kyouka_rei_20_year_red_random_icon.jpg'), # lack of info
@@ -270,15 +280,18 @@ translations = [
 (u'首輪オキタ金', 'Necklace Forge Spirit (Gold)', 'small gold necklace forge spirit.jpg'),
 (u'指輪オキタ金', 'Ring Forge Spirit (Gold)', 'small gold ring forge spirit.jpg'),
 (u'腕輪オキタ金', 'Bracelet Forge Spirit (Gold)', 'small gold bracelet forge spirit.jpg'),
+(u'専用装備オキタ金', 'Personal Equipment Forge Spirit (Gold)', 'small gold personal forge spirit.jpg'),
 
 (u'中級装備ガチャ種x100', 'Mid Lv Equip Gacha Seeds x100', 'mid-equip-100.jpg'),
 (u'中級装備ガチャ種x250', 'Mid Lv Equip Gacha Seeds x250', 'mid-equip-250.jpg'),
+(u'中級装備ガチャ種x500', 'Mid Lv Equip Gacha Seeds x500', 'mid-equip-500.jpg'),
 (u'中級装備ガチャ種x1,000', 'Mid Lv Equip Gacha Seeds x1,000', 'mid-equip-1k.jpg'),
 (u'中級装備ガチャ種', 'Mid Lv Equip Gacha Seeds', 'Mid-equip-seed.jpg'),
 (u'級装備種', 'Mid Lv Equip Gacha Seeds', 'Mid-equip-seed.jpg'), # typo
 (u'装備ガチャ種', 'Mid Lv Equip Gacha Seeds', 'Mid-equip-seed.jpg'), # ambiguous
 (u'ガチャ種x100', 'Gacha Seeds x100', 'gacha-100.jpg'),
 (u'ガチャ種x250', 'Gacha Seeds x250', 'gacha-250.jpg'),
+(u'ガチャ種x500', 'Gacha Seeds x500', 'gacha-500.jpg'),
 (u'ガチャ種', 'Gacha Seeds', '000003.png'),
 (u'絆水晶x10', 'Bond Crystals x10', 'Bond_crystal.png'),
 (u'絆水晶', 'Bond Crystals', 'Bond_crystal.png'),
