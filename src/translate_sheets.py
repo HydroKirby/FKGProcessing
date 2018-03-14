@@ -460,7 +460,7 @@ These are the card sheets for [[{title}]]. The set of cards sheets a player will
 			# don't want this separator at the end of the table.
 			if sheet_num <= len(all_sheets[sheet_owner]):
 				text += '\n|-' \
-						'\n!colspan="{0}" |' \
+						'\n!colspan="{0}" class="sheet-row-sep"|' \
 						'\n|-\n'.format(8)
 		# Close off the whole table of sheets.
 		text += '\n|}'
