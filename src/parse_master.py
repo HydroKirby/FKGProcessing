@@ -821,8 +821,8 @@ class CharacterEntry(BaseEntry):
 		# Added 3/5/2018. When non-zero, points to the character ID of what this
 		# character would become after being rarity grown.
 		'rarityGrownID',
-		'canRarityGrow', # Added 3/12/2018.
 		'isRarityGrown', # Added 3/12/2018.
+		'canRarityGrow', # Added 3/12/2018.
 		]
 
 	def __init__(my, data_entry_csv):
