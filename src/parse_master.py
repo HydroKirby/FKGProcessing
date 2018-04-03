@@ -52,9 +52,9 @@ giftList = {
 
 # Maps a rarity to its maxmimum levels per evolution tier.
 maxLevel = {
-	'2':['50','60'],
-	'3':['50','60'],
-	'4':['50','60'],
+	'2':['50','60','80'],
+	'3':['50','60','80'],
+	'4':['50','60','80'],
 	'5':['60','70','80'],
 	'6':['60','70','80'],
 }
@@ -207,6 +207,11 @@ class FlowerKnight(object):
 	(NO_RARITY_GROWTH,
 	HAS_RARITY_GROWTH) = range(2)
 
+	# If a bug was found regarding how the data was parsed, state it only once.
+	# When False, a message is printed and it turns to True.
+	# When True, no message is printed.
+	stated_integrity_bug = False
+
 	def __init__(my, entries=[]):
 		"""Constructor.
 
@@ -241,16 +246,28 @@ class FlowerKnight(object):
 	def add_entry(my, entry):
 		"""Adds a CharacterEntry instance to this knight's data."""
 		tier = entry.getval('evolutionTier')
+		isRarityGrown = entry.getval('isRarityGrown') == '1'
+		unknown03 = entry.getval('unknown03') == '1'
+		unknown04 = entry.getval('unknown04') == '1'
 		if tier == '1':
-			my._add_pre_evo_entry(entry)
+			my._add_tier1_entry(entry)
 		elif tier == '2':
-			my._add_evo_entry(entry)
-		elif tier == '3':
-			my._add_bloom_entry(entry)
-		elif entry.getval('isRarityGrown'):
-			my._add_rarity_grown_entry(entry)
-		else:
-			print('Warning: Tried to add a CharacterEntry w/o an evolution tier.')
+			my._add_tier2_entry(entry)
+		elif (tier == '3' and not isRarityGrown) or \
+			(tier == '99' and isRarityGrown and not unknown03 and unknown04):
+			# tier = 3 means it is a 5* or 6* that can bloom.
+			# tier = 99 means it is a 2-4* that can go beyond evolution.
+			my._add_tier3_entry(entry)
+		elif (tier == '4' and isRarityGrown) or \
+			(tier == '99' and isRarityGrown and unknown03 and not unknown04):
+			my._add_tier4_entry(entry)
+		elif not FlowerKnight.stated_integrity_bug:
+			print('Warning: CharacterEntry w/an invalid evolution tier.\n' \
+				'The logic may be wrong or the CSVs have changed meanings.\n' \
+				'Character {0} w/id {1} was an exception.\n'.format(
+					entry.getval('fullName'), entry.getval('id0')) + \
+				'Will ignore bugged entries and stop stating this message.')
+			FlowerKnight.stated_integrity_bug = True
 
 	def _add_common_data(my, entry):
 		"""Stores info which should be the same for all evolution tiers."""
@@ -271,7 +288,7 @@ class FlowerKnight(object):
 		my.is_event = entry.getval('isEventKnight')
 		my._determine_romaji()
 
-	def _add_pre_evo_entry(my, entry):
+	def _add_tier1_entry(my, entry):
 		"""Stores the CharacterEntry's data as the pre-evolved info.
 
 		As a side-effect of calling this method, some of the common
@@ -295,9 +312,8 @@ class FlowerKnight(object):
 		# pics aren't used in the library / 図鑑.
 		my.charID1 = entry.getval('sortID')
 
-	def _add_evo_entry(my, entry):
+	def _add_tier2_entry(my, entry):
 		"""Stores the CharacterEntry's data as the evolved info."""
-		my._add_common_data(entry)
 		my.tiers[2]['id'] = entry.getval('id0')
 		my.tiers[2]['skill'] = entry.getval('skill1ID')
 		my.tiers[2]['lvlCap'] = maxLevel[my.rarity][1]
@@ -310,13 +326,12 @@ class FlowerKnight(object):
 		my.tiers[2]['date1'] = entry.getval('date1')
 		my.tiers[2]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
 
-	def _add_bloom_entry(my, entry):
+	def _add_tier3_entry(my, entry):
 		"""Stores the CharacterEntry's data as the bloomed info.
 
 		Aa a side-effect of calling this method, the "bloomability" is set.
 		"""
 
-		my._add_common_data(entry)
 		if entry.getval('isBloomedPowersOnly') == "1":
 			my.bloomability = FlowerKnight.BLOOM_POWERS_ONLY
 		else:
@@ -333,13 +348,12 @@ class FlowerKnight(object):
 		my.tiers[3]['date1'] = entry.getval('date1')
 		my.tiers[3]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
 
-	def _add_rarity_grown_entry(my, entry):
+	def _add_tier4_entry(my, entry):
 		"""Stores the CharacterEntry's data as the rarity grown info.
 
 		Aa a side-effect of calling this method, the "growability" is set.
 		"""
 
-		my._add_common_data(entry)
 		my.growability = FlowerKnight.HAS_RARITY_GROWTH
 		my.tiers[4]['id'] = entry.getval('id0')
 		# Rarity growth turns the character's rarity into a 6-star.
