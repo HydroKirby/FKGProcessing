@@ -286,6 +286,7 @@ class FlowerKnight(object):
 		my.nation = entry.getval('nation')
 		my.gift = entry.getval('gift')
 		my.is_event = entry.getval('isEventKnight')
+		my.is_powers_only_bloom = entry.getval('isBloomedPowersOnly')
 		my._determine_romaji()
 
 	def _add_tier1_entry(my, entry):
@@ -466,6 +467,8 @@ class FlowerKnight(object):
 			'type':my.type,
 			'rarity':my.rarity,
 			'isEvent':my.is_event,
+			# Has bloom features?
+			'tier3PowersOnlyBloom':my.is_powers_only_bloom,
 			'gift':my.gift,
 			'nation':my.nation,
 			'family':my.family,
@@ -632,6 +635,7 @@ class FlowerKnight(object):
 			type = {type},
 			rarity = {rarity},
 			isEvent = {isEvent},
+			tier3PowersOnlyBloom = {tier3PowersOnlyBloom},
 			likes = {gift},
 			nation = {nation},
 			family = {family},
