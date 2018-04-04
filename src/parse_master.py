@@ -1758,15 +1758,15 @@ class MasterData(object):
 				ability4 = my.abilities[ability4_id]
 		
 		#Lookup character equip
-		dataEquipBase = dataEquipEvolved = []
-		personal_equip = None
+		dataEquipBase = []
+		dataEquipEvolved = []
+		personal_equip = False
 		
 		for line in my.equipment_entries:
-			if line and line[21].partition('|')[0] == knight.charID1:
-				mystery_number = int(line[2])
-				if mystery_number >= 360000 and mystery_number < 380000:
+			if ((line != '') and (line[21].partition('|')[0] == knight.tiers[1]['id'])):
+				if ((int(line[2]) >= 360000) and (int(line[2]) < 380000)):
 					dataEquipBase.append(line)
-				elif mystery_number >= 380000:
+				elif (int(line[2]) >= 380000):
 					dataEquipEvolved.append(line)
 					personal_equip = True
 		
@@ -1789,11 +1789,7 @@ class MasterData(object):
 		template_text = ''.join(["{{CharacterStat\n|fkgID = ", knight.tiers[1]['id'],
 			"\n|type = ", attribList[knight.type],
 			"\n|name = ", english_name,
-			"\n|JP = ", knight.fullName,
-			"\n|BasicCharImg = [[File:", icon_name, "_00.png|thumb|315x315px|center]]",
-			"\n|EvoCharImg = [[File:", icon_name, "_01.png|thumb|315x315px|center]]",])
-		if knight.bloomability == FlowerKnight.BLOOMABLE:
-			template_text += "\n|BloomCharImg = [[File:" + icon_name + "_02.png|thumb|315x315px|center]]"
+			"\n|JP = ", knight.fullName,])
 		template_text = ''.join([template_text,
 			"\n|rarity = ", rarityStar(knight.rarity),
 			"\n|IconName = ", icon_name,])
@@ -1805,42 +1801,7 @@ class MasterData(object):
 		template_text = ''.join([template_text,
 			"\n|likes = ", giftList[knight.gift],
 			"\n|breed = ", family[1],
-			"\n|nation = ", nationList[knight.nation],
-			"\n|BasiclvlMax = ", knight.tiers[1]['lvlCap'],
-			"\n|BasicHPheartBonus = ", affectionCalc(knight.tiers[1]['aff1'][0],0),
-			"\n|BasicHPlv1 = ", knight.tiers[1]['lvlOne'][0],
-			"\n|BasicHPlv60 = ", knight.tiers[1]['lvlMax'][0],
-			"\n|BasicATKheartBonus = ", affectionCalc(knight.tiers[1]['aff1'][1],0),
-			"\n|BasicATKlv1 = ", knight.tiers[1]['lvlOne'][1],
-			"\n|BasicATKlv60 = ", knight.tiers[1]['lvlMax'][1],
-			"\n|BasicDEFheartBonus = ", affectionCalc(knight.tiers[1]['aff1'][2],0),
-			"\n|BasicDEFlv1 = ", knight.tiers[1]['lvlOne'][2],
-			"\n|BasicDEFlv60 = ", knight.tiers[1]['lvlMax'][2],
-			"\n|MVSpeed = ", knight.spd,
-			"\n|EvolvlMax = ", knight.tiers[2]['lvlCap'],
-			"\n|EvoHPbloomBonus = ", affectionCalc(knight.tiers[2]['aff1'][0], knight.tiers[2]['aff2'][0]),
-			"\n|EvoHPlv1 = ", knight.tiers[2]['lvlOne'][0],
-			"\n|EvoHPlv60 = ", knight.tiers[2]['lvlMax'][0],
-			"\n|EvoATKbloomBonus = ", affectionCalc(knight.tiers[2]['aff1'][1], knight.tiers[2]['aff2'][1]),
-			"\n|EvoATKlv1 = ", knight.tiers[2]['lvlOne'][1],
-			"\n|EvoATKlv60 = ", knight.tiers[2]['lvlMax'][1],
-			"\n|EvoDEFbloomBonus = ", affectionCalc(knight.tiers[2]['aff1'][2], knight.tiers[2]['aff2'][2]),
-			"\n|EvoDEFlv1 = ", knight.tiers[2]['lvlOne'][2],
-			"\n|EvoDEFlv60 = ", knight.tiers[2]['lvlMax'][2]])
-		if knight.bloomability != FlowerKnight.NO_BLOOM:
-			template_text = ''.join([template_text,
-				"\n|BloomlvlMax = ", knight.tiers[3]['lvlCap'],
-				"\n|BloomHPheartBonus = ", affectionCalc(knight.tiers[2]['aff1'][0], knight.tiers[3]['aff2'][0]),
-				"\n|BloomHPlv1 = ", knight.tiers[3]['lvlOne'][0],
-				"\n|BloomHPlv60 = ", knight.tiers[3]['lvlMax'][0],
-				"\n|BloomATKheartBonus = ", affectionCalc(knight.tiers[2]['aff1'][1], knight.tiers[3]['aff2'][1]),
-				"\n|BloomATKlv1 = ", knight.tiers[3]['lvlOne'][1],
-				"\n|BloomATKlv60 = ", knight.tiers[3]['lvlMax'][1],
-				"\n|BloomDEFheartBonus = ", affectionCalc(knight.tiers[2]['aff1'][2], knight.tiers[3]['aff2'][2]),
-				"\n|BloomDEFlv1 = ", knight.tiers[3]['lvlOne'][2],
-				"\n|BloomDEFlv60 = ", knight.tiers[3]['lvlMax'][2]])
-		else:
-			template_text += "\n|BloomHPheartBonus = \n|BloomHPlv1 = \n|BloomHPlv60 = \n|BloomATKheartBonus = \n|BloomATKlv1 = \n|BloomATKlv60 = \n|BloomDEFheartBonus = \n|BloomDEFlv1 = \n|BloomDEFlv60 = "
+			"\n|nation = ", nationList[knight.nation],])
 		if personal_equip:
 			template_text = ''.join([template_text,
 				"\n|BasicEquipATKLv1 = ", dataEquipBase[0][4],
@@ -1858,18 +1819,10 @@ class MasterData(object):
 			"\n|SkillNameJP = ", skill.getval('nameJapanese'),
 			"\n|SkillLv1Trigger = ",skill.getval('triggerRateLv1'),
 			"\n|SkillLv5Trigger = ",skillLv5Calc(skill.getval('triggerRateLv1'),skill.getval('triggerRateLvUp'),skill.getval('unknown00')),
-			"\n|SkillDescription = ", skill.getval('descJapanese'),
-			"\n|Passive1Description = ", ability1.getval('uniqueID'),
-			"\n|Passive2Description = ", ability2.getval('uniqueID'),])
-		if knight.bloomability != FlowerKnight.NO_BLOOM:
-			template_text = ''.join([template_text,
-				"\n|Passive3Description = ", ability3.getval('uniqueID'),
-				"\n|Passive4Description = ", '0' if not ability4 else ability4.getval('uniqueID')])
-		else:
-			template_text += "\n|Passive3Description = \n|Passive4Description = "
+			"\n|SkillDescription = ", skill.getval('descJapanese'),])
 		template_text += "\n|EvoEquipAbilityDescription = "
 		if personal_equip:
-			template_text += dataEquipEvolved[0][25].partition('※')[0]
+			template_text += "During combat, increase attack and defense power of all members with matching attribute by 2%."
 		template_text = ''.join([template_text,
 			"\n|ScientificName = ",
 			"\n|CommonName = ",
