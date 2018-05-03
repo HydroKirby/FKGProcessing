@@ -10,7 +10,7 @@ except ImportError:
 
 DEFAULT_INFILENAME = 'src.php'
 DEFAULT_OUTFILENAME = 'result.txt'
-SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E3%81%8A%E8%BF%94%E3%81%97%E3%82%B9%E3%82%A4%E3%83%BC%E3%83%84%E5%A4%A7%E4%BD%9C%E6%88%A6/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
+SRC_URL = u'http://フラワーナイトガール.攻略wiki.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E5%A5%B3%E7%8E%8B%E6%A7%98%E3%81%AF%E5%BF%99%E3%81%97%E3%81%84%EF%BC%81/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
 
 __doc__ = u"""Mass translates card flip cheat sheets for Flower Knight Girl.
 
@@ -30,7 +30,24 @@ if major_ver < 3:
 	# Make input behave like Python3; don't interpret the inputted text.
 	input = raw_input
 
-event_char = u'キヌサヤ'
+class SheetCharacter(object):
+	def __init__(self, name_jp, name_en, sheet_id):
+		self.name_jp = name_jp
+		self.name_en = name_en
+		self.sheet_id = sheet_id
+
+# Theese things (before the typo_fixes) need to be changed for each event!
+event_name_en = 'The Queen is Busy!'
+event_char_jp = u'アヤメ'
+event_char_en = u'Blood Iris'
+equip_jp = u'一滴の'
+equip_en = u'Fluid Drop'
+sheet_characters = [
+	SheetCharacter(u'ミズアオイ', u'Pickerel Weed', u'Miz_01'),
+	SheetCharacter(u'ホルデュウム', u'Squirrel Tail Grass', u'Hor_01'),
+	SheetCharacter(u'ヒツジグサ', u'Pygmy Water Lily', u'Hit_01'),
+	SheetCharacter(event_char_jp, event_char_en, u'Aya_01'),
+]
 
 # Normalize the text to be translated.
 typo_fixes = [
@@ -116,89 +133,12 @@ typo_fixes = [
 translations = [
 (u'おまけシート', 'Bonus Sheet ', ''),
 (u'シート', 'Sheet ', ''),
-(u'フクシアの技花', "Fuchsia's Skill Flower", ''),
-(u'フクシアの装花', "Fuchsia's Equipment Flower", ''),
-(u'フクシア', 'Fuchsia', ''),
-(u'シーマニアの技花', "Bolivian Sunset's Skill Flower", 'Seemannia_SkillFlower.png'),
-(u'シーマニアの装花', "Bolivian Sunset's Equipment Flower", 'Seemannia_EquipFlower.png'),
-(u'シーマニア', 'Bolivian Sunset', 'BolivianSunset_icon00.png'),
-(u'メイゲツカエデの技花', "Fullmoon Maple's Skill Flower", 'AmurMaple_SkillFlower.png'),
-(u'メイゲツカエデの装花', "Fullmoon Maple's Equipment Flower", 'AmurMaple_EquipmentFlower.png'),
-(u'メイゲツカエデ', 'Fullmoon Maple', 'FullmoonMaple_icon00.png'),
-(u'オリーブの技花', "Olive's Skill Flower", 'Olive_SkillFlower.png'),
-(u'オリーブの装花', "Olive's Equipment Flower", 'Olive_EquipFlower.png'),
-(u'オリーブ', 'Olive', 'Olive_icon00.png'),
-(u'オリーブの技花', "Olive's Skill Flower", 'Olive_SkillFlower.png'),
-(u'オリーブの装花', "Olive's Equipment Flower", 'Olive_EquipFlower.png'),
-(u'モルチアナの技花', "Common Mallow's Skill Flower", 'CommonMallow_SkillFlower.png'),
-(u'モルチアナの装花', "Common Mallow's Equipment Flower", 'CommonMallow_EquipFlower.png'),
-(u'モルチアナ', 'Common Mallow', 'CommonMallow_icon00.png'),
-(u'コマチソウの技花', "Sweet William Catchfly's Skill Flower", 'SweetWilliamCatchfly_SkillFlower.png'),
-(u'コマチソウの装花', "Sweet William Catchfly's Equipment Flower", 'SweetWilliamCatchfly_EquipFlower.png'),
-(u'コマチソウ', 'Sweet William Catchfly', 'SweetWilliamCatchfly_icon00.png'),
-# Event 66
-(u'エケベリアの技花', "Echeveria's Skill Flower", 'Echeveria_SkillFlower.png'),
-(u'エケベリアの装花', "Echeveria's Equipment Flower", 'Echeveria_EquipFlower.png'),
-(u'エケベリア', 'Echeveria', 'icon_128101.png'),
-# Event 71
-(u'メギの技花', "Japanese Barberry's Skill Flower", 'Japanese_Barberry_SkillFlower.png'),
-(u'メギの装花', "Japanese Barberry's Equipment Flower", 'Japanese_Barberry_EquipFlower.png'),
-# Event 77
-(u'ビバーナムの技花', "Viburnum's Skill Flower", 'Viburnum_SkillFlower.png'),
-(u'ビバーナムの装花', "Viburnum's Equipment Flower", 'Viburnum_EquipFlower.png'),
-# Event 81
-(u'キヌサヤの技花', "Snow Pea's Skill Flower", 'Snow_Pea_SkillFlower.png'),
-(u'キヌサヤの装花', "Snow Pea's Equipment Flower", 'Snow_Pea_EquipFlower.png'),
-
-(u'レイニーシーソー', 'Rainy Seesaw', ''),
-(u'ﾚｲﾆｰｽﾌﾟﾘﾝｸﾞｻﾝﾎﾞﾝ', 'Rainy Spring Sanbon', ''),
-
-# Event equipment
-(u'てるてるぼうずの指輪', "Teru Teru Bouzu's Ring", ''),
-(u'てるてるぼうずの首輪', "Teru Teru Bouzu's Necklace", ''),
-(u'てるてるぼうずの耳飾り', "Teru Teru Bouzu's Earrings", ''),
-(u'てるてるぼうずの腕輪', "Teru Teru Bouzu's Bracelet", ''),
-(u'海賊の指輪', "Pirate's Ring", "pirate's-ring.png"),
-(u'海賊の首輪', "Pirate's Necklace", "pirate's-necklace.png"),
-(u'海賊の耳飾り', "Pirate's Earrings", "pirate's-earrings.png"),
-(u'海賊の腕輪', "Pirate's Bracelet", "pirate's-bracelet.png"),
-(u'実りの指輪', 'Harvest Ring', 'harvest_ring.png'),
-(u'実りの首輪', 'Harvest Necklace', 'harvest_necklace.png'),
-(u'実りの耳飾', 'Harvest Earrings', 'harvest_earrings.png'),
-(u'実りの腕輪', 'Harvest Bracelet', 'harvest_bracelet.png'),
-(u'童心の指輪', 'Childlike Innocence Ring', 'childlike innocence ring.png'),
-(u'童心の首輪', 'Childlike Innocence Necklace', 'childlike innocence necklace.png'),
-(u'童心の耳飾', 'Childlike Innocence Earrings', 'childlike innocence earrings.png'),
-(u'童心の腕輪', 'Childlike Innocence Bracelet', 'childlike innocence bracelet.png'),
-(u'蒼海の指輪', 'Blue Waters Ring', 'blue waters ring.png'),
-(u'蒼海の首輪', 'Blue Waters Necklace', 'blue waters necklace.png'),
-(u'蒼海の耳飾', 'Blue Waters Earrings', 'blue waters earrings.png'),
-(u'蒼海の腕輪', 'Blue Waters Bracelet', 'blue waters bracelet.png'),
-# Event 61
-(u'栄光の指輪', 'Glory Ring', 'Glory ring.png'),
-(u'栄光の首輪', 'Glory Necklace', 'Glory necklace.png'),
-(u'栄光の耳飾', 'Glory Earrings', 'Glory earrings.png'),
-(u'栄光の腕輪', 'Glory Bracelet', 'Glory bracelet.png'),
-# Event 66
-(u'飴細工の指輪', 'Shaped Candy Ring', 'Shaped candy ring.png'),
-(u'飴細工の首輪', 'Shaped Candy Necklace', 'Shaped candy necklace.png'),
-(u'飴細工の耳飾', 'Shaped Candy Earrings', 'Shaped candy earrings.png'),
-(u'飴細工の腕輪', 'Shaped Candy Bracelet', 'Shaped candy bracelet.png'),
-# Event 71
-(u'指針の指輪', 'Compass Needle Ring', 'Compass needle ring.png'),
-(u'指針の首輪', 'Compass Needle Necklace', 'Compass needle necklace.png'),
-(u'指針の耳飾', 'Compass Needle Earrings', 'Compass needle earrings.png'),
-(u'指針の腕輪', 'Compass Needle Bracelet', 'Compass needle bracelet.png'),
-# Event 77
-(u'雪玉モフモフの指輪', 'Fluffly Snowball Ring', 'Fluffy snowball ring.png'),
-(u'雪玉モフモフの首輪', 'Fluffly Snowball Necklace', 'Fluffy snowball necklace.png'),
-(u'雪玉モフモフの耳飾', 'Fluffly Snowball Earrings', 'Fluffy snowball earrings.png'),
-(u'雪玉モフモフの腕輪', 'Fluffly Snowball Bracelet', 'Fluffy snowball bracelet.png'),
-# Event 81
-(u'白い日の指輪', 'White Day Ring', 'White day ring.png'),
-(u'白い日の首輪', 'White Day Necklace', 'White day necklace.png'),
-(u'白い日の耳飾', 'White Day Earrings', 'White day earrings.png'),
-(u'白い日の腕輪', 'White Day Bracelet', 'White day bracelet.png'),
+(event_char_jp + u'の技花', event_char_en + " Skill Flower", event_char_en + ' SkillFlower.png'),
+(event_char_jp + u'の装花', event_char_en + " Equipment Flower", event_char_en + ' EquipFlower.png'),
+(equip_jp + u'指輪', equip_en + ' Ring', equip_en + ' ring.png'),
+(equip_jp + u'首輪', equip_en + ' Necklace', equip_en + ' necklace.png'),
+(equip_jp + u'耳飾', equip_en + ' Earrings', equip_en + ' earrings.png'),
+(equip_jp + u'腕輪', equip_en + ' Bracelet', equip_en + ' bracelet.png'),
 
 (u'？ゴールド', '? gold', 'gold.jpg'),
 (u'1000ゴールド', '1,000 gold', 'gold1k.jpg'),
@@ -333,8 +273,8 @@ def translate_text(text):
 			text = text.replace(jp_word, full_icon)
 		text = text.replace(jp_word, en_word)
 
-	text = text.replace(event_char,
-		'{{CImage|'+event_char+'|50px}}')
+	text = text.replace(event_char_jp,
+		'{{CImage|'+event_char_jp+'|50px}}')
 
 	return text
 
@@ -398,10 +338,8 @@ def parse_soup(soup):
 	"""
 
 	sheets = {}
-	sheets['Winter Cosmos'] = get_sheets_for_id('Win_01', soup)
-	sheets["Flat Sea Holly"] = get_sheets_for_id('Ery_01', soup)
-	sheets['Wheat'] = get_sheets_for_id('Kom_01', soup)
-	sheets['Snow Pea'] = get_sheets_for_id('Kin_01', soup)
+	for char in sheet_characters:
+		sheets[char.name_en] = get_sheets_for_id(char.sheet_id, soup)
 	sheets['Bonus'] = get_sheets_for_id('Extra_01', soup, False)
 	return sheets
 
@@ -415,26 +353,26 @@ def process_sheets_dict(all_sheets):
 These are the card sheets for [[{title}]]. The set of cards sheets a player will have will be based on which of the four featured girls appears on card flipping screen. Bonus Sheets have the same pattern for all players. Mouse over icons to display their meaning. All data comes directly from the [{wiki} Japanese Wiki] with great gratitude.
 {{| style="text-align: center"
 |-
+|{{{{CImage|{char0_jp}|center|link=#{char0_en}_Sheets}}}}
 |{{{{CImage|{char1_jp}|center|link=#{char1_en}_Sheets}}}}
 |{{{{CImage|{char2_jp}|center|link=#{char2_en}_Sheets}}}}
 |{{{{CImage|{char3_jp}|center|link=#{char3_en}_Sheets}}}}
-|{{{{CImage|{char4_jp}|center|link=#{char4_en}_Sheets}}}}
 | rowspan="2"| [[#Bonus Sheets|Bonus Sheets]]
 |-
+|[[#{char0_en} Sheets|{char0_en}]]
 |[[#{char1_en} Sheets|{char1_en}]]
 |[[#{char2_en} Sheets|{char2_en}]]
 |[[#{char3_en} Sheets|{char3_en}]]
-|[[#{char4_en} Sheets|{char4_en}]]
 |}}
 
-'''.format(title=u'Fierce Fight! The Climactic Snowball Fight',
-	wiki=SRC_URL,
-	char1_jp=u'ウィンターコスモス', char1_en=u'Winter Cosmos',
-	char2_jp=u'エリンジウム', char2_en=u"Flat Sea Holly",
-	char3_jp=u'コムギ', char3_en=u'Wheat',
-	char4_jp=u'キヌサヤ', char4_en=u'Snow Pea')
-	display_order = ['Winter Cosmos', 'Flat Sea Holly',
-		'Wheat', 'Snow Pea', 'Bonus']
+'''.format(title=event_name_en, wiki=SRC_URL,
+	char0_jp=sheet_characters[0].name_jp, char0_en=sheet_characters[0].name_en,
+	char1_jp=sheet_characters[1].name_jp, char1_en=sheet_characters[1].name_en,
+	char2_jp=sheet_characters[2].name_jp, char2_en=sheet_characters[2].name_en,
+	char3_jp=sheet_characters[3].name_jp, char3_en=sheet_characters[3].name_en,)
+	display_order = [sheet_characters[0].name_en,
+		sheet_characters[1].name_en, sheet_characters[2].name_en,
+		sheet_characters[3].name_en, 'Bonus']
 	char_num = 0
 	for sheet_owner in display_order:
 		table_cols = len(all_sheets[sheet_owner][0][0]) + 1
