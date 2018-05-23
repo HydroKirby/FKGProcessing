@@ -1596,6 +1596,112 @@ class MasterData(object):
 			''').strip().format(knights)
 		return output
 
+	EQUIPMENT_AFFIXES = [u'の指輪', u'の腕輪', u'の首飾り', u'の耳飾り',
+		u'指輪', u'腕輪', u'首飾り', u'耳飾り',]
+	def __remove_equipment_affix(my, name):
+		"""Removes the type of equipment from the Japanese name.
+
+		If the name does not have a generic affix, the name
+		is returned as is.
+		As a result, unique equipment will have their names
+		returned in full.
+
+		@param name: The Japanese name of the equipment.
+		@returns The name without an affix.
+		"""
+
+		for affix in MasterData.EQUIPMENT_AFFIXES:
+			idx = name.find(affix)
+			if idx >= 0:
+				return name[:idx]
+		return name
+
+	def __get_new_equipment_names_page_parse_page(my, page):
+		"""Parses the Wikia page and returns the dict of equipment names.
+
+		@returns: A dict of {'JP name':'EN name'} pairs.
+		"""
+		
+		# Crop all text from the "return" statement and following { symbol.
+		idx_start = page.text.find('return')
+		idx_start += page.text[idx_start + 1:].find('{')
+		idx_end = page.text.rfind('}')
+		if idx_start < 0 or idx_end < 0:
+			print("Error: Module:Equipment/Names doesn't have a table in it.")
+			return {}
+
+		# This text should be the entire table of equipment names.
+		page_table = page.text[idx_start:idx_end]
+		names = {}
+		# Make the dict of {jp_name:en_name} entries.
+		# Loop over all items except the "return {" start and "}" end.
+		for line in page_table.split('\n')[1:-1]:
+			line = line.strip()
+			jp_name, en_name = line.split('=')
+
+			# Get the Japanese name.
+			idx_start = jp_name.find('["')
+			idx_end = jp_name.find('"]')
+			if idx_start < 0 or idx_end < 0:
+				# This line doesn't have a proper table entry in it.
+				print("Warning: Removing this line from Module:Equipment:")
+				print(line)
+				continue
+			jp_name = jp_name[idx_start + 2:idx_end]
+			# At this point, we have the entire Japanese name.
+			# Cut off the の... part that designates the type of accessory.
+			jp_name = my.__remove_equipment_affix(jp_name)
+
+			# Get the English name.
+			idx_start = en_name.find('"')
+			# +1 to skip over the first double-quote.
+			idx_end = en_name[idx_start + 1:].find('"')
+			if idx_start < 0 or idx_end < 0:
+				# This line doesn't have a proper table entry in it.
+				print("Warning: Removing this line from Module:Equipment:")
+				print(line)
+				continue
+			# idx_start + 1 skips over the first double-quote.
+			# idx_end + 2 accounts for the first double-quote and something else?
+			en_name = en_name[idx_start + 1:idx_end + 2]
+			names[jp_name] = en_name
+		return names
+
+	def get_new_equipment_names_page(my, page):
+		"""Outputs the table of equipment names.
+
+		The original Wikia page is passed into this function.
+		This function recreates the list of Japanese equipment names and
+		assigned English names. If the Japanese name is not found,
+		it is inserted into the list with a default value.
+		"""
+
+		output = u''
+		names = my.__get_new_equipment_names_page_parse_page(page)
+		# Add all missing equipment from the master data to the Wikia's list.
+		for equip in my.equipment:
+			jp = equip.getval('name')
+			jp = my.__remove_equipment_affix(jp)
+			if jp not in names:
+				names[jp] = ''
+		# Sort the fully filled list for easy lookups on the Wikia page.
+		sorted_name_indices = sorted(list(names))
+
+		# Generate the Wikia page.
+		equips = '\n    '.join(
+			['["{0}"] = "{1}",'.format(idx, names[jp]) \
+			for idx in sorted_name_indices])
+		output = dedent(u'''
+			--[[Category:Equipment modules]]
+			--[[Category:Automatically updated modules]]
+			--[[Category:Manually updated modules]]
+			-- Relates Japanese equipment names to translated names.
+			
+			return {{
+			    {0}}}
+			''').lstrip().format(equips)
+		return output
+
 	def get_char_entries(my, char_name_or_id):
 		"""Finds all entries relevant to a character ID or full name."""
 		char_id = ''
