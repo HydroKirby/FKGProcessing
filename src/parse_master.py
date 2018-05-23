@@ -1605,6 +1605,9 @@ class MasterData(object):
 		is returned as is.
 		As a result, unique equipment will have their names
 		returned in full.
+		Note that Okitaeerus / Forge Spirits will become an empty string.
+		This is also intentional because they are more like items
+		and shouldn't be grouped in with equippable things.
 
 		@param name: The Japanese name of the equipment.
 		@returns The name without an affix.
@@ -1651,6 +1654,10 @@ class MasterData(object):
 			# At this point, we have the entire Japanese name.
 			# Cut off the の... part that designates the type of accessory.
 			jp_name = my.__remove_equipment_affix(jp_name)
+			if not jp_name:
+				# Chances are, this is an Okitaeeru / Forge Spirit.
+				# Do not add this to the list of equippable things.
+				continue
 
 			# Get the English name.
 			idx_start = en_name.find('"')
@@ -1689,7 +1696,7 @@ class MasterData(object):
 
 		# Generate the Wikia page.
 		equips = '\n    '.join(
-			['["{0}"] = "{1}",'.format(idx, names[jp]) \
+			['["{0}"] = "{1}",'.format(idx, names[idx]) \
 			for idx in sorted_name_indices])
 		output = dedent(u'''
 			--[[Category:Equipment modules]]
@@ -1698,8 +1705,8 @@ class MasterData(object):
 			-- Relates Japanese equipment names to translated names.
 			
 			return {{
-			    {0}}}
-			''').lstrip().format(equips)
+			    {0}
+			}}''').lstrip().format(equips)
 		return output
 
 	def get_char_entries(my, char_name_or_id):
