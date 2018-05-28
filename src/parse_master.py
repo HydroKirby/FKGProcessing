@@ -1596,27 +1596,20 @@ class MasterData(object):
 			''').strip().format(knights)
 		return output
 
-	EQUIPMENT_AFFIXES = [u'の指輪', u'の腕輪', u'の首飾り', u'の耳飾り',
-		u'指輪', u'腕輪', u'首飾り', u'耳飾り',]
+	EQUIPMENT_AFFIXES = [u'指輪', u'腕輪', u'首飾り', u'耳飾り',]
 	def __remove_equipment_affix(my, name):
 		"""Removes the type of equipment from the Japanese name.
 
-		If the name does not have a generic affix, the name
-		is returned as is.
-		As a result, unique equipment will have their names
-		returned in full.
-		Note that Okitaeerus / Forge Spirits will become an empty string.
-		This is also intentional because they are more like items
-		and shouldn't be grouped in with equippable things.
+		If the name does not have a generic affix, the name is returned as is.
+		As a result, unique equipment will have their names returned in full.
 
 		@param name: The Japanese name of the equipment.
 		@returns The name without an affix.
 		"""
 
 		for affix in MasterData.EQUIPMENT_AFFIXES:
-			idx = name.find(affix)
-			if idx >= 0:
-				return name[:idx]
+			if name.endswith(affix):
+				return name[:-len(affix)]
 		return name
 
 	def __get_new_equipment_names_page_parse_page(my, page):
@@ -1686,17 +1679,20 @@ class MasterData(object):
 		output = u''
 		names = my.__get_new_equipment_names_page_parse_page(page)
 		# Add all missing equipment from the master data to the Wikia's list.
+		master_names = {}
 		for equip in my.equipment:
 			jp = equip.getval('name')
 			jp = my.__remove_equipment_affix(jp)
-			if jp not in names:
-				names[jp] = ''
+			if jp in names:
+				master_names[jp] = names[jp]
+			else:
+				master_names[jp] = ''
 		# Sort the fully filled list for easy lookups on the Wikia page.
-		sorted_name_indices = sorted(list(names))
+		sorted_name_indices = sorted(list(master_names))
 
 		# Generate the Wikia page.
 		equips = '\n    '.join(
-			['["{0}"] = "{1}",'.format(idx, names[idx]) \
+			['["{0}"] = "{1}",'.format(idx, master_names[idx]) \
 			for idx in sorted_name_indices])
 		output = dedent(u'''
 			--[[Category:Equipment modules]]
