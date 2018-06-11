@@ -1061,7 +1061,7 @@ class EquipmentEntry(BaseEntry):
 
 	def __str__(my):
 		return 'EquipmentEntry ID {0} named {1} owned by {2}.'.format(
-			my.getval('id0'), my.getval('name'), my.getval('owners') or 'nobody')
+			my.getval('equipID'), my.getval('name'), my.getval('owners') or 'nobody')
 
 	def get_owner_ids(my):
 		"""Gets the IDs of flower knights that own this equipment.
@@ -1096,7 +1096,7 @@ class EquipmentEntry(BaseEntry):
 		# Generate the Lua table.
 		# Relate the named entries to their value.
 		# Example output: {name="Bob", type="cat", hairs=5},
-		lua_table = u'[{0}] = {{'.format(my.getval('id0'))
+		lua_table = u'[{0}] = {{'.format(my.getval('equipID'))
 		pairs = []
 		for k, v in sorted(my._named_values.items()):
 			v = string_transformer(k, my.values[v], quoted)
@@ -1558,7 +1558,7 @@ class MasterData(object):
 		# Write the page header.
 		module_name = 'Module:Equipment/Data'
 		def getid(entry):
-			return int(entry.getval('id0'))
+			return int(entry.getval('equipID'))
 		equips = u',\n\t'.join([entry.getlua(True) for entry in
 			sorted(my.equipment, key=getid)])
 		output = dedent(u'''
