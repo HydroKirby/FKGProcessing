@@ -1901,8 +1901,7 @@ class MasterData(object):
 			"\n|name = ", english_name,
 			"\n|JP = ", knight.fullName,])
 		template_text = ''.join([template_text,
-			"\n|rarity = ", rarityStar(knight.rarity),
-			"\n|IconName = ", icon_name,])
+			"\n|rarity = ", rarityStar(knight.rarity),])
 		if personal_equip:
 			template_text += "\n|BasicEquipName = \n|BasicEquipJP = " + dataEquipBase[0][1]
 			template_text += "\n|EvoEquipName = \n|EvoEquipJP = " + dataEquipEvolved[0][1]
@@ -1924,12 +1923,6 @@ class MasterData(object):
 				"\n|EvoEquipDEFLvMax = ", dataEquipEvolved[0][8]])
 		else:
 			template_text += "\n|BasicEquipATKLv1 = \n|BasicEquipDEFLv1 = \n|BasicEquipATKLvMax = \n|BasicEquipDEFLvMax = \n|EvoEquipATKLv1 = \n|EvoEquipDEFLv1 = \n|EvoEquipATKLvMax = \n|EvoEquipDEFLvMax = "
-		template_text = ''.join([template_text,
-			"\n|SkillName = ",
-			"\n|SkillNameJP = ", skill.getval('nameJapanese'),
-			"\n|SkillLv1Trigger = ",skill.getval('triggerRateLv1'),
-			"\n|SkillLv5Trigger = ",skillLv5Calc(skill.getval('triggerRateLv1'),skill.getval('triggerRateLvUp'),skill.getval('unknown00')),
-			"\n|SkillDescription = ", skill.getval('descJapanese'),])
 		template_text += "\n|EvoEquipAbilityDescription = "
 		if personal_equip:
 			template_text += "During combat, increase attack and defense power of all members with matching attribute by 2%."
