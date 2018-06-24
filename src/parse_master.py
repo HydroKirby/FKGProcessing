@@ -665,41 +665,59 @@ DEF = FlowerKnight.DEF
 class BaseEntry(object):
 	"""Base class for deriving Entry classes.
 
-	Important note: The CSV entries are stored such that
+	Usage: Make a child class from this and create two static variables:
+	_MASTER_DATA_TYPE and _CSV_NAMES.
+	_MASTER_DATA_TYPE is a string that simply states where in the master data
+	the child class is getting its data from. It is only for diagnostics.
+	_CSV_NAMES is a list of strings. It gives names to each CSV entry in
+	a section of the master data. The names need to be valid variable names
+	or else the setattr() function in the ctor will fail.
+
+	Note: The CSV entries in the master data are stored such that
 	numerical values are strings, and
 	string values are strings enclosed in double-quotes.
 	"""
 
 	INVALID_ENTRY_TYPE = 'invalid'
-	# For a given entry type (eg. "character", "skill"), this stores a list of
-	# indices for my.values pointing to the values that are strings instead of
-	# numbers. It is used to track which entries to enclose in double-quotes.
+	# Used to track which entries to enclose in double-quotes.
 	_string_valued_indices = {}
 	# If we encounter an invalid number of CSV entries, warn the user and set
 	# the corresponding entry type to True. Only state the warning once.
 	_WARN_WRONG_SIZE = {}
 
-	def __init__(my, data_entry_csv, entry_type=INVALID_ENTRY_TYPE, entries=[]):
+	def __init__(my, data_entry_csv):
 		"""Ctor. To be overrridden and called by child classes."""
-		if not len(entries) or entry_type == BaseEntry.INVALID_ENTRY_TYPE:
-			raise Exception('Error: Trying to instantiate the base Entry class instead of a child class.')
+		if not len(my._CSV_NAMES) or not my._MASTER_DATA_TYPE:
+			raise Exception(
+			'Error: Instantiating BaseEntry class instead of a child class.')
 
 		# Turn the CSV into a list.
 		values, success, actual_count = split_and_check_count(
-			data_entry_csv, len(entries))
-		if entry_type not in BaseEntry. _WARN_WRONG_SIZE:
-			BaseEntry._WARN_WRONG_SIZE[entry_type] = False
-		if not success and not BaseEntry._WARN_WRONG_SIZE[entry_type]:
+			data_entry_csv, len(my._CSV_NAMES))
+		# Add this type of master data section to the list of checked sections.
+		if my._MASTER_DATA_TYPE not in BaseEntry._WARN_WRONG_SIZE:
+			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = False
+		# If the CSV parsing failed and there has not been a message given
+		# about that, print an warning report.
+		if not success and not BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE]:
 			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
-				actual_count, entry_type, len(entries)))
+				actual_count, my._MASTER_DATA_TYPE, len(my._CSV_NAMES)))
 			print('The format of getMaster may have changed.\n')
 			# Don't state the warning again.
-			BaseEntry._WARN_WRONG_SIZE[entry_type] = True
+			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
 
-		# Store the values. We can access it with integer indices, or
-		# indirectly using my._named_values. The latter is done through
-		# the class instance's getval() function.
-		my.values = values
+		# Store the values.
+		my.values_dict = dict(zip(my._CSV_NAMES, values))
+
+		# Assign the CSV entries to member variables of this instance.
+		# For example, if you have a CharacterEntry with _CVS_NAMES as
+		# ['id0', 'id1', 'fullName']
+		# then this lets you access the fields like so.
+		# my_character_csv_instance.id0
+		# my_character_csv_instance.fullName
+		temp = dict(zip(range(len(my._CSV_NAMES)),
+			my._CSV_NAMES))
+		[setattr(my, temp[i], values[i]) for i in range(len(values))]
 		
 		# Determine which values are strings.
 		# It helps to store this because strings need enclosed in double-quotes
@@ -707,7 +725,9 @@ class BaseEntry(object):
 		#
 		# NOTE: This list may be unused in the code right now.
 		# Do a string search in the source code.
-		if entry_type not in my._string_valued_indices:
+		#
+		# TODO: Make this code work if it seems useful to have.
+		if False and my._MASTER_DATA_TYPE not in my._string_valued_indices:
 			# This is the first time assigning double-quotes to strings for
 			# CSV entries of this type of Entry. Make a list of all values
 			# that are strings instead of numbers.
@@ -715,20 +735,9 @@ class BaseEntry(object):
 			# Implementation note: Check for equivalance to None instead of
 			# duck-typing and checking for not(value). get_float can return
 			# 0 or 0.0 for valid numbers, but None for non-numbers.
-			my._string_valued_indices[entry_type] = \
-				[i for i in range(len(my.values)) if \
-				get_float(my.values[i]) is None]
-
-		# Store a list of names to relate to the values.
-		# This should be created in the child class.
-		my._named_values = None
-
-	def getval(my, name_or_index):
-		"""Returns a stored value by its name or index in the CSV."""
-		if type(name_or_index) is int:
-			return my.values[name_or_index]
-		# The name_or_index is a string.
-		return my.values[my._named_values[name_or_index]]
+			my._string_valued_indices[my._MASTER_DATA_TYPE] = \
+				[i for i in range(len(values)) if \
+				get_float(values[i]) is None]
 
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list.
@@ -742,34 +751,22 @@ class BaseEntry(object):
 		string_transformer = get_quotify_or_do_nothing_func(quoted)
 
 		# Generate the Lua table.
-		if my._named_values:
-			# Relate the named entries to their value.
-			# This relies on how Python maintains order in dicts.
-			# Example output: {name="Bob", type="cat", hairs=5},
-			lua_table = u', '.join([u'{0}={1}'.format(
-				k, string_transformer(my.values[v])) \
-				for k, v in sorted(my._named_values.items())])
-		else:
-			# There's no dict of named entries-to-indices.
-			# Just output all of the values separated by commas.
-			# Example output: {"Bob", "cat", 5},
-			lua_table = u', '.join([string_transformer(v) for v in my.values])
-
+		lua_table = u', '.join([u'{0}={1}'.format(
+			name, string_transformer(my.values_dict[name])) \
+			for name in sorted(set(my._CSV_NAMES))])
+		
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)
 
 	def __lt__(my, other):
 		return my.tiers[1]['id'] < other.tiers[1]['id']
 
-	def __repr__(my, named_entries=[]):
+	def __repr__(my):
 		"""Gets a string stating nearly everything about this instance."""
-		if named_entries:
-			return u'CSV fields by index, name, value:\n' + \
-				u'\n'.join([u'{0:02}: {1} = {2}'.format(
-					i, named_entries[i], my.getval(i)) \
-				for i in range(len(my.values))])
-		else:
-			return my.__str__()
+		return u'CSV fields by index, name, value:\n' + \
+			u'\n'.join([u'{0:02}: {1} = {2}'.format(
+				i, my._CSV_NAMES[i], my.values_dict[my._CSV_NAMES[i]]) \
+			for i in range(len(my.values_dict))])
 
 	def __str__(my):
 		"""Gets a succinct string describing this instance."""
@@ -777,7 +774,7 @@ class BaseEntry(object):
 
 class CharacterEntry(BaseEntry):
 	"""Stores one line of data from the masterCharacter section."""
-	__NAMED_ENTRIES = [
+	_CSV_NAMES = [
 		'id0',
 		'id1',
 		'family',
@@ -842,20 +839,10 @@ class CharacterEntry(BaseEntry):
 		'isRarityGrown', # Added 3/12/2018.
 		'canRarityGrow', # Added 3/12/2018.
 		]
+	_MASTER_DATA_TYPE = 'character'
 
 	def __init__(my, data_entry_csv):
-		super(CharacterEntry, my).__init__(data_entry_csv, 'character',
-			my.__NAMED_ENTRIES)
-		# Create a dict that gives descriptive names to indices in the CSV.
-		# As an example of what this does, it could set
-		# my._named_values['id0'] = 0
-		# my._named_values['id1'] = 1
-		# my._named_values['family'] = 2
-		my._named_values = dict(zip(my.__NAMED_ENTRIES,
-			range(len(my.__NAMED_ENTRIES))))
-		temp = dict(zip(range(len(my.__NAMED_ENTRIES)),
-			my.__NAMED_ENTRIES))
-		[setattr(my, temp[i], my.values[i]) for i in range(len(my.values))]
+		super(CharacterEntry, my).__init__(data_entry_csv)
 
 	def getlua_name_to_id(my):
 		return u'[{0}] = {1},'.format(add_quotes(my.fullName), my.id0)
@@ -866,9 +853,6 @@ class CharacterEntry(BaseEntry):
 	def __lt__(my, other):
 		return my.id0 < other.id0
 
-	def __repr__(my):
-		return super(CharacterEntry, my).__repr__(my.__NAMED_ENTRIES)
-
 	def __str__(my):
 		return 'CharacterEntry for {0} at evolution tier {1}: '.format(
 			my.fullName, my.evolutionTier) + \
@@ -876,7 +860,7 @@ class CharacterEntry(BaseEntry):
 
 class SkillEntry(BaseEntry):
 	"""Stores one line of data from the masterCharacter section."""
-	__NAMED_ENTRIES = [
+	_CSV_NAMES = [
 		'uniqueID',
 		'nameJapanese',
 		'typeID',
@@ -891,14 +875,10 @@ class SkillEntry(BaseEntry):
 		'date00',
 		'date01',
 		'unknown01',]
+	_MASTER_DATA_TYPE = 'skill'
+
 	def __init__(my, data_entry_csv):
-		super(SkillEntry, my).__init__(data_entry_csv, 'skill',
-			my.__NAMED_ENTRIES)
-		my._named_values = dict(zip(my.__NAMED_ENTRIES,
-			range(len(my.__NAMED_ENTRIES))))
-		temp = dict(zip(range(len(my.__NAMED_ENTRIES)),
-			my.__NAMED_ENTRIES))
-		[setattr(my, temp[i], my.values[i]) for i in range(len(my.values))]
+		super(SkillEntry, my).__init__(data_entry_csv)
 
 	def __lt__(my, other):
 		return my.uniqueID < other.uniqueID
@@ -912,7 +892,7 @@ class AbilityEntry(BaseEntry):
 
 	In the master data, this section is named masterCharacterLeaderSkill.
 	"""
-	__NAMED_ENTRIES = [
+	_CSV_NAMES = [
 		'uniqueID',
 		'shortDescJapanese', # Used for synthesis mats.
 		'ability1ID',
@@ -933,33 +913,25 @@ class AbilityEntry(BaseEntry):
 		'date00',
 		'date01',
 		'unknown00',]
+	_MASTER_DATA_TYPE = 'ability'
 
 	def __init__(my, data_entry_csv):
-		super(AbilityEntry, my).__init__(data_entry_csv, 'ability',
-			my.__NAMED_ENTRIES)
-		my._named_values = dict(zip(my.__NAMED_ENTRIES,
-			range(len(my.__NAMED_ENTRIES))))
-		temp = dict(zip(range(len(my.__NAMED_ENTRIES)),
-			my.__NAMED_ENTRIES))
-		[setattr(my, temp[i], my.values[i]) for i in range(len(my.values))]
+		super(AbilityEntry, my).__init__(data_entry_csv)
 
 	def __lt__(my, other):
 		return my.uniqueID < other.uniqueID
 
-	def __repr__(my):
-		return super(AbilityEntry, my).__repr__(my.__NAMED_ENTRIES)
-
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
 		# Copy our dict of named values. Then remove the unneeded elements.
-		named_values = dict(my._named_values)
-		named_values.pop('shortDescJapanese')
+		temp_dict = dict(my.values_dict)
+		temp_dict.pop('shortDescJapanese')
 		# Get a function that double-quotes strings if requested.
 		string_transformer = get_quotify_or_do_nothing_func(quoted)
 		# Compile a list of variable names-values pairs.
 		lua_list = u', '.join([u'{0}={1}'.format(
-			k, string_transformer(my.values[v])) \
-			for k, v in sorted(named_values.items())])
+			k, string_transformer(v)) \
+			for k, v in sorted(temp_dict.items())])
 		# Relate the list of values to the unique ID.
 		return u'[{0}] = {{{1}}},'.format(my.uniqueID, lua_list)
 
@@ -969,7 +941,7 @@ class AbilityDescEntry(BaseEntry):
 	In the master data, this section is named masterCharacterLeaderSkillDescription.
 	"""
 
-	__NAMED_ENTRIES = [
+	_CSV_NAMES = [
 		'id0',
 		'id1',
 		'ability1icon',
@@ -980,15 +952,10 @@ class AbilityDescEntry(BaseEntry):
 		'ability3desc',
 		'ability4icon',
 		'ability4desc',]
+	_MASTER_DATA_TYPE = 'ability description'
 
 	def __init__(my, data_entry_csv):
-		super(AbilityDescEntry, my).__init__(data_entry_csv, 'ability description',
-			my.__NAMED_ENTRIES)
-		my._named_values = dict(zip(my.__NAMED_ENTRIES,
-			range(len(my.__NAMED_ENTRIES))))
-		temp = dict(zip(range(len(my.__NAMED_ENTRIES)),
-			my.__NAMED_ENTRIES))
-		[setattr(my, temp[i], my.values[i]) for i in range(len(my.values))]
+		super(AbilityDescEntry, my).__init__(data_entry_csv)
 
 	def is_synthesis_ability(my):
 		"""Returns True if the ability ID is for synthesis materials."""
@@ -997,16 +964,13 @@ class AbilityDescEntry(BaseEntry):
 	def __lt__(my, other):
 		return my.id0 < other.id0
 
-	def __repr__(my):
-		return super(AbilityDescEntry, my).__repr__(my.__NAMED_ENTRIES)
-
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
 		return u'[{0}] = '.format(my.id0) + \
 			super(AbilityDescEntry, my).getlua(quoted)
 
 class EquipmentEntry(BaseEntry):
-	__NAMED_ENTRIES = [
+	_CSV_NAMES = [
 		'id0',
 		'name',
 		'equipID',
@@ -1039,30 +1003,13 @@ class EquipmentEntry(BaseEntry):
 		'dateMade',
 		'dateChanged',
 		'zero',]
-
+	_MASTER_DATA_TYPE = 'equipment'
 
 	def __init__(my, data_entry_csv):
-		super(EquipmentEntry, my).__init__(data_entry_csv, 'equipment',
-			my.__NAMED_ENTRIES)
-		my._named_values = dict(zip(my.__NAMED_ENTRIES,
-			range(len(my.__NAMED_ENTRIES))))
-		temp = dict(zip(range(len(my.__NAMED_ENTRIES)),
-			my.__NAMED_ENTRIES))
-		[setattr(my, temp[i], my.values[i]) for i in range(len(my.values))]
-		"""
-		if not my._named_values:
-			# Create a dict that gives descriptive names to indices in the CSV.
-			# As an example of what this does, it could set
-			# my._named_values['id'] = 0
-			my._named_values = dict(zip(my.__NAMED_ENTRIES,
-				range(len(EquipmentEntry.__NAMED_ENTRIES))))
-		"""
+		super(EquipmentEntry, my).__init__(data_entry_csv)
 
 	def __lt__(my, other):
 		return my.id0 < other.id0
-
-	def __repr__(my):
-		return super(EquipmentEntry, my).__repr__(my.__NAMED_ENTRIES)
 
 	def __str__(my):
 		return 'EquipmentEntry ID {0} named {1} owned by {2}.'.format(
@@ -1103,8 +1050,8 @@ class EquipmentEntry(BaseEntry):
 		# Example output: {name="Bob", type="cat", hairs=5},
 		lua_table = u'[{0}] = {{'.format(my.equipID)
 		pairs = []
-		for k, v in sorted(my._named_values.items()):
-			v = string_transformer(k, my.values[v], quoted)
+		for k, v in sorted(my.values_dict.items()):
+			v = string_transformer(k, v, quoted)
 			pairs.append([k, v])
 		lua_table += u', '.join([u'{0}={1}'.format(
 			pair[0], pair[1]) for pair in pairs])
