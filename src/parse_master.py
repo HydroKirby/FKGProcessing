@@ -753,7 +753,7 @@ class BaseEntry(object):
 		# Generate the Lua table.
 		lua_table = u', '.join([u'{0}={1}'.format(
 			name, string_transformer(my.values_dict[name])) \
-			for name in sorted(set(my._CSV_NAMES))])
+			for name in sorted(my._CSV_NAMES)])
 		
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)
@@ -874,7 +874,7 @@ class SkillEntry(BaseEntry):
 		'unknown01',
 		'date00',
 		'date01',
-		'unknown01',]
+		'unknown02',]
 	_MASTER_DATA_TYPE = 'skill'
 
 	def __init__(my, data_entry_csv):
