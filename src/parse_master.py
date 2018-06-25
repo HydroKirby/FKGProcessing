@@ -31,7 +31,6 @@ class MasterData(object):
 		my.masterTexts = {}
 		my.characters = {}
 		my.knights = {}
-		my.pre_evo_chars = {}
 		my.unique_characters = {}
 		my.skills = {}
 		my.abilities = {}
@@ -51,8 +50,6 @@ class MasterData(object):
 		character_entries = [CharacterEntry(entry) for entry in my.masterTexts['masterCharacter']]
 		# Store CSV entries in a dict such that their ID is their key.
 		my.characters = {c.id0:c for c in character_entries}
-		my.pre_evo_chars = {c.id0:c for c in character_entries if
-			c.isFlowerKnight1 == '1' and c.evolutionTier == '1'}
 		# Compile a list of all flower knights from the CSVs.
 		my.knights = {}
 		# Dereference the dict for faster access.
@@ -498,9 +495,9 @@ class MasterData(object):
 			return int(entry.id0)
 		knights = u''
 		for name in sorted(my.knights):
-			knights += '["{0}"] =\n{1},\n'.format(
+			knights += '["{0}"] =\n    {1},\n'.format(
 				my.knights[name].fullName,
-				indent(my.knights[name].get_lua(), '    '))
+				'\n    '.join(my.knights[name].get_lua().split('\n')))
 		output = dedent(u'''
 			--[[Category:Flower Knight description modules]]
 			--[[Category:Automatically updated modules]]
