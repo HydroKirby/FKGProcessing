@@ -3,7 +3,7 @@
 from __future__ import print_function
 from common import *
 from entry import *
-from textwrap import dedent, indent
+from textwrap import dedent
 
 __doc__ = """Stores collective data for individual flower knights.
 
