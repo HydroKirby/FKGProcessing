@@ -2,12 +2,12 @@
 # -*- coding: utf-8  -*-
 import pywikibot
 from pywikibot import i18n
-import IDlookup
+import parse_master
 import sys
 
 class ListUpdaterBot(object):
     def __init__(my):
-        my.master_data = IDlookup.MasterData()
+        my.master_data = parse_master.MasterData()
         my.site = pywikibot.Site()
         my.default_summary = i18n.twtranslate(my.site, 'basic-changing')
         my.comment = u'Automatic update by bot.'
@@ -97,7 +97,7 @@ class ListUpdaterBot(object):
         my.update_equipment_names()
         my.update_ingame_char_data()
 
-def main(argv=[]):
+def run(argv=[]):
     bot = ListUpdaterBot()
     if '-h' in argv or '--help' in argv:
         print('Updates the Wikia with these scripts and logging into a bot.')
@@ -112,4 +112,4 @@ def main(argv=[]):
         bot.update()
 
 if __name__ == "__main__":
-    main(sys.argv)
+    run(sys.argv)
