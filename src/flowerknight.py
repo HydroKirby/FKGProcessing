@@ -99,6 +99,7 @@ class FlowerKnight(object):
 			# The data is already stored.
 			return
 		my.fullName = entry.fullName
+		my.reading = entry.reading
 		my.rarity = entry.rarity
 		my.spd = entry.lvlOneSpd
 		# TODO: Rely on my.tiers[NUMBER]['skill'] instead.
@@ -291,6 +292,7 @@ class FlowerKnight(object):
 			'type':my.type,
 			'rarity':my.rarity,
 			'isEvent':my.is_event,
+			'reading':my.reading,
 			# Has bloom features?
 			'tier3PowersOnlyBloom':my.is_powers_only_bloom,
 			'gift':my.gift,
@@ -456,6 +458,7 @@ class FlowerKnight(object):
 			{{id = {id},
 			charID = {charID},
 			name = {japanese},
+			reading = "{reading}",
 			type = {type},
 			rarity = {rarity},
 			isEvent = {isEvent},
