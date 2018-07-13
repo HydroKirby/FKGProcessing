@@ -1,12 +1,13 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # coding=utf-8
 from __future__ import print_function
 import os, sys, math, re, random, zlib, hashlib, json, binascii, time
 from base64 import b64decode
 import six
 from io import open
-from textwrap import dedent, indent
 from common import *
+from entry import *
+from flowerknight import *
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -20,1092 +21,6 @@ elif sys.version_info.major < 3:
 
 __doc__ = '''Parses getMaster and stores data in human-readable formats.'''
 
-# Download state flags.
-(DL_OK, # The download succeeded.
-DL_FAIL, # The download failed.
-DL_QUIT) = range(3) # The user forcefully stopped the download.
-
-CmdPrint = True
-
-attribList = {
-	'1':'Slash',
-	'2':'Blunt',
-	'3':'Pierce',
-	'4':'Magic'
-	}
-
-nationList = {
-	'1':'Winter Rose',
-	'2':'Banana Ocean',
-	'3':'Blossom Hill',
-	'4':'Bergamot Valley',
-	'5':'Lily Wood',
-	'7':'Lotus Lake'
-	}
-
-giftList = {
-	'1':'Gem',
-	'2':'Teddy Bear',
-	'3':'Cake',
-	'4':'Book'
-	}
-
-# Maps a rarity to its maxmimum levels per evolution tier.
-maxLevel = {
-	'2':['50','60','80'],
-	'3':['50','60','80'],
-	'4':['50','60','80'],
-	'5':['60','70','80'],
-	'6':['60','70','80'],
-}
-
-def lua_indentify(text):
-	"""Creates consistent indentation for Lua code.
-
-	This removes all indentation and then adds indents after curly braces.
-	It is intended to be used with triple-quoted strings.
-
-	For example, this Lua code:
-	p = {
-		name="Foo",
-		age=5,
-	}
-
-	... will have this type of indentation style, but "p" and "}" will
-	have no indentation.
-
-	@param text: A multi-line string.
-	@returns: A string of the beautified text.
-	"""
-
-	num_indents = 0
-	lines = []
-	for line in text.splitlines():
-		increment_indents = False
-		if line.endswith('{'):
-			increment_indents = True
-		elif line.endswith('}'):
-			num_indents = min(0, num_indents - 1)
-		line = '\t' * num_indents + line.strip()
-		if increment_indents:
-			num_indents += 1
-		lines += [line]
-	return '\n'.join(lines)
-
-def split_and_check_count(data_entry_csv, expected_count):
-	"""Splits a line of CSV and verifies the number of entries is correct.
-
-	data_entry_csv is a string of CSV data.
-	expected_count is an int saying how many entries to expect.
-
-	Returns a tuple: (entries, success, actual_count) such that "entries" is
-		all of the CSV data turned into a list of strings, "success" says
-		whether or not the expected_count was the number of actual CSV entries,
-		and "actual_count" is the actual number of CSV entries.
-	The returned "entries" is guaranteed to be the same size as expected_count.
-	If the actual count = the expected count,
-		the CSV are returned along with success = True.
-	If the actual count < the expected count,
-		the available CSV are returned and the parts that were unavailable
-		become empty strings. success = False.
-	If the actual count > the expected count,
-		as many CSV as can fit into "entries" will be returned. success = False.
-
-	Returns (entries, success, actual_count)
-	"""
-
-	data_entry_csv = data_entry_csv.rstrip()
-	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
-	if data_entry_csv.endswith(','):
-		# The last data entry is empty and unnecessary.
-		entries = entries[:-1]
-
-	actual_count = len(entries)
-	if actual_count < expected_count:
-		# Add empty strings to fill in the blanks.
-		entries += ['' for i in range(expected_count - actual_count)]
-	elif actual_count > expected_count:
-		# Crop off the excess entries.
-		entries = entries[:expected_count]
-
-	return (entries, expected_count == actual_count, actual_count)
-
-def remove_quotes(text):
-	"""Removes pairs of double-quotes around strings."""
-	if text.startswith('"') and text.endswith('"'):
-		return text[1:-1]
-	return text
-
-def add_quotes(text):
-	"""Puts pairs of double-quotes around strings."""
-	if text.startswith('"') and text.endswith('"'):
-		return text
-	return '"' + text + '"'
-
-def get_float(val):
-	"""Checks if a value is a floating point number or not."""
-	try:
-		return float(val)
-	except ValueError:
-		return None
-
-def quotify_non_number(text):
-	"""Surrounds a non-numerical string in double quotes.
-
-	This function is intended for outputting strings for Lua.
-	Hence, numbers should be strings or numbers in Python, but
-	strings themselves should be surrounded in double quotes.
-
-	For example, this is a valid Lua table.
-	sample_table = {val1=5, val2="cat"}
-	If the passed "text" for this function is 5 or cat, it would be
-	processed in that fashion.
-
-	@param text: String. Intended to be a Lua table value.
-	@returns: String. The value which gets double quotes if it is a string.
-	"""
-
-	try:
-		float(text)
-	except ValueError:
-		return add_quotes(text)
-	return text
-
-def get_quotify_or_do_nothing_func(quoted):
-	"""Gets a function that double-quotes strings or does nothing.
-
-	The returned function can be used to make Lua tables.
-	See "quotify_non_number" for more info.
-
-	@param quoted: Boolean. Whether or not to add quotes.
-	@returns: Function. It transforms strings.
-	"""
-
-	if quoted:
-		string_transformer = quotify_non_number
-	else:
-		def asis(val):
-			"""Returns the value as-is."""
-			return val
-		string_transformer = asis
-	return string_transformer
-
-class FlowerKnight(object):
-	"""Class for storing all of a flower knight's info.
-
-	It does not store info for other variants.
-	"""
-	# These constants correspond to the "stats" dict.
-	(HP,
-	ATK,
-	DEF) = range(3)
-	# These are the evolution tiers the character is capable of.
-	(NO_BLOOM,
-	BLOOMABLE,
-	BLOOM_POWERS_ONLY) = range(3)
-	# These are the rarity growth tiers the character is capable of.
-	(NO_RARITY_GROWTH,
-	HAS_RARITY_GROWTH) = range(2)
-
-	# If a bug was found regarding how the data was parsed, state it only once.
-	# When False, a message is printed and it turns to True.
-	# When True, no message is printed.
-	stated_integrity_bug = False
-
-	def __init__(my, entries=[]):
-		"""Constructor.
-
-		@param entries: A list of 0~3 CharacterEntry instances.
-			They would be the pre-evolved, evolved, and bloomed forms.
-		"""
-
-		# Unset the full name. When we get the 1st entry, this will be filled.
-		my.fullName = ''
-		# Organize the entries based on evolution tier.
-		# They use the Lua list format: Indices start at 1.
-		my.tiers = {1:{}, 2:{}, 3:{}, 4:{}}
-		# Assume the character can't bloom or rarity grow.
-		my.bloomability = FlowerKnight.NO_BLOOM
-		my.growability = FlowerKnight.NO_RARITY_GROWTH
-		# Store the latest date out of all CSV values.
-		# This will be only calculated once on the fly once
-		# get_latest_date is called.
-		my.latest_date = None
-		my.add_entries(entries)
-
-	def add_entries(my, entries):
-		"""Adds a list of CharacterEntry instances to this knight's data."""
-		try:
-			for entry in entries:
-				# entries is a list of CharacterEntry instances.
-				my.add_entry(entry)
-		except TypeError:
-			# entries was a single CharacterEntry instance.
-			my.add_entry(entries)
-
-	def add_entry(my, entry):
-		"""Adds a CharacterEntry instance to this knight's data."""
-		tier = entry.getval('evolutionTier')
-		isRarityGrown = entry.getval('isRarityGrown') == '1'
-		unknown03 = entry.getval('unknown03') == '1'
-		unknown04 = entry.getval('unknown04') == '1'
-		if tier == '1':
-			my._add_tier1_entry(entry)
-		elif tier == '2':
-			my._add_tier2_entry(entry)
-		elif (tier == '3' and not isRarityGrown) or \
-			(tier == '99' and isRarityGrown and not unknown03 and unknown04):
-			# tier = 3 means it is a 5* or 6* that can bloom.
-			# tier = 99 means it is a 2-4* that can go beyond evolution.
-			my._add_tier3_entry(entry)
-		elif (tier == '4' and isRarityGrown) or \
-			(tier == '99' and isRarityGrown and unknown03 and not unknown04):
-			my._add_tier4_entry(entry)
-		elif not FlowerKnight.stated_integrity_bug:
-			print('Warning: CharacterEntry w/an invalid evolution tier.\n' \
-				'The logic may be wrong or the CSVs have changed meanings.\n' \
-				'Character {0} w/id {1} was an exception.\n'.format(
-					entry.getval('fullName'), entry.getval('id0')) + \
-				'Will ignore bugged entries and stop stating this message.')
-			FlowerKnight.stated_integrity_bug = True
-
-	def _add_common_data(my, entry):
-		"""Stores info which should be the same for all evolution tiers."""
-		if my.fullName:
-			# The data is already stored.
-			return
-		my.fullName = entry.getval('fullName')
-		my.rarity = entry.getval('rarity')
-		my.spd = entry.getval('lvlOneSpd')
-		# TODO: Rely on my.tiers[NUMBER]['skill'] instead.
-		# The skill is no longer the same between all evolution tiers.
-		# It changes if the character undergoes rarity growth.
-		my.skill = entry.getval('skill1ID')
-		my.family = entry.getval('family')
-		my.type = entry.getval('type')
-		my.nation = entry.getval('nation')
-		my.gift = entry.getval('gift')
-		my.is_event = entry.getval('isEventKnight')
-		my.is_powers_only_bloom = entry.getval('isBloomedPowersOnly')
-		my._determine_romaji()
-
-	def _add_tier1_entry(my, entry):
-		"""Stores the CharacterEntry's data as the pre-evolved info.
-
-		As a side-effect of calling this method, some of the common
-		information between all evolution tiers is stored in the class.
-		"""
-		
-		my._add_common_data(entry)
-		my.tiers[1]['id'] = entry.getval('id0')
-		my.tiers[1]['lvlCap'] = maxLevel[my.rarity][0]
-		my.tiers[1]['skill'] = entry.getval('skill1ID')
-		my.tiers[1]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
-		my.tiers[1]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
-		my.tiers[1]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
-		my.tiers[1]['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
-		my.tiers[1]['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
-		# Both date values and the game-version-when-added strings can differ between tiers.
-		my.tiers[1]['date0'] = entry.getval('date0')
-		my.tiers[1]['date1'] = entry.getval('date1')
-		my.tiers[1]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
-		# Only the pre-evolved entry has a sort ID because evolved/bloomed
-		# pics aren't used in the library / 図鑑.
-		my.charID1 = entry.getval('sortID')
-
-	def _add_tier2_entry(my, entry):
-		"""Stores the CharacterEntry's data as the evolved info."""
-		my.tiers[2]['id'] = entry.getval('id0')
-		my.tiers[2]['skill'] = entry.getval('skill1ID')
-		my.tiers[2]['lvlCap'] = maxLevel[my.rarity][1]
-		my.tiers[2]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
-		my.tiers[2]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
-		my.tiers[2]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
-		my.tiers[2]['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
-		my.tiers[2]['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
-		my.tiers[2]['date0'] = entry.getval('date0')
-		my.tiers[2]['date1'] = entry.getval('date1')
-		my.tiers[2]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
-
-	def _add_tier3_entry(my, entry):
-		"""Stores the CharacterEntry's data as the bloomed info.
-
-		Aa a side-effect of calling this method, the "bloomability" is set.
-		"""
-
-		if entry.getval('isBloomedPowersOnly') == "1":
-			my.bloomability = FlowerKnight.BLOOM_POWERS_ONLY
-		else:
-			my.bloomability = FlowerKnight.BLOOMABLE
-		my.tiers[3]['id'] = entry.getval('id0')
-		my.tiers[3]['skill'] = entry.getval('skill1ID')
-		my.tiers[3]['lvlCap'] = maxLevel[my.rarity][2]
-		my.tiers[3]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
-		my.tiers[3]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
-		my.tiers[3]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
-		my.tiers[3]['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
-		my.tiers[3]['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
-		my.tiers[3]['date0'] = entry.getval('date0')
-		my.tiers[3]['date1'] = entry.getval('date1')
-		my.tiers[3]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
-
-	def _add_tier4_entry(my, entry):
-		"""Stores the CharacterEntry's data as the rarity grown info.
-
-		Aa a side-effect of calling this method, the "growability" is set.
-		"""
-
-		my.growability = FlowerKnight.HAS_RARITY_GROWTH
-		my.tiers[4]['id'] = entry.getval('id0')
-		# Rarity growth turns the character's rarity into a 6-star.
-		my.tiers[4]['lvlCap'] = maxLevel['6'][2]
-		my.tiers[4]['skill'] = entry.getval('skill1ID')
-		my.tiers[4]['abilities'] = [entry.getval('ability1ID'), entry.getval('ability2ID')]
-		my.tiers[4]['lvlOne'] = [entry.getval('lvlOneHP'), entry.getval('lvlOneAtk'), entry.getval('lvlOneDef')]
-		my.tiers[4]['lvlMax'] = [entry.getval('lvlMaxHP'), entry.getval('lvlMaxAtk'), entry.getval('lvlMaxDef')]
-		my.tiers[4]['aff1'] = [entry.getval('aff1MultHP'), entry.getval('aff1MultAtk'), entry.getval('aff1MultDef')]
-		my.tiers[4]['aff2'] = [entry.getval('aff2MultHP'), entry.getval('aff2MultAtk'), entry.getval('aff2MultDef')]
-		my.tiers[4]['date0'] = entry.getval('date0')
-		my.tiers[4]['date1'] = entry.getval('date1')
-		my.tiers[4]['gameVersionWhenAdded'] = entry.getval('gameVersionWhenAdded')
-
-	def _determine_romaji(my):
-		"""Determines the romaji spelling of the full name."""
-		# TODO
-		my.romajiName = '""'
-
-	def can_evolve(my):
-		"""Returns True if the character can evolve.
-
-		Characters that can't evolve are either materials or skins."""
-		return 'id' in my.tiers[2]
-
-	def can_bloom(my):
-		"""Returns True if the character can bloom."""
-		return my.bloomability != FlowerKnight.NO_BLOOM
-
-	def can_rarity_grow(my):
-		"""Returns True if the character can rarity grow."""
-		return my.growability != FlowerKnight.NO_RARITY_GROWTH
-
-	def get_latest_date(my):
-		"""Gets the latest date in all evolution tiers."""
-		if my.latest_date:
-			# The latest date was determined and stored.
-			# Just return the pre-calculated value.
-			return my.latest_date
-		# Determine the latest date amongst all available dates.
-		if my.bloomability == FlowerKnight.NO_BLOOM:
-			# Cannot bloom or rarity grow.
-			my.latest_date = max([
-				my.tiers[1]['date0'],
-				my.tiers[1]['date1'],
-				my.tiers[2]['date0'],
-				my.tiers[2]['date1'],])
-		elif my.growability == FlowerKnight.NO_RARITY_GROWTH:
-			# Can bloom, but not rarity grow.
-			my.latest_date = max([
-				my.tiers[1]['date0'],
-				my.tiers[1]['date1'],
-				my.tiers[2]['date0'],
-				my.tiers[2]['date1'],
-				my.tiers[3]['date0'],
-				my.tiers[3]['date1'],])
-		else:
-			# Can bloom and rarity grow.
-			my.latest_date = max([
-				my.tiers[1]['date0'],
-				my.tiers[1]['date1'],
-				my.tiers[2]['date0'],
-				my.tiers[2]['date1'],
-				my.tiers[3]['date0'],
-				my.tiers[3]['date1'],
-				my.tiers[4]['date0'],
-				my.tiers[4]['date1'],])
-		return my.latest_date
-
-	def has_id(my, id):
-		"""Checks if the passed ID is related to this flower knight.
-
-		@param id: String or integer. The ID to check.
-
-		@returns: Boolean. True if the ID is related to this flower knight.
-			False if the id is 0, a blank string, or an unrelated number.
-		"""
-
-		id = str(id)
-		if not id:
-			return False
-		elif 'id' not in my.tiers[2]:
-			# This flower knight is only a skin. It can't evolve.
-			return id == my.tiers[1]['id']
-		elif my.bloomability == FlowerKnight.NO_BLOOM:
-			# This flower knight is evolvable, but not bloomable.
-			return id in (my.tiers[1]['id'], my.tiers[2]['id'])
-		elif my.growability == FlowerKnight.NO_RARITY_GROWTH:
-			# This flower knight can bloom, but not rarity grow.
-			return id in (my.tiers[1]['id'], my.tiers[2]['id'],
-				my.tiers[3]['id'])
-		else:
-			# This flower knight can bloom and rarity grow.
-			return id in (my.tiers[1]['id'], my.tiers[2]['id'],
-				my.tiers[3]['id'], my.tiers[4]['id'])
-
-	def get_lua(my, quoted=False):
-		"""Returns the stored data as a Lua list.
-
-		@param quoted: Boolean. When True, encloses string values
-			of this class' variables in double-quotes.
-
-		@returns: String. All variables of the class in Lua table format.
-		"""
-
-		#Fill out a string format table with descriptive variable names.
-		formatDict = {
-			'id':my.tiers[1]['id'],
-			'charID':my.charID1,
-			'type':my.type,
-			'rarity':my.rarity,
-			'isEvent':my.is_event,
-			# Has bloom features?
-			'tier3PowersOnlyBloom':my.is_powers_only_bloom,
-			'gift':my.gift,
-			'nation':my.nation,
-			'family':my.family,
-			'japanese':quotify_non_number(my.fullName),
-			'dateAdded':quotify_non_number(my.tiers[1]['date0']),
-			# Stats
-			'speed':my.spd,
-			# Pre-evolution stats.
-			'tier1Lv1HP':my.tiers[1]['lvlOne'][HP],
-			'tier1Lv1Atk':my.tiers[1]['lvlOne'][ATK],
-			'tier1Lv1Def':my.tiers[1]['lvlOne'][DEF],
-			'tier1LvMaxHP':my.tiers[1]['lvlMax'][HP],
-			'tier1LvMaxAtk':my.tiers[1]['lvlMax'][ATK],
-			'tier1LvMaxDef':my.tiers[1]['lvlMax'][DEF],
-			# Bonus stats from affection 1 and 2.
-			# Pre-evolution affection bonuses.
-			'tier1Aff1HP':my.tiers[1]['aff1'][HP],
-			'tier1Aff1Atk':my.tiers[1]['aff1'][ATK],
-			'tier1Aff1Def':my.tiers[1]['aff1'][DEF],
-			'tier1Aff2HP':my.tiers[1]['aff2'][HP],
-			'tier1Aff2Atk':my.tiers[1]['aff2'][ATK],
-			'tier1Aff2Def':my.tiers[1]['aff2'][DEF],
-			# Abilities
-			# Skill
-			'skill':my.tiers[1]['skill'],
-			}
-
-		if my.can_evolve():
-			formatDict.update({
-				# Evolution stats.
-				'tier2Lv1HP':my.tiers[2]['lvlOne'][HP],
-				'tier2Lv1Atk':my.tiers[2]['lvlOne'][ATK],
-				'tier2Lv1Def':my.tiers[2]['lvlOne'][DEF],
-				'tier2LvMaxHP':my.tiers[2]['lvlMax'][HP],
-				'tier2LvMaxAtk':my.tiers[2]['lvlMax'][ATK],
-				'tier2LvMaxDef':my.tiers[2]['lvlMax'][DEF],
-				# Evolution affection bonuses.
-				'tier2Aff1HP':my.tiers[2]['aff1'][HP],
-				'tier2Aff1Atk':my.tiers[2]['aff1'][ATK],
-				'tier2Aff1Def':my.tiers[2]['aff1'][DEF],
-				'tier2Aff2HP':my.tiers[2]['aff2'][HP],
-				'tier2Aff2Atk':my.tiers[2]['aff2'][ATK],
-				'tier2Aff2Def':my.tiers[2]['aff2'][DEF],
-			})
-
-		if my.can_bloom():
-			formatDict.update({
-				# Bloom stats.
-				'tier3Lv1HP':my.tiers[3]['lvlOne'][HP],
-				'tier3Lv1Atk':my.tiers[3]['lvlOne'][ATK],
-				'tier3Lv1Def':my.tiers[3]['lvlOne'][DEF],
-				'tier3LvMaxHP':my.tiers[3]['lvlMax'][HP],
-				'tier3LvMaxAtk':my.tiers[3]['lvlMax'][ATK],
-				'tier3LvMaxDef':my.tiers[3]['lvlMax'][DEF],
-				# Bloom affection bonuses.
-				'tier3Aff1HP':my.tiers[3]['aff1'][HP],
-				'tier3Aff1Atk':my.tiers[3]['aff1'][ATK],
-				'tier3Aff1Def':my.tiers[3]['aff1'][DEF],
-				'tier3Aff2HP':my.tiers[3]['aff2'][HP],
-				'tier3Aff2Atk':my.tiers[3]['aff2'][ATK],
-				'tier3Aff2Def':my.tiers[3]['aff2'][DEF],
-			})
-
-		if my.can_rarity_grow():
-			formatDict.update({
-				'tier4skill':my.tiers[4]['skill'],
-				# Rarity grown stats.
-				'tier4Lv1HP':my.tiers[4]['lvlOne'][HP],
-				'tier4Lv1Atk':my.tiers[4]['lvlOne'][ATK],
-				'tier4Lv1Def':my.tiers[4]['lvlOne'][DEF],
-				'tier4LvMaxHP':my.tiers[4]['lvlMax'][HP],
-				'tier4LvMaxAtk':my.tiers[4]['lvlMax'][ATK],
-				'tier4LvMaxDef':my.tiers[4]['lvlMax'][DEF],
-				# Rarity grown affection bonuses.
-				'tier4Aff1HP':my.tiers[4]['aff1'][HP],
-				'tier4Aff1Atk':my.tiers[4]['aff1'][ATK],
-				'tier4Aff1Def':my.tiers[4]['aff1'][DEF],
-				'tier4Aff2HP':my.tiers[4]['aff2'][HP],
-				'tier4Aff2Atk':my.tiers[4]['aff2'][ATK],
-				'tier4Aff2Def':my.tiers[4]['aff2'][DEF],
-			})
-
-		#Generate specific portions of the table.
-		ability1DEPRECATED = my.tiers[1]['abilities'][0]
-		ability2DEPRECATED = ability3DEPRECATED = ability4DEPRECATED = ''
-
-		tier2StatsString = tier2AffString = ''
-		abilityString = '{{{0}, {1},}},'.format(
-			my.tiers[1]['abilities'][0], my.tiers[1]['abilities'][1])
-		if my.can_evolve():
-			tier2StatsString = dedent('''
-				tier2Lv1 = {{ {tier2Lv1HP}, {tier2Lv1Atk}, {tier2Lv1Def} }},
-				tier2LvMax = {{ {tier2LvMaxHP}, {tier2LvMaxAtk}, {tier2LvMaxDef} }},
-				''').lstrip().format(**formatDict)
-			tier2AffString = dedent('''
-				tier2Aff1Bonus = {{ {tier2Aff1HP}, {tier2Aff1Atk}, {tier2Aff1Def} }},
-				tier2Aff2Bonus = {{ {tier2Aff2HP}, {tier2Aff2Atk}, {tier2Aff2Def} }},
-				''').lstrip().format(**formatDict)
-			my.tiers[1]['abilities'][0],
-			if my.tiers[2]['abilities'][1]:
-				ability2DEPRECATED = my.tiers[2]['abilities'][1]
-			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
-				my.tiers[2]['abilities'][0], my.tiers[2]['abilities'][1])
-
-		tier3StatsString = tier3AffString = ''
-		if my.can_bloom():
-			tier3StatsString = dedent('''
-				tier3Lv1 = {{ {tier3Lv1HP}, {tier3Lv1Atk}, {tier3Lv1Def} }},
-				tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},
-				''').lstrip().format(**formatDict)
-			tier3AffString = dedent('''
-				tier3Aff1Bonus = {{ {tier3Aff1HP}, {tier3Aff1Atk}, {tier3Aff1Def} }},
-				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},
-				''').lstrip().format(**formatDict)
-			if my.tiers[3]['abilities'][0]:
-				ability3DEPRECATED = my.tiers[3]['abilities'][0]
-			if my.tiers[3]['abilities'][1]:
-				ability4DEPRECATED = my.tiers[3]['abilities'][1]
-			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
-				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1])
-
-		tier4StatsString = tier4AffString = ''
-		tier4SkillString = ''
-		if my.can_rarity_grow():
-			tier4StatsString = dedent('''
-				tier4Lv1 = {{ {tier4Lv1HP}, {tier4Lv1Atk}, {tier4Lv1Def} }},
-				tier4LvMax = {{ {tier4LvMaxHP}, {tier4LvMaxAtk}, {tier4LvMaxDef} }},
-				''').lstrip().format(**formatDict)
-			tier4AffString = dedent('''
-				tier4Aff1Bonus = {{ {tier4Aff1HP}, {tier4Aff1Atk}, {tier4Aff1Def} }},
-				tier4Aff2Bonus = {{ {tier4Aff2HP}, {tier4Aff2Atk}, {tier4Aff2Def} }},
-				''').lstrip().format(**formatDict)
-			if my.tiers[4]['abilities'][0]:
-				ability3DEPRECATED = my.tiers[4]['abilities'][0]
-			if my.tiers[4]['abilities'][1]:
-				ability4DEPRECATED = my.tiers[4]['abilities'][1]
-			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
-				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1])
-			tier4SkillString = dedent('''
-				tier4skill = {tier4skill},
-				''').lstrip().format(**formatDict)
-
-		# Make a comma-separated list of the ability IDs.
-		abilityStringDEPRECATED = u', '.join([a for a in [ability1DEPRECATED, ability2DEPRECATED, ability3DEPRECATED, ability4DEPRECATED] if a])
-		abilityStringDEPRECATED = '{{ {0} }}'.format(abilityStringDEPRECATED)
-
-		# Add all of the generated strings to the string format table.
-		formatDict.update({
-			'tier2StatsString':tier2StatsString,
-			'tier2AffString':tier2AffString,
-			'tier3StatsString':tier3StatsString,
-			'tier3AffString':tier3AffString,
-			'tier4StatsString':tier4StatsString,
-			'tier4AffString':tier4AffString,
-			'abilityStringDEPRECATED':abilityStringDEPRECATED,
-			'abilityString':abilityString,
-			'tier4skill':tier4SkillString,
-		})
-
-		lua_table = dedent(u'''
-			{{id = {id},
-			charID = {charID},
-			name = {japanese},
-			type = {type},
-			rarity = {rarity},
-			isEvent = {isEvent},
-			tier3PowersOnlyBloom = {tier3PowersOnlyBloom},
-			likes = {gift},
-			nation = {nation},
-			family = {family},
-			dateAdded = {dateAdded},
-			skill = {skill},
-			{tier4skill}ability = {abilityStringDEPRECATED}, -- Deprecated. Use bundledAbilities.
-			bundledAbilities = {{ {abilityString} }},
-			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
-			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
-			{tier2StatsString}{tier3StatsString}{tier4StatsString}speed = {speed},
-			tier1Aff1Bonus = {{ {tier1Aff1HP}, {tier1Aff1Atk}, {tier1Aff1Def} }},
-			tier1Aff2Bonus = {{ {tier1Aff2HP}, {tier1Aff2Atk}, {tier1Aff2Def} }},
-			{tier2AffString}{tier3AffString}{tier4AffString}}}''').lstrip().format(**formatDict)
-
-		return lua_table
-
-	def __str__(my):
-		return 'FlowerKnight: {0} who is a {1}* {2} type with pre-evo ID {3}.'.format(
-			remove_quotes(my.fullName), my.rarity, attribList[my.type],
-			my.tiers[1]['id'])
-
-# Globalize the FlowerKnight constants for short access.
-HP = FlowerKnight.HP
-ATK = FlowerKnight.ATK
-DEF = FlowerKnight.DEF
-
-class BaseEntry(object):
-	"""Base class for deriving Entry classes.
-
-	Important note: The CSV entries are stored such that
-	numerical values are strings, and
-	string values are strings enclosed in double-quotes.
-	"""
-
-	INVALID_ENTRY_TYPE = 'invalid'
-	# For a given entry type (eg. "character", "skill"), this stores a list of
-	# indices for my.values pointing to the values that are strings instead of
-	# numbers. It is used to track which entries to enclose in double-quotes.
-	_string_valued_indices = {}
-	# If we encounter an invalid number of CSV entries, warn the user and set
-	# the corresponding entry type to True. Only state the warning once.
-	_WARN_WRONG_SIZE = {}
-
-	def __init__(my, data_entry_csv, entry_type=INVALID_ENTRY_TYPE, entries=[]):
-		"""Ctor. To be overrridden and called by child classes."""
-		if not len(entries) or entry_type == BaseEntry.INVALID_ENTRY_TYPE:
-			raise Exception('Error: Trying to instantiate the base Entry class instead of a child class.')
-
-		# Turn the CSV into a list.
-		values, success, actual_count = split_and_check_count(
-			data_entry_csv, len(entries))
-		if entry_type not in BaseEntry. _WARN_WRONG_SIZE:
-			BaseEntry._WARN_WRONG_SIZE[entry_type] = False
-		if not success and not BaseEntry._WARN_WRONG_SIZE[entry_type]:
-			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
-				actual_count, entry_type, len(entries)))
-			print('The format of getMaster may have changed.\n')
-			# Don't state the warning again.
-			BaseEntry._WARN_WRONG_SIZE[entry_type] = True
-
-		# Store the values. We can access it with integer indices, or
-		# indirectly using my._named_values. The latter is done through
-		# the class instance's getval() function.
-		my.values = values
-
-		# Determine which values are strings.
-		# It helps to store this because strings need enclosed in double-quotes
-		# in the Lua code.
-		#
-		# NOTE: This list may be unused in the code right now.
-		# Do a string search in the source code.
-		if entry_type not in my._string_valued_indices:
-			# This is the first time assigning double-quotes to strings for
-			# CSV entries of this type of Entry. Make a list of all values
-			# that are strings instead of numbers.
-
-			# Implementation note: Check for equivalance to None instead of
-			# duck-typing and checking for not(value). get_float can return
-			# 0 or 0.0 for valid numbers, but None for non-numbers.
-			my._string_valued_indices[entry_type] = \
-				[i for i in range(len(my.values)) if \
-				get_float(my.values[i]) is None]
-
-		# Store a list of names to relate to the values.
-		# This should be created in the child class.
-		my._named_values = {}
-
-	def getval(my, name_or_index):
-		"""Returns a stored value by its name or index in the CSV."""
-		if type(name_or_index) is int:
-			return my.values[name_or_index]
-		# The name_or_index is a string.
-		return my.values[my._named_values[name_or_index]]
-
-	def getlua(my, quoted=False):
-		"""Returns the stored data as a Lua list.
-
-		@param quoted: Boolean. When True, encloses string values
-			of this class' variables in double-quotes.
-
-		@returns: String. All variables of the class in Lua table format.
-		"""
-
-		string_transformer = get_quotify_or_do_nothing_func(quoted)
-
-		# Generate the Lua table.
-		if my._named_values:
-			# Relate the named entries to their value.
-			# This relies on how Python maintains order in dicts.
-			# Example output: {name="Bob", type="cat", hairs=5},
-			lua_table = u', '.join([u'{0}={1}'.format(
-				k, string_transformer(my.values[v])) \
-				for k, v in sorted(my._named_values.items())])
-		else:
-			# There's no dict of named entries-to-indices.
-			# Just output all of the values separated by commas.
-			# Example output: {"Bob", "cat", 5},
-			lua_table = u', '.join([string_transformer(v) for v in my.values])
-
-		# Surround the Lua table in angle brackets.
-		return u'{{{0}}}'.format(lua_table)
-
-	def __lt__(my, other):
-		return my.tiers[1]['id'] < other.tiers[1]['id']
-
-	def __repr__(my, named_entries=[]):
-		"""Gets a string stating nearly everything about this instance."""
-		if named_entries:
-			return u'CSV fields by index, name, value:\n' + \
-				u'\n'.join([u'{0:02}: {1} = {2}'.format(
-					i, named_entries[i], my.getval(i)) \
-				for i in range(len(my.values))])
-		else:
-			return my.__str__()
-
-	def __str__(my):
-		"""Gets a succinct string describing this instance."""
-		return my.getlua()
-
-class CharacterEntry(BaseEntry):
-	"""Stores one line of data from the masterCharacter section."""
-	__NAMED_ENTRIES = [
-		'id0',
-		'id1',
-		'family',
-		'nation',
-		'charID1',
-		'baseName0',
-		'baseName1',
-		'rarity',
-		'type',
-		'gift',
-		'ability1ID',
-		'ability2ID',
-		'skill1ID',
-		'skill2ID',
-		'unknown00',
-		'lvlOneHP',
-		'lvlMaxHP',
-		'lvlOneAtk',
-		'lvlMaxAtk',
-		'lvlOneDef',
-		'lvlMaxDef',
-		'lvlOneSpd',
-		'lvlOneSpd',
-		'ampuleBonusHP',
-		'ampuleBonusAtk',
-		'ampuleBonusDef',
-		'ampule2BonusHP',
-		'ampule2BonusAtk',
-		'ampule2BonusDef',
-		'goldSellValue',
-		'sortCategory', # Unverified
-		'sortID', # Used when viewing the library and sorting by "図鑑No"
-		'isNotPreEvo',
-		'isFlowerKnight1',
-		'aff1MultHP',
-		'aff1MultAtk',
-		'aff1MultDef',
-		'charID2',
-		'evolutionTier',
-		'isFlowerKnight2',
-		'aff2MultHP',
-		'aff2MultAtk',
-		'aff2MultDef',
-		'unknown01',
-		'unknown02',
-		'unknown03',
-		'unknown04',
-		'fullName',
-		'isBloomedPowersOnly',
-		'variant',
-		'reading',
-		'libraryID',
-		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
-		'isEventKnight', # Added 1/22/2018. When 1, it's an event character of any evolution tier. Doesn't include serial code girls.
-		'date0',
-		'date1',
-		'unknown06',
-		'gameVersionWhenAdded',
-		# Added 3/5/2018. When non-zero, points to the character ID of what this
-		# character would become after being rarity grown.
-		'rarityGrownID',
-		'isRarityGrown', # Added 3/12/2018.
-		'canRarityGrow', # Added 3/12/2018.
-		]
-
-	def __init__(my, data_entry_csv):
-		super(CharacterEntry, my).__init__(data_entry_csv, 'character',
-			my.__NAMED_ENTRIES)
-		if not my._named_values:
-			# Create a dict that gives descriptive names to indices in the CSV.
-			# As an example of what this does, it could set
-			# my._named_values['id'] = 0
-			my._named_values = dict(zip(my.__NAMED_ENTRIES,
-				range(len(CharacterEntry.__NAMED_ENTRIES))))
-
-	def getlua_name_to_id(my):
-		return u'[{0}] = {1},'.format(
-			add_quotes(my.getval('fullName')), my.getval('id0'))
-
-	def getlua_id_to_name(my):
-		return u'[{0}] = {1},'.format(
-			my.getval('id0'), add_quotes(my.getval('fullName')))
-
-	def __lt__(my, other):
-		return my.getval('id0') < other.getval('id0')
-
-	def __repr__(my):
-		return super(CharacterEntry, my).__repr__(my.__NAMED_ENTRIES)
-
-	def __str__(my):
-		return 'CharacterEntry for {0} at evolution tier {1}: '.format(
-			my.getval('fullName'), my.getval('evolutionTier')) + \
-		super(CharacterEntry, my).__str__()
-
-class SkillEntry(BaseEntry):
-	"""Stores one line of data from the masterCharacter section."""
-	__NAMED_ENTRIES = [
-		'uniqueID',
-		'nameJapanese',
-		'typeID',
-		'val0',
-		'val1',
-		'val2',
-		'descJapanese',
-		'triggerRateLv1',
-		'triggerRateLvUp',
-		'unknown00',
-		'unknown01',
-		'date00',
-		'date01',
-		'unknown01',]
-
-	def __init__(my, data_entry_csv):
-		super(SkillEntry, my).__init__(data_entry_csv, 'skill',
-			my.__NAMED_ENTRIES)
-		if not my._named_values:
-			# Create a dict that gives descriptive names to indices in the CSV.
-			# As an example of what this does, it could set
-			# my._named_values['id'] = 0
-			my._named_values = dict(zip(my.__NAMED_ENTRIES,
-				range(len(SkillEntry.__NAMED_ENTRIES))))
-
-	def __lt__(my, other):
-		return my.getval('uniqueID') < other.getval('uniqueID')
-
-	def getlua(my, quoted=False):
-		return u'[{0}] = {1},'.format(my.getval('uniqueID'),
-			super(SkillEntry, my).getlua(quoted))
-
-class AbilityEntry(BaseEntry):
-	"""Stores one line of data from the ability section.
-
-	In the master data, this section is named masterCharacterLeaderSkill.
-	"""
-	__NAMED_ENTRIES = [
-		'uniqueID',
-		'shortDescJapanese', # Used for synthesis mats.
-		'ability1ID',
-		'ability1Val0',
-		'ability1Val1',
-		'ability1Val2',
-		'ability1Val3',
-		'ability2ID',
-		'ability2Val0',
-		'ability2Val1',
-		'ability2Val2',
-		'ability2Val3',
-		'ability3ID',
-		'ability3Val0',
-		'ability3Val1',
-		'ability3Val2',
-		'ability3Val3',
-		'date00',
-		'date01',
-		'unknown00',]
-
-	def __init__(my, data_entry_csv):
-		super(AbilityEntry, my).__init__(data_entry_csv, 'ability',
-			my.__NAMED_ENTRIES)
-		if not my._named_values:
-			# Create a dict that gives descriptive names to indices in the CSV.
-			# As an example of what this does, it could set
-			# my._named_values['id'] = 0
-			my._named_values = dict(zip(my.__NAMED_ENTRIES,
-				range(len(AbilityEntry.__NAMED_ENTRIES))))
-
-	def __lt__(my, other):
-		return my.getval('uniqueID') < other.getval('uniqueID')
-
-	def __repr__(my):
-		return super(AbilityEntry, my).__repr__(my.__NAMED_ENTRIES)
-
-	def getlua(my, quoted=False):
-		"""Returns the stored data as a Lua list."""
-		# Copy our dict of named values. Then remove the unneeded elements.
-		named_values = dict(my._named_values)
-		named_values.pop('shortDescJapanese')
-		# Get a function that double-quotes strings if requested.
-		string_transformer = get_quotify_or_do_nothing_func(quoted)
-		# Compile a list of variable names-values pairs.
-		lua_list = u', '.join([u'{0}={1}'.format(
-			k, string_transformer(my.values[v])) \
-			for k, v in sorted(named_values.items())])
-		# Relate the list of values to the unique ID.
-		return u'[{0}] = {{{1}}},'.format(my.getval('uniqueID'), lua_list)
-
-class AbilityDescEntry(BaseEntry):
-	"""Stores one line of data from the ability description section.
-
-	In the master data, this section is named masterCharacterLeaderSkillDescription.
-	"""
-
-	__NAMED_ENTRIES = [
-		'id0',
-		'id1',
-		'ability1icon',
-		'ability1desc',
-		'ability2icon',
-		'ability2desc',
-		'ability3icon',
-		'ability3desc',
-		'ability4icon',
-		'ability4desc',]
-
-	def __init__(my, data_entry_csv):
-		super(AbilityDescEntry, my).__init__(data_entry_csv, 'ability description',
-			my.__NAMED_ENTRIES)
-		if not my._named_values:
-			# Create a dict that gives descriptive names to indices in the CSV.
-			# As an example of what this does, it could set
-			# my._named_values['id'] = 0
-			my._named_values = dict(zip(my.__NAMED_ENTRIES,
-				range(len(AbilityDescEntry.__NAMED_ENTRIES))))
-
-	def is_synthesis_ability(my):
-		"""Returns True if the ability ID is for synthesis materials."""
-		return u'合成' in my.getval('ability1desc')
-
-	def __lt__(my, other):
-		return my.getval('id0') < other.getval('id0')
-
-	def __repr__(my):
-		return super(AbilityDescEntry, my).__repr__(my.__NAMED_ENTRIES)
-
-	def getlua(my, quoted=False):
-		"""Returns the stored data as a Lua list."""
-		return u'[{0}] = '.format(my.getval('id0')) + \
-			super(AbilityDescEntry, my).getlua(quoted)
-
-class EquipmentEntry(BaseEntry):
-	__NAMED_ENTRIES = [
-		'id0',
-		'name',
-		'equipID',
-		'lvlOneHP',
-		'lvlOneAtk',
-		'lvlOneDef',
-		'lvlMaxHP',
-		'lvlMaxAtk',
-		'lvlMaxDef',
-		'baseAbilityID',
-		'ability1ID',
-		'ability1Val0',
-		'ability1Val1',
-		'ability1Val2',
-		'ability2ID',
-		'ability2Val0',
-		'ability2Val1',
-		'ability2Val2',
-		'equipPart',
-		'equipType',
-		'isPersonalEquip',
-		'owners',
-		'unknown10',
-		'unknown11',
-		'isForgingFairy',
-		'desc',
-		'commonEquipPlusValue',
-		'personalEquipSortID',
-		'isPersonalEarring',
-		'dateMade',
-		'dateChanged',
-		'zero',]
-
-
-	def __init__(my, data_entry_csv):
-		super(EquipmentEntry, my).__init__(data_entry_csv, 'equipment',
-			my.__NAMED_ENTRIES)
-		if not my._named_values:
-			# Create a dict that gives descriptive names to indices in the CSV.
-			# As an example of what this does, it could set
-			# my._named_values['id'] = 0
-			my._named_values = dict(zip(my.__NAMED_ENTRIES,
-				range(len(EquipmentEntry.__NAMED_ENTRIES))))
-
-	def __lt__(my, other):
-		return my.getval('id0') < other.getval('id0')
-
-	def __repr__(my):
-		return super(EquipmentEntry, my).__repr__(my.__NAMED_ENTRIES)
-
-	def __str__(my):
-		return 'EquipmentEntry ID {0} named {1} owned by {2}.'.format(
-			my.getval('id0'), my.getval('name'), my.getval('owners') or 'nobody')
-
-	def get_owner_ids(my):
-		"""Gets the IDs of flower knights that own this equipment.
-
-		Returns a list of 0 or more stringly-typed integers.
-		No elements means this equipment can be publicly used.
-		One element means it's a personal equipment.
-		Two or more elements means it's a special personal equipment
-			awarded to all base forms of some flower knight.
-
-		The owners value separates multiple flower knights with
-			pipe | characters.
-
-		@returns A list of 0 or more integers.
-		"""
-
-		if not my.getval('owners'):
-			return []
-		return [int(id) for id in my.getval('owners').split(u'|')]
-
-	def getlua(my, quoted=False):
-		def string_transformer(key, val, quoted):
-			if key == 'owners':
-				# Change the format of owners from a stringly-type,
-				# pipe-separated list of integers to a Lua list.
-				# ex: owners=71|341 becomes owners={71, 341}
-				return '{{{0}}}'.format( ', '.join(val.split('|')) )
-			elif quoted:
-				return quotify_non_number(val)
-			return val
-
-		# Generate the Lua table.
-		# Relate the named entries to their value.
-		# Example output: {name="Bob", type="cat", hairs=5},
-		lua_table = u'[{0}] = {{'.format(my.getval('id0'))
-		pairs = []
-		for k, v in sorted(my._named_values.items()):
-			v = string_transformer(k, my.values[v], quoted)
-			pairs.append([k, v])
-		lua_table += u', '.join([u'{0}={1}'.format(
-			pair[0], pair[1]) for pair in pairs])
-		lua_table += '}'
-		return lua_table
-
 class MasterData(object):
 	"""Handles various info from the master data."""
 	# Debugging variables.
@@ -1116,7 +31,6 @@ class MasterData(object):
 		my.masterTexts = {}
 		my.characters = {}
 		my.knights = {}
-		my.pre_evo_chars = {}
 		my.unique_characters = {}
 		my.skills = {}
 		my.abilities = {}
@@ -1135,20 +49,18 @@ class MasterData(object):
 		# Store the CSV into understandable variable names.
 		character_entries = [CharacterEntry(entry) for entry in my.masterTexts['masterCharacter']]
 		# Store CSV entries in a dict such that their ID is their key.
-		my.characters = {c.getval('id0'):c for c in character_entries}
-		my.pre_evo_chars = {c.getval('id0'):c for c in character_entries if
-			c.getval('isFlowerKnight1') == '1' and c.getval('evolutionTier') == '1'}
+		my.characters = {c.id0:c for c in character_entries}
 		# Compile a list of all flower knights from the CSVs.
 		my.knights = {}
 		# Dereference the dict for faster access.
 		knights = my.knights
 		unique_characters = my.unique_characters
 		for char in character_entries:
-			name = remove_quotes(char.getval('fullName'))
-			if char.getval('isFlowerKnight1') != '1':
+			name = remove_quotes(char.fullName)
+			if char.isFlowerKnight1 != '1':
 				# This is not a flower knight. Remove its ability.
-				if char.getval('ability1ID') in my.abilities:
-					my.abilities.pop(char.getval('ability1ID'))
+				if char.ability1ID in my.abilities:
+					my.abilities.pop(char.ability1ID)
 				unique_characters[name] = char
 			elif name not in knights:
 				knights[name] = FlowerKnight(char)
@@ -1158,15 +70,15 @@ class MasterData(object):
 	def _parse_skill_entries(my):
 		"""Creates a list of skill entries from masterCharacterSkill."""
 		skill_entries = [SkillEntry(entry) for entry in my.masterTexts['masterSkill']]
-		my.skills = {s.getval('uniqueID'):s for s in skill_entries}
+		my.skills = {s.uniqueID:s for s in skill_entries}
 
 	def _parse_ability_entries(my):
 		"""Creates a list of ability entries from masterCharacterLeaderSkill."""
 		ability_entries = [AbilityEntry(entry) for entry in my.masterTexts['masterAbility']]
 		# Remove abilities related to Strengthening Synthesis.
 		ability_entries = [entry for entry in ability_entries if
-			u'合成' not in entry.getval('shortDescJapanese')]
-		my.abilities = {a.getval('uniqueID'):a for a in ability_entries}
+			u'合成' not in entry.shortDescJapanese]
+		my.abilities = {a.uniqueID:a for a in ability_entries}
 
 	def _parse_ability_desc_entries(my):
 		"""Creates a list of ability description entries from the master data.
@@ -1175,7 +87,7 @@ class MasterData(object):
 		"""
 
 		ability_desc_entries = [AbilityDescEntry(entry) for entry in my.masterTexts['masterAbilityDescs']]
-		my.ability_descs = {a.getval('id0'):a for a in ability_desc_entries}
+		my.ability_descs = {a.id0:a for a in ability_desc_entries}
 		
 	def _parse_equipment_entries(my):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
@@ -1334,7 +246,7 @@ class MasterData(object):
 		"""
 
 		main_ver, major_ver, minor_ver = \
-			remove_quotes(entry.getval('gameVersionWhenAdded')).split('.')
+			remove_quotes(entry.gameVersionWhenAdded).split('.')
 		return my._convert_version_to_int(main_ver, major_ver, minor_ver)
 
 	def get_newest_characters(my):
@@ -1423,7 +335,7 @@ class MasterData(object):
 		"""
 
 		if type(knight) is FlowerKnight:
-			knight_id = int(knight.charID1)
+			knight_id = int(knight.charID2)
 		else:
 			knight_id = int(knight)
 		return [equip for equip in my.equipment if knight_id in equip.get_owner_ids()]
@@ -1514,7 +426,7 @@ class MasterData(object):
 		# Write the page header.
 		module_name = 'Module:SkillList'
 		def getid(entry):
-			return int(entry.getval('uniqueID') or 0)
+			return int(entry.uniqueID or 0)
 		output = u'\n'.join([
 			'--[[Category:Flower Knight description modules]]',
 			'--[[Category:Automatically updated modules]]',
@@ -1536,7 +448,7 @@ class MasterData(object):
 		# Write the page header.
 		module_name = 'Module:BundledAbilityList'
 		def getid(entry):
-			return int(entry.getval('uniqueID'))
+			return int(entry.uniqueID)
 		output = u'\n'.join([
 			'--[[Category:Flower Knight description modules]]',
 			'--[[Category:Automatically updated modules]]',
@@ -1558,7 +470,7 @@ class MasterData(object):
 		# Write the page header.
 		module_name = 'Module:Equipment/Data'
 		def getid(entry):
-			return int(entry.getval('id0'))
+			return int(entry.equipID)
 		equips = u',\n\t'.join([entry.getlua(True) for entry in
 			sorted(my.equipment, key=getid)])
 		output = dedent(u'''
@@ -1573,19 +485,40 @@ class MasterData(object):
 			return EquipmentData
 			''').strip().format(equips)
 		return output
+		
+	def get_personal_equip_list_page(my):
+		"""Outputs the table of skill IDs and their related skill info."""
+		# Write the page header.
+		module_name = 'Module:SkillList'
+		def getid(entry):
+			return int(entry.uniqueID or 0)
+		output = u'\n'.join([
+			'--[[Category:Flower Knight description modules]]',
+			'--[[Category:Equipment modules]]',
+			'--[[Category:Automatically updated modules]]',
+			'--Contains autogenerated list of personal equipments.\n',
+
+			# Write the page body.
+			'\t' +  u'\n\t'.join('{for FlowerKnight.full_name in MasterCharacterData}:{personalEquip()}'),
+
+			# Write the page footer.
+			'}\n',
+			'return p',
+			])
+		return output
 
 	def get_master_char_data_page(my):
 		"""Outputs the table of every char's data and their related names."""
 		module_name = 'Module:MasterCharacterData'
 		def getname(entry):
-			return entry.getval('fullName')
+			return entry.fullName
 		def getid(entry):
-			return int(entry.getval('id0'))
+			return int(entry.id0)
 		knights = u''
 		for name in sorted(my.knights):
-			knights += '["{0}"] =\n{1},\n'.format(
+			knights += '["{0}"] =\n    {1},\n'.format(
 				my.knights[name].fullName,
-				indent(my.knights[name].get_lua(), '    '))
+				'\n    '.join(my.knights[name].get_lua().split('\n')))
 		output = dedent(u'''
 			--[[Category:Flower Knight description modules]]
 			--[[Category:Automatically updated modules]]
@@ -1594,6 +527,115 @@ class MasterData(object):
 			return {{
 			{0}}}
 			''').strip().format(knights)
+		return output
+
+	EQUIPMENT_AFFIXES = [u'指輪', u'腕輪', u'首飾り', u'耳飾り',]
+	def __remove_equipment_affix(my, name):
+		"""Removes the type of equipment from the Japanese name.
+
+		If the name does not have a generic affix, the name is returned as is.
+		As a result, unique equipment will have their names returned in full.
+
+		@param name: The Japanese name of the equipment.
+		@returns The name without an affix.
+		"""
+
+		for affix in MasterData.EQUIPMENT_AFFIXES:
+			if name.endswith(affix):
+				return name[:-len(affix)]
+		return name
+
+	def __get_new_equipment_names_page_parse_page(my, page):
+		"""Parses the Wikia page and returns the dict of equipment names.
+
+		@returns: A dict of {'JP name':'EN name'} pairs.
+		"""
+		
+		# Crop all text from the "return" statement and following { symbol.
+		idx_start = page.text.find('return')
+		idx_start += page.text[idx_start + 1:].find('{')
+		idx_end = page.text.rfind('}')
+		if idx_start < 0 or idx_end < 0:
+			print("Error: Module:Equipment/Names doesn't have a table in it.")
+			return {}
+
+		# This text should be the entire table of equipment names.
+		page_table = page.text[idx_start:idx_end]
+		names = {}
+		# Make the dict of {jp_name:en_name} entries.
+		# Loop over all items except the "return {" start and "}" end.
+		for line in page_table.split('\n')[1:-1]:
+			line = line.strip()
+			jp_name, en_name = line.split('=')
+
+			# Get the Japanese name.
+			idx_start = jp_name.find('["')
+			idx_end = jp_name.find('"]')
+			if idx_start < 0 or idx_end < 0:
+				# This line doesn't have a proper table entry in it.
+				print("Warning: Removing this line from Module:Equipment:")
+				print(line)
+				continue
+			jp_name = jp_name[idx_start + 2:idx_end]
+			# At this point, we have the entire Japanese name.
+			# Cut off the の... part that designates the type of accessory.
+			jp_name = my.__remove_equipment_affix(jp_name)
+			if not jp_name:
+				# Chances are, this is an Okitaeeru / Forge Spirit.
+				# Do not add this to the list of equippable things.
+				continue
+
+			# Get the English name.
+			idx_start = en_name.find('"')
+			# +1 to skip over the first double-quote.
+			idx_end = en_name[idx_start + 1:].find('"')
+			if idx_start < 0 or idx_end < 0:
+				# This line doesn't have a proper table entry in it.
+				print("Warning: Removing this line from Module:Equipment:")
+				print(line)
+				continue
+			# idx_start + 1 skips over the first double-quote.
+			# idx_end + 2 accounts for the first double-quote and something else?
+			en_name = en_name[idx_start + 1:idx_end + 2]
+			names[jp_name] = en_name
+		return names
+
+	def get_new_equipment_names_page(my, page):
+		"""Outputs the table of equipment names.
+
+		The original Wikia page is passed into this function.
+		This function recreates the list of Japanese equipment names and
+		assigned English names. If the Japanese name is not found,
+		it is inserted into the list with a default value.
+		"""
+
+		output = u''
+		names = my.__get_new_equipment_names_page_parse_page(page)
+		# Add all missing equipment from the master data to the Wikia's list.
+		master_names = {}
+		for equip in my.equipment:
+			jp = equip.name
+			jp = my.__remove_equipment_affix(jp)
+			if jp in names:
+				master_names[jp] = names[jp]
+			else:
+				master_names[jp] = ''
+		# Sort the fully filled list for easy lookups on the Wikia page.
+		sorted_name_indices = sorted(list(master_names))
+
+		# Generate the Wikia page.
+		equips = '\n    '.join(
+			['["{0}"] = "{1}",'.format(idx, master_names[idx]) \
+			for idx in sorted_name_indices])
+		output = dedent(u'''
+			--[[Category:Equipment modules]]
+			--[[Category:Automatically updated modules]]
+			--[[Category:Manually updated modules]]
+			-- Relates Japanese equipment names to translated names.
+			
+			return {{
+			    {0}
+			}}''').lstrip().format(equips)
 		return output
 
 	def get_char_entries(my, char_name_or_id):
@@ -1606,7 +648,7 @@ class MasterData(object):
 			# Find the one entry for this character.
 			char_id = str(char_name_or_id)
 			if char_id in my.characters:
-				fullName = my.characters[char_id].getval('fullName')
+				fullName = my.characters[char_id].fullName
 			else:
 				print('Warning: No character by this ID exists: ' + \
 					str(char_name_or_id))
@@ -1616,7 +658,7 @@ class MasterData(object):
 		fullName = fullName or str(char_name_or_id)
 		# Search for all evolution tiers for the character.
 		def same_name(entry):
-			return entry.getval('fullName') == fullName
+			return entry.fullName == fullName
 		entries = list(filter(same_name, my.characters.values()))
 		if len(entries) < 2 or len(entries) > 3:
 			print('Warning: No character by that name has 2~3 evolution stages.')
@@ -1698,20 +740,20 @@ class MasterData(object):
 		# Please do not extend upon it unless you intend to clean it up.
 		ref_counts = {}
 		for abilityInstance in my.abilities.values():
-			ability1ID = abilityInstance.getval('ability1ID')
-			ability2ID = abilityInstance.getval('ability2ID')
-			desc = abilityInstance.getval('descJapanese')
+			ability1ID = abilityInstance.ability1ID
+			ability2ID = abilityInstance.ability2ID
+			desc = abilityInstance.descJapanese
 
 			# Increment the number of references found for this ability ID.
 			# Also store some useful info as an example implementation of it.
 			if ability1ID not in ref_counts:
 				ref_counts[ability1ID] = [-1, '', 0, 0, 0]
-				ref_counts[ability1ID][1] = abilityInstance.getval('ability1Val0')
-				ref_counts[ability1ID][2] = abilityInstance.getval('ability1Val1')
-				ref_counts[ability1ID][3] = abilityInstance.getval('ability1Val2')
+				ref_counts[ability1ID][1] = abilityInstance.ability1Val0
+				ref_counts[ability1ID][2] = abilityInstance.ability1Val1
+				ref_counts[ability1ID][3] = abilityInstance.ability1Val2
 				ref_counts[ability1ID][4] = u'See FIRST description / \n\t' +\
 					desc
-			ref_counts[abilityInstance.getval('ability1ID')][0] += 1
+			ref_counts[abilityInstance.ability1ID][0] += 1
 
 			if int(ability2ID) <= 0:
 				# ID 0 is actually the "empty" ability for when the character doesn't
@@ -1719,12 +761,12 @@ class MasterData(object):
 				continue
 			if ability2ID not in ref_counts:
 				ref_counts[ability2ID] = [-1, '', 0, 0, 0]
-				ref_counts[ability2ID][1] = abilityInstance.getval('ability2Val0')
-				ref_counts[ability2ID][2] = abilityInstance.getval('ability2Val1')
-				ref_counts[ability2ID][3] = abilityInstance.getval('ability2Val2')
+				ref_counts[ability2ID][1] = abilityInstance.ability2Val0
+				ref_counts[ability2ID][2] = abilityInstance.ability2Val1
+				ref_counts[ability2ID][3] = abilityInstance.ability2Val2
 				ref_counts[ability2ID][4] = u'See SECOND description / \n\t' +\
 					desc
-			ref_counts[abilityInstance.getval('ability2ID')][0] += 1
+			ref_counts[abilityInstance.ability2ID][0] += 1
 
 		# Organize all of the data.
 		# The result, uniqueAbilities is a list of tuples with data members:
@@ -1792,8 +834,7 @@ class MasterData(object):
 			"\n|name = ", english_name,
 			"\n|JP = ", knight.fullName,])
 		template_text = ''.join([template_text,
-			"\n|rarity = ", rarityStar(knight.rarity),
-			"\n|IconName = ", icon_name,])
+			"\n|rarity = ", rarityStar(knight.rarity),])
 		if personal_equip:
 			template_text += "\n|BasicEquipName = \n|BasicEquipJP = " + dataEquipBase[0][1]
 			template_text += "\n|EvoEquipName = \n|EvoEquipJP = " + dataEquipEvolved[0][1]
@@ -1815,12 +856,6 @@ class MasterData(object):
 				"\n|EvoEquipDEFLvMax = ", dataEquipEvolved[0][8]])
 		else:
 			template_text += "\n|BasicEquipATKLv1 = \n|BasicEquipDEFLv1 = \n|BasicEquipATKLvMax = \n|BasicEquipDEFLvMax = \n|EvoEquipATKLv1 = \n|EvoEquipDEFLv1 = \n|EvoEquipATKLvMax = \n|EvoEquipDEFLvMax = "
-		template_text = ''.join([template_text,
-			"\n|SkillName = ",
-			"\n|SkillNameJP = ", skill.getval('nameJapanese'),
-			"\n|SkillLv1Trigger = ",skill.getval('triggerRateLv1'),
-			"\n|SkillLv5Trigger = ",skillLv5Calc(skill.getval('triggerRateLv1'),skill.getval('triggerRateLvUp'),skill.getval('unknown00')),
-			"\n|SkillDescription = ", skill.getval('descJapanese'),])
 		template_text += "\n|EvoEquipAbilityDescription = "
 		if personal_equip:
 			template_text += "During combat, increase attack and defense power of all members with matching attribute by 2%."

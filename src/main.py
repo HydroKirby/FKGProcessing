@@ -234,7 +234,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 				outfile.write(output_text)
 			print('Completed the processing.')
 
-def main(input_name_or_id=None, english_name=''):
+def run_standalone(input_name_or_id=None, english_name=''):
 	# Open and parse the master database
 	master_data = MasterData()
 
@@ -252,11 +252,11 @@ if __name__ == '__main__':
 	if ((type(findID) is list) and (type(english_nameList) is list)):
 		li = 0
 		for ID in findID:
-			main(ID,english_nameList[li])
+			run_standalone(ID,english_nameList[li])
 			li += 1
 	else:
 		if (type(english_nameList) is list):
-			main(findID,english_nameList[0])
+			run_standalone(findID,english_nameList[0])
 		else:
 			if (type(english_nameList) is str):
-				main(findID,english_nameList)
+				run_standalone(findID,english_nameList)
