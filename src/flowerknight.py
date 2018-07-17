@@ -137,6 +137,7 @@ class FlowerKnight(object):
 		# Only the pre-evolved entry has a sort ID because evolved/bloomed
 		# pics aren't used in the library / 図鑑.
 		my.charID1 = entry.sortID
+		my.charID2 = entry.charID2
 
 	def _add_tier2_entry(my, entry):
 		"""Stores the CharacterEntry's data as the evolved info."""
@@ -289,6 +290,7 @@ class FlowerKnight(object):
 		formatDict = {
 			'id':my.tiers[1]['id'],
 			'charID':my.charID1,
+			'charID2':my.charID2,
 			'type':my.type,
 			'rarity':my.rarity,
 			'isEvent':my.is_event,
@@ -466,6 +468,7 @@ class FlowerKnight(object):
 			likes = {gift},
 			nation = {nation},
 			family = {family},
+			personalEquipOwnerID = {charID2},
 			dateAdded = {dateAdded},
 			skill = {skill},
 			{tier4skill}ability = {abilityStringDEPRECATED}, -- Deprecated. Use bundledAbilities.

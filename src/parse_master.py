@@ -636,7 +636,19 @@ class MasterData(object):
 			--[[Category:Equipment modules]]
 			--[[Category:Automatically updated modules]]
 			--[[Category:Manually updated modules]]
-			-- Relates Japanese equipment names to translated names.
+			
+			--[[
+			Relates Japanese equipment names to translated names.
+			
+			The Wikia updating scripts automatically add new equipment to this page.
+			Editors need to add translations for these names manually.
+			
+			The four generic equipment types are automatically translated from Japanese.
+			They are earrings, rings, bracelets, and necklaces.
+			But for other types of equipment, they need to be written explicitly.
+			
+			Machine translations and copy-pastes from Nutaku are NOT ALLOWED.
+			--]]
 			
 			return {{
 			    {0}
@@ -793,30 +805,6 @@ class MasterData(object):
 		"""Outputs a single character's template text to a file."""
 		knight = my.get_knight(char_name_or_id)
 		skill = my.skills[knight.skill]
-		# Ability 1 is used by pre-evo and evo tiers.
-		ability1 = my.abilities[knight.tiers[1]['abilities'][0]]
-		# Ability 2 is used by evo and bloom tiers.
-		ability2 = my.abilities[knight.tiers[2]['abilities'][1]]
-		# Abilities 3 and 4 replace abilities 1 and 2 after blooming.
-		ability3 = ability4 = ''
-		if knight.bloomability != FlowerKnight.NO_BLOOM:
-			ability3 = my.abilities[knight.tiers[3]['abilities'][0]]
-			ability4_id = knight.tiers[3]['abilities'][1]
-			if ability4_id != '0':
-				ability4 = my.abilities[ability4_id]
-		
-		#Lookup character equip
-		dataEquipBase = []
-		dataEquipEvolved = []
-		personal_equip = False
-		
-		for line in my.equipment_entries:
-			if ((line != '') and (line[21].partition('|')[0] == knight.tiers[1]['id'])):
-				if ((int(line[2]) >= 360000) and (int(line[2]) < 380000)):
-					dataEquipBase.append(line)
-				elif (int(line[2]) >= 380000):
-					dataEquipEvolved.append(line)
-					personal_equip = True
 		
 		#Lookup flower family
 		for line in my.masterTexts['masterPlantFamily']:
@@ -834,37 +822,8 @@ class MasterData(object):
 		icon_name = english_name.replace(' ','').replace('(','_').replace(')','')
 		
 		#Assembles the template data via repeated join and concatenations.
-		template_text = ''.join(["{{CharacterStat\n|fkgID = ", knight.tiers[1]['id'],
-			"\n|type = ", attribList[knight.type],
-			"\n|name = ", english_name,
-			"\n|JP = ", knight.fullName,])
-		template_text = ''.join([template_text,
-			"\n|rarity = ", rarityStar(knight.rarity),])
-		if personal_equip:
-			template_text += "\n|BasicEquipName = \n|BasicEquipJP = " + dataEquipBase[0][1]
-			template_text += "\n|EvoEquipName = \n|EvoEquipJP = " + dataEquipEvolved[0][1]
-		else:
-			template_text += "\n|BasicEquipName = \n|BasicEquipJP = \n|EvoEquipName = \n|EvoEquipJP = "
-		template_text = ''.join([template_text,
-			"\n|likes = ", giftList[knight.gift],
-			"\n|breed = ", family[1],
-			"\n|nation = ", nationList[knight.nation],])
-		if personal_equip:
-			template_text = ''.join([template_text,
-				"\n|BasicEquipATKLv1 = ", dataEquipBase[0][4],
-				"\n|BasicEquipDEFLv1 = ", dataEquipBase[0][5],
-				"\n|BasicEquipATKLvMax = ", dataEquipBase[0][7],
-				"\n|BasicEquipDEFLvMax = ", dataEquipBase[0][8],
-				"\n|EvoEquipATKLv1 = ", dataEquipEvolved[0][4],
-				"\n|EvoEquipDEFLv1 = ", dataEquipEvolved[0][5],
-				"\n|EvoEquipATKLvMax = ", dataEquipEvolved[0][7],
-				"\n|EvoEquipDEFLvMax = ", dataEquipEvolved[0][8]])
-		else:
-			template_text += "\n|BasicEquipATKLv1 = \n|BasicEquipDEFLv1 = \n|BasicEquipATKLvMax = \n|BasicEquipDEFLvMax = \n|EvoEquipATKLv1 = \n|EvoEquipDEFLv1 = \n|EvoEquipATKLvMax = \n|EvoEquipDEFLvMax = "
-		template_text += "\n|EvoEquipAbilityDescription = "
-		if personal_equip:
-			template_text += "During combat, increase attack and defense power of all members with matching attribute by 2%."
-		template_text = ''.join([template_text,
+		template_text = ''.join(["{{CharacterStat\n|",
+			"\n|JP = ", knight.fullName,
 			"\n|ScientificName = ",
 			"\n|CommonName = ",
 			"\n|languageoftheflowers = ", meaning[5],
