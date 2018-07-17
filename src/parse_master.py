@@ -28,6 +28,7 @@ class MasterData(object):
 	remove_characters = False
 
 	def __init__(my, infilename=''):
+		# Most of these are deprecated 
 		my.masterTexts = {}
 		my.characters = {}
 		my.knights = {}
@@ -37,6 +38,10 @@ class MasterData(object):
 		my.ability_descs = {}
 		my.equipment_entries = []
 		my.equipment = {}
+
+		# This is the new way to access the master data.
+		my.entries = {}
+		my.entry_ids = {}
 		my.load_getMaster(infilename)
 
 	def _extract_section(my, section, rawdata):
