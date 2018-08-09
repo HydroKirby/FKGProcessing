@@ -354,7 +354,7 @@ def output_to_file(text, filename=DEFAULT_OUTFILENAME):
 def process_sheets_dict(all_sheets):
 	"""Gets the sheets data as a full string ready to be printed."""
 	text = u'''__NOTOC__
-[[Category:Event_Rewards]]
+[[Category:Card Sheets]]
 These are the card sheets for [[{title}]]. The set of cards sheets a player will have will be based on which of the four featured girls appears on card flipping screen. Bonus Sheets have the same pattern for all players. Mouse over icons to display their meaning. All data comes directly from the [{wiki} Japanese Wiki] with great gratitude.
 {{| style="text-align: center"
 |-
