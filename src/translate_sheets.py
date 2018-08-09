@@ -38,15 +38,15 @@ class SheetCharacter(object):
 
 # Theese things (before the typo_fixes) need to be changed for each event!
 event_name_en = "The Summertime Memorial Service Torch"
-event_char_jp = u'ビスカリア'
+event_char_jp = u'セアノサス'
 event_char_en = u'Ceanothus'
 equip_jp = u'花菓子の'
 equip_en = u'Flower Pastry'
 sheet_characters = [
 	SheetCharacter(u'ポインセチア(浴衣)', u'Poinsettia (Yukata)', u'Poi_01'),
-	SheetCharacter(event_char_jp, event_char_en, u'Vis_01'),
 	SheetCharacter(u'ゼラニウム(浴衣)', u'Geranium (Yukata)', u'Ger_01'),
-	SheetCharacter(u'セアノサス', u'Silene Coeli Rosa', u'Cea_01'),
+	SheetCharacter(u'ビスカリア', u'Silene Coeli Rosa', u'Vis_01'),
+	SheetCharacter(event_char_jp, event_char_en, u'Cea_01'),
 ]
 
 # Normalize the text to be translated.
@@ -354,6 +354,7 @@ def output_to_file(text, filename=DEFAULT_OUTFILENAME):
 def process_sheets_dict(all_sheets):
 	"""Gets the sheets data as a full string ready to be printed."""
 	text = u'''__NOTOC__
+[[Category:Event_Rewards]]
 These are the card sheets for [[{title}]]. The set of cards sheets a player will have will be based on which of the four featured girls appears on card flipping screen. Bonus Sheets have the same pattern for all players. Mouse over icons to display their meaning. All data comes directly from the [{wiki} Japanese Wiki] with great gratitude.
 {{| style="text-align: center"
 |-
