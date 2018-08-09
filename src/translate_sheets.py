@@ -10,7 +10,7 @@ except ImportError:
 
 DEFAULT_INFILENAME = 'src.php'
 DEFAULT_OUTFILENAME = 'result.txt'
-SRC_URL = u'http://xn--eckq7fg8cygsa1a1je.xn--wiki-4i9hs14f.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E6%B0%B4%E5%BA%95%E3%81%AE%E4%BB%AE%E9%9D%A2%E8%88%9E%E8%B8%8F%E4%BC%9A/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
+SRC_URL = u'https://フラワーナイトガール.攻略wiki.com/index.php?%E7%B7%8A%E6%80%A5%E4%BB%BB%E5%8B%99%E3%80%80%E5%A4%8F%E3%81%AE%E7%81%AF%E3%82%8A%E3%81%AE%E6%85%B0%E9%9C%8A%E7%A5%AD/%E3%82%AB%E3%83%BC%E3%83%89%E3%82%81%E3%81%8F%E3%82%8A'
 
 __doc__ = u"""Mass translates card flip cheat sheets for Flower Knight Girl.
 
@@ -37,16 +37,16 @@ class SheetCharacter(object):
 		self.sheet_id = sheet_id
 
 # Theese things (before the typo_fixes) need to be changed for each event!
-event_name_en = "The Bottom of the Sea's Masquerade Ball"
-event_char_jp = u'ミズヒキ'
-event_char_en = u'Jumpseed'
-equip_jp = u'怪しき火の'
-equip_en = u'Strange Fire'
+event_name_en = "The Summertime Memorial Service Torch"
+event_char_jp = u'ビスカリア'
+event_char_en = u'Ceanothus'
+equip_jp = u'花菓子の'
+equip_en = u'Flower Pastry'
 sheet_characters = [
-	SheetCharacter(u'プルメリア(ジューンブライド)', u'Plumeria (June Bride)', u'Plu_01'),
-	SheetCharacter(u'サクランボ(ジューンブライド)', u'Cherry (June Bride)', u'Che_01'),
-	SheetCharacter(u'ハス(ジューンブライド)', u'Lotus (June Bride)', u'Lot_01'),
-	SheetCharacter(event_char_jp, event_char_en, u'Jum_01'),
+	SheetCharacter(u'ポインセチア(浴衣)', u'Poinsettia (Yukata)', u'Poi_01'),
+	SheetCharacter(event_char_jp, event_char_en, u'Vis_01'),
+	SheetCharacter(u'ゼラニウム(浴衣)', u'Geranium (Yukata)', u'Ger_01'),
+	SheetCharacter(u'セアノサス', u'Silene Coeli Rosa', u'Cea_01'),
 ]
 
 # Normalize the text to be translated.
