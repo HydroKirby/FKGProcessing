@@ -467,7 +467,7 @@ class EquipmentEntry(BaseEntry):
 		'isPersonalEquip',
 		'owners',
 		'unknown10',
-		'unknown11',
+		'isLevelable', # 0 if okitaeeru or ability bracelet; 1 otherwise
 		'isForgingFairy',
 		'desc',
 		'commonEquipPlusValue',
