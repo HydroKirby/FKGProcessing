@@ -65,14 +65,29 @@ class Networking(object):
 
         return my.downloadCharacterImages(master_data, knight)
 
-    def download_flower_knight_equip_pics(my, knight):
-        """Downloads all person equipment images for a flower knight.
+    def dl_personal_equip_pics(my, knight):
+        """Downloads all personal equipment images for a flower knight.
 
         @param knight: A FlowerKnight entity.
         @returns Networking.DL_OK on success, or Networking.DL_FAIL otherwise.
         """
 
         pass
+
+    def dl_equip_pics(my, equip_list):
+        """Downloads all equipment images.
+
+        @param equip_list: A list of EquipmentEntries, integers, or strings.
+            Ints and strings are expected to be equipment IDs.
+        @returns Networking.DL_OK on success, or Networking.DL_FAIL otherwise.
+        """
+
+        dl_state = Networking.DL_OK
+        for equip in equip_list:
+            dl_state = my.downloadEquipImage(equip)
+            if dl_state != Networking.DL_OK:
+                break
+        return dl_state
 
     def downloadCharacterImages(my,master_data,knight,tiers=[PRE_EVO,EVO,BLOOM]):
         inputID = int(knight.tiers['preEvo']['id'])
@@ -134,7 +149,9 @@ class Networking(object):
         # Determine the ID.
         equip_id = equip_id_or_csv
         if type(equip_id_or_csv) is EquipmentEntry:
-            equip_id = equip_id_or_csv.getval('equipID')
+            equip_id = equip_id_or_csv.equipID
+        elif type(equip_id_or_csv) is str:
+            equip_id = int(equip_id_or_csv)
 
         # Setup the download location.
         imgFileLink = "{0}/{1}.png".format(Networking.getEquipURL, equip_id)
