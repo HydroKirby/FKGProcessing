@@ -462,12 +462,12 @@ class EquipmentEntry(BaseEntry):
 		'ability2Val0',
 		'ability2Val1',
 		'ability2Val2',
-		'equipPart',
+		'equipPart', # See note 1 below
 		'equipType',
 		'isPersonalEquip',
 		'owners',
-		'unknown10',
-		'unknown11',
+		'classification', # See note 2 below
+		'isLevelable', # 0 if okitaeeru or ability bracelet; 1 otherwise
 		'isForgingFairy',
 		'desc',
 		'commonEquipPlusValue',
@@ -476,6 +476,27 @@ class EquipmentEntry(BaseEntry):
 		'dateMade',
 		'dateChanged',
 		'zero',]
+	# Note 1: CSV "equipPart" has the following meanings.
+	# 300001: All gacha rings.
+	# 300002: All gacha bracelets.
+	# 300003: All gacha necklaces.
+	# 300001: Everything else.
+
+	# Note 2: CSV "classification" is the easiest way to determine the rarity.
+	# It has the following meanings.
+	# 1:   1* bracelets and necklaces (gacha low tier).
+	# 3:   3* bracelets and necklaces (gacha mid & high tier;
+	#          not EX for either),
+	#      2* rings and earrings (gacha low tier).
+	# 5:   4* event equipment (not the bracelet),
+	#      4* rings and earrings (gacha mid & high tier; not EX for either),
+	#      EX bracelet and necklace.
+	# 7:   EX ring and earrings,
+	#      5* event bracelet,
+	#      personal earrings and personal evolved equips.
+	# 101: Copper forge spirits.
+	# 102: Silver forge spirits.
+	# 103: Gold forge spirits.
 	_MASTER_DATA_TYPE = 'equipment'
 
 	def __init__(my, data_entry_csv):

@@ -41,11 +41,16 @@ class Imaging(object):
 	'../res/type-blunt.png',
 	'../res/type-pierce.png',
 	'../res/type-magic.png']
+	ICON_STAGES = [
+	'../res/stage-preEvolved.png',
+	'../res/stage-evolved.png',
+	'../res/stage-bloom.png']
 
 	def __init__(my):
 		my.icon_bgs = [my.load_image(filename) for filename in Imaging.ICON_BACKGROUNDS]
 		my.icon_frames = [my.load_image(filename) for filename in Imaging.ICON_FRAMES]
 		my.icon_types = [my.load_image(filename) for filename in Imaging.ICON_TYPES]
+		my.icon_stages = [my.load_image(filename) for filename in Imaging.ICON_STAGES]
 
 	def load_image(my, filename):
 		"""Loads an image or returns the image as-is."""
@@ -74,9 +79,10 @@ class Imaging(object):
 		result = Image.new("RGBA", bottom_image.size)
 		result = Image.alpha_composite(result, bottom_image)
 		result = Image.alpha_composite(result, top_image)
+		result = Image.alpha_composite(result, top_image)
 		return result
 
-	def get_framed_icon(my, icon_filename, outfilename, rarity, typing):
+	def get_framed_icon(my, icon_filename, outfilename, rarity, typing, stage=None):
 		"""Produces the full icon for a character.
 
 		@param icon_filename: An Image instance or filename.
@@ -95,10 +101,12 @@ class Imaging(object):
 		icon_typing = my.icon_types[typing - 1]
 		frame = my.icon_frames[rarity - 1]
 		bg = my.icon_bgs[rarity - 1]
+		if stage: stage_level = my.icon_stages[stage - 1]
 		# Apply the layers.
 		result = my.apply_layer(char_icon, bg)
 		result = my.apply_layer(frame, result)
 		result = my.apply_layer(icon_typing, result)
+		if stage: result = my.apply_layer(stage_level, result)
 		# Save and return the result.
 		result.save(outfilename, 'png')
 		return result

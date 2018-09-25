@@ -154,6 +154,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	ACT_GET_CHAR_TEMPLATE = 'char template'
 	ACT_GET_CHAR_MODULE = 'char module'
 	ACT_DL_CHAR_IMAGES = 'dl char images'
+	ACT_DL_EQUIP_IMAGES = 'dl equip images'
 	ACT_WRITE_SKILL_LIST = 'skill list'
 	ACT_WRITE_ABILITY_LIST = 'ability list'
 	ACT_WRITE_CHAR_NAME_LIST = 'char list'
@@ -170,6 +171,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_GET_CHAR_TEMPLATE:'Output a Character template.',
 		ACT_GET_CHAR_MODULE:'Output a Character module.',
 		ACT_DL_CHAR_IMAGES:'Download all images for a character.',
+		ACT_DL_EQUIP_IMAGES:'Download all equipment images.',
 		ACT_WRITE_SKILL_LIST:'Write the Skill list (Skill ID:Skill Info).',
 		ACT_WRITE_ABILITY_LIST:'Write the Ability list (Ability ID:Ability Info).',
 		ACT_WRITE_CHAR_NAME_LIST:'Write the Character list (FKG ID:JP Name).',
@@ -210,6 +212,8 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			output_text = get_char_module(master_data)
 		elif user_input == ACT_DL_CHAR_IMAGES:
 			output_text = download_character_images(master_data, networking)
+		elif user_input == ACT_DL_EQUIP_IMAGES:
+			networking.dl_equip_pics(master_data.equipment)
 		elif user_input == ACT_WRITE_SKILL_LIST:
 			output_text = master_data.get_skill_list_page()
 		elif user_input == ACT_WRITE_ABILITY_LIST:
