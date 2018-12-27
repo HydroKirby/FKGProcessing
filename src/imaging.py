@@ -57,7 +57,10 @@ class Imaging(object):
 		if not _HAS_LIB:
 			return None
 		elif type(filename) is str:
-			return Image.open(filename)
+			if Image.open(filename).mode != 'RGBA':
+				return Image.open(filename).convert('RGBA')
+			else:
+				return Image.open(filename)
 		return filename
 
 	def _print_no_library_warning(my):
