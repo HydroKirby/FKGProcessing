@@ -260,6 +260,7 @@ class CharacterEntry(BaseEntry):
 		'gift',
 		'ability1ID',
 		'ability2ID',
+		'ability3ID',
 		'skill1ID',
 		'skill2ID',
 		'unknown00',
