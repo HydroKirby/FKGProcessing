@@ -280,6 +280,7 @@ class CharacterEntry(BaseEntry):
 		'ampule2BonusDef',
 		'goldSellValue',
 		'sortCategory', # Unverified
+		'hasAlternateForm', # Unverified
 		'sortID', # Used when viewing the library and sorting by "図鑑No"
 		'isNotPreEvo',
 		'isFlowerKnight1',
