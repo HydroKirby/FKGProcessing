@@ -260,6 +260,7 @@ class CharacterEntry(BaseEntry):
 		'gift',
 		'ability1ID',
 		'ability2ID',
+		'ability3ID',
 		'skill1ID',
 		'skill2ID',
 		'unknown00',
@@ -279,6 +280,7 @@ class CharacterEntry(BaseEntry):
 		'ampule2BonusDef',
 		'goldSellValue',
 		'sortCategory', # Unverified
+		'hasAlternateForm', # Unverified
 		'sortID', # Used when viewing the library and sorting by "図鑑No"
 		'isNotPreEvo',
 		'isFlowerKnight1',
