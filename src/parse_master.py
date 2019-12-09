@@ -5,6 +5,7 @@ import os, sys, math, re, random, zlib, hashlib, json, binascii, time
 from base64 import b64decode
 import six
 from io import open
+from getmaster_loader import *
 from common import *
 from entry import *
 from flowerknight import *
@@ -27,7 +28,7 @@ class MasterData(object):
 	# When True, only store flower knights.
 	remove_characters = False
 
-	def __init__(my, infilename=''):
+	def __init__(my):
 		# Most of these are deprecated 
 		my.masterTexts = {}
 		my.characters = {}
@@ -42,11 +43,15 @@ class MasterData(object):
 		# This is the new way to access the master data.
 		my.entries = {}
 		my.entry_ids = {}
-		my.load_getMaster(infilename)
+		my.load_getMaster()
 
 	def _extract_section(my, section, rawdata):
 		"""Gets all text from one section of the master data."""
-		return rawdata.partition(section + '\n')[2][1:].partition('master')[0].strip().split('\n')
+		str_beyond_section = rawdata.partition(section + '\n')[2][1:]
+		str_until_next_section = str_beyond_section.partition('master')[0]
+		str_until_next_section = str_until_next_section.strip()
+		data_lines = str_until_next_section.split('\n')
+		return data_lines
 
 	def _parse_character_entries(my):
 		"""Creates a list of character entries from masterCharacter."""
@@ -166,41 +171,21 @@ class MasterData(object):
 				print('Could not load {0} as plain text.'.format(infilename))
 		return False
 
-	def _decode_getMaster(my, infilename='', diagnostics=False, output_result=False):
+	def _decode_getMaster(my, output_result=False):
 		"""Gets getMaster's data.
 
-		@param infilename: The raw or decoded getMaster file's name.
-			If unset, defaults to DEFAULT_GETMASTER_INFILENAME from common.py .
-		@param diagnostics: If True, prints what the function is doing.
-			Defaults to False.
 		@param output_result: If True, also outputs the decoded data to
 			DEFAULT_GETMASTER_OUTFILENAME from common.py . Defaults to False.
 		@returns On success, a string of the decoded data.
 			On failure, None.
 		"""
-		if not infilename:
-			infilename = DEFAULT_GETMASTER_INFILENAME
-
-		# Try as encoded (raw) data directly taken from in-game.
-		master_data = my.__decode_getMaster_encoded(infilename, diagnostics)
-		if not master_data:
-			# Try as pre-decoded plain text.
-			master_data = my.__decode_getMaster_plain_text(
-				infilename, diagnostics)
-		if not master_data:
-			# Both methods failed. This isn't the master data file?
-			return None
-
+		loader = MasterDataLoader()
+		api_data = loader.output_getMaster_plaintext()
 		if output_result:
-			outfilename = DEFAULT_GETMASTER_OUTFILENAME
-			with open(outfilename, 'w', encoding='utf-8') as outfile:
-				outfile.write(time.strftime('Timestamp: %a, %m-%d-%Y\n', time.gmtime()))
-				outfile.write(master_data)
-			if diagnostics:
-				print('Wrote the output to {0}.'.format(outfilename))
-		return master_data
+			loader.output_getMaster_plaintext()
+		return api_data
 
-	def load_getMaster(my, infilename=''):
+	def load_getMaster(my):
 		"""Loads and parses getMaster.
 
 		This function is called automatically if the constructor is given
@@ -208,7 +193,7 @@ class MasterData(object):
 		"""
 
 		# Open the master database
-		api_data = my._decode_getMaster(infilename, True, True)
+		api_data = my._decode_getMaster(True)
 		
 		# Extract relevant data from master database
 		my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', api_data)
