@@ -59,11 +59,11 @@ class FlowerKnight(object):
 
 	def add_entries(my, entries):
 		"""Adds a list of CharacterEntry instances to this knight's data."""
-		try:
+		if type(entries) is list:
 			for entry in entries:
 				# entries is a list of CharacterEntry instances.
 				my.add_entry(entry)
-		except TypeError:
+		else:
 			# entries was a single CharacterEntry instance.
 			my.add_entry(entries)
 
@@ -125,7 +125,7 @@ class FlowerKnight(object):
 		my.tiers[1]['id'] = entry.id0
 		my.tiers[1]['lvlCap'] = maxLevel[my.rarity][0]
 		my.tiers[1]['skill'] = entry.skill1ID
-		my.tiers[1]['abilities'] = [entry.ability1ID, entry.ability2ID]
+		my.tiers[1]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
 		my.tiers[1]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[1]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[1]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -144,7 +144,7 @@ class FlowerKnight(object):
 		my.tiers[2]['id'] = entry.id0
 		my.tiers[2]['skill'] = entry.skill1ID
 		my.tiers[2]['lvlCap'] = maxLevel[my.rarity][1]
-		my.tiers[2]['abilities'] = [entry.ability1ID, entry.ability2ID]
+		my.tiers[2]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
 		my.tiers[2]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[2]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[2]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -166,7 +166,7 @@ class FlowerKnight(object):
 		my.tiers[3]['id'] = entry.id0
 		my.tiers[3]['skill'] = entry.skill1ID
 		my.tiers[3]['lvlCap'] = maxLevel[my.rarity][2]
-		my.tiers[3]['abilities'] = [entry.ability1ID, entry.ability2ID]
+		my.tiers[3]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
 		my.tiers[3]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[3]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[3]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -186,7 +186,7 @@ class FlowerKnight(object):
 		# Rarity growth turns the character's rarity into a 6-star.
 		my.tiers[4]['lvlCap'] = maxLevel['6'][2]
 		my.tiers[4]['skill'] = entry.skill1ID
-		my.tiers[4]['abilities'] = [entry.ability1ID, entry.ability2ID]
+		my.tiers[4]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
 		my.tiers[4]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[4]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[4]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -384,8 +384,9 @@ class FlowerKnight(object):
 		ability2DEPRECATED = ability3DEPRECATED = ability4DEPRECATED = ''
 
 		tier2StatsString = tier2AffString = ''
-		abilityString = '{{{0}, {1},}},'.format(
-			my.tiers[1]['abilities'][0], my.tiers[1]['abilities'][1])
+		abilityString = '{{{0}, {1}, {2}}},'.format(
+			my.tiers[1]['abilities'][0], my.tiers[1]['abilities'][1],
+			my.tiers[1]['abilities'][2])
 		if my.can_evolve():
 			tier2StatsString = dedent('''
 				tier2Lv1 = {{ {tier2Lv1HP}, {tier2Lv1Atk}, {tier2Lv1Def} }},
@@ -398,8 +399,9 @@ class FlowerKnight(object):
 			my.tiers[1]['abilities'][0],
 			if my.tiers[2]['abilities'][1]:
 				ability2DEPRECATED = my.tiers[2]['abilities'][1]
-			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
-				my.tiers[2]['abilities'][0], my.tiers[2]['abilities'][1])
+			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
+				my.tiers[2]['abilities'][0], my.tiers[2]['abilities'][1],
+				my.tiers[2]['abilities'][2])
 
 		tier3StatsString = tier3AffString = ''
 		if my.can_bloom():
@@ -415,8 +417,9 @@ class FlowerKnight(object):
 				ability3DEPRECATED = my.tiers[3]['abilities'][0]
 			if my.tiers[3]['abilities'][1]:
 				ability4DEPRECATED = my.tiers[3]['abilities'][1]
-			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
-				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1])
+			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
+				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1],
+				my.tiers[3]['abilities'][2])
 
 		tier4StatsString = tier4AffString = ''
 		tier4SkillString = ''
@@ -433,8 +436,9 @@ class FlowerKnight(object):
 				ability3DEPRECATED = my.tiers[4]['abilities'][0]
 			if my.tiers[4]['abilities'][1]:
 				ability4DEPRECATED = my.tiers[4]['abilities'][1]
-			abilityString = abilityString + '\n    {{{0}, {1},}},'.format(
-				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1])
+			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
+				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1],
+				my.tiers[4]['abilities'][2])
 			tier4SkillString = dedent('''
 				tier4skill = {tier4skill},
 				''').lstrip().format(**formatDict)
