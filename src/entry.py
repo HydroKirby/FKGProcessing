@@ -121,9 +121,6 @@ def split_and_check_count(data_entry_csv, expected_count):
 
 	data_entry_csv = data_entry_csv.rstrip()
 	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
-	if data_entry_csv.endswith(','):
-		# The last data entry is empty and unnecessary.
-		entries = entries[:-1]
 
 	actual_count = len(entries)
 	if actual_count < expected_count:
@@ -176,6 +173,9 @@ class BaseEntry(object):
 			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
 				actual_count, my._MASTER_DATA_TYPE, len(my._CSV_NAMES)))
 			print('The format of getMaster may have changed.\n')
+			print('The offending CSV was this:')
+			# Remove any trailing newlines.
+			print(data_entry_csv.rstrip())
 			# Don't state the warning again.
 			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
 
@@ -271,7 +271,7 @@ class CharacterEntry(BaseEntry):
 		'lvlOneDef',
 		'lvlMaxDef',
 		'lvlOneSpd',
-		'lvlOneSpd',
+		'lvlMaxSpd',
 		'ampuleBonusHP',
 		'ampuleBonusAtk',
 		'ampuleBonusDef',
@@ -349,7 +349,9 @@ class SkillEntry(BaseEntry):
 		'unknown01',
 		'date00',
 		'date01',
-		'unknown02',]
+		'unknown02',
+		'empty', # Added Dec 24, 2019
+	]
 	_MASTER_DATA_TYPE = 'skill'
 
 	def __init__(my, data_entry_csv):
@@ -390,7 +392,9 @@ class AbilityEntry(BaseEntry):
 		'ability3Val4',
 		'date00',
 		'date01',
-		'unknown00',]
+		'unknown00',
+		'empty', # Added Dec 24, 2019
+	]
 	_MASTER_DATA_TYPE = 'ability'
 
 	def __init__(my, data_entry_csv):
@@ -429,7 +433,9 @@ class AbilityDescEntry(BaseEntry):
 		'ability3icon',
 		'ability3desc',
 		'ability4icon',
-		'ability4desc',]
+		'ability4desc',
+		'empty', # Added Dec 24, 2019
+	]
 	_MASTER_DATA_TYPE = 'ability description'
 
 	def __init__(my, data_entry_csv):
@@ -480,7 +486,9 @@ class EquipmentEntry(BaseEntry):
 		'isPersonalEarring',
 		'dateMade',
 		'dateChanged',
-		'zero',]
+		'zero',
+		'empty', # Added Dec 24, 2019
+	]
 	# Note 1: CSV "equipPart" has the following meanings.
 	# 300001: All gacha rings.
 	# 300002: All gacha bracelets.
