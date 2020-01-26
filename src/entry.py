@@ -120,6 +120,8 @@ def split_and_check_count(data_entry_csv, expected_count):
 	"""
 
 	data_entry_csv = data_entry_csv.rstrip()
+	if data_entry_csv.endswith(','):
+		data_entry_csv = data_entry_csv[:-1]
 	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
 
 	actual_count = len(entries)
@@ -167,17 +169,6 @@ class BaseEntry(object):
 		# Add this type of master data section to the list of checked sections.
 		if my._MASTER_DATA_TYPE not in BaseEntry._WARN_WRONG_SIZE:
 			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = False
-		# If the CSV parsing failed and there has not been a message given
-		# about that, print an warning report.
-		if not success and not BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE]:
-			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
-				actual_count, my._MASTER_DATA_TYPE, len(my._CSV_NAMES)))
-			print('The format of getMaster may have changed.\n')
-			print('The offending CSV was this:')
-			# Remove any trailing newlines.
-			print(data_entry_csv.rstrip())
-			# Don't state the warning again.
-			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
 
 		# Store the values.
 		my.values_dict = dict(zip(my._CSV_NAMES, values))
@@ -191,6 +182,23 @@ class BaseEntry(object):
 		temp = dict(zip(range(len(my._CSV_NAMES)),
 			my._CSV_NAMES))
 		[setattr(my, temp[i], values[i]) for i in range(len(values))]
+		
+		# If the CSV parsing failed and there has not been a message given
+		# about that, print an warning report.
+		if not success and not BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE]:
+			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
+				actual_count, my._MASTER_DATA_TYPE, len(my._CSV_NAMES)))
+			print('The offending CSV was this:')
+			# Remove any trailing newlines.
+			print(data_entry_csv.rstrip())
+			if actual_count <= 1:
+				print('This is probably a parsing bug.')
+			else:
+				print('The format of getMaster may have changed. ' \
+					'This is the current interpretation:')
+				print(repr(my))
+			# Don't state the warning again.
+			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
 		
 		# Determine which values are strings.
 		# It helps to store this because strings need enclosed in double-quotes
@@ -263,7 +271,6 @@ class CharacterEntry(BaseEntry):
 		'ability3ID',
 		'skill1ID',
 		'skill2ID',
-		'unknown00',
 		'lvlOneHP',
 		'lvlMaxHP',
 		'lvlOneAtk',
@@ -271,7 +278,7 @@ class CharacterEntry(BaseEntry):
 		'lvlOneDef',
 		'lvlMaxDef',
 		'lvlOneSpd',
-		'lvlMaxSpd',
+		'lvlMaxSpd', # Renamed Dec 24, 2019
 		'ampuleBonusHP',
 		'ampuleBonusAtk',
 		'ampuleBonusDef',
@@ -350,7 +357,6 @@ class SkillEntry(BaseEntry):
 		'date00',
 		'date01',
 		'unknown02',
-		'empty', # Added Dec 24, 2019
 	]
 	_MASTER_DATA_TYPE = 'skill'
 
@@ -393,7 +399,6 @@ class AbilityEntry(BaseEntry):
 		'date00',
 		'date01',
 		'unknown00',
-		'empty', # Added Dec 24, 2019
 	]
 	_MASTER_DATA_TYPE = 'ability'
 
@@ -434,7 +439,6 @@ class AbilityDescEntry(BaseEntry):
 		'ability3desc',
 		'ability4icon',
 		'ability4desc',
-		'empty', # Added Dec 24, 2019
 	]
 	_MASTER_DATA_TYPE = 'ability description'
 
@@ -487,7 +491,6 @@ class EquipmentEntry(BaseEntry):
 		'dateMade',
 		'dateChanged',
 		'zero',
-		'empty', # Added Dec 24, 2019
 	]
 	# Note 1: CSV "equipPart" has the following meanings.
 	# 300001: All gacha rings.
