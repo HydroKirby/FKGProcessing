@@ -53,11 +53,11 @@ class MasterData(object):
 		data_lines = str_until_next_section.split('\n')
 		return data_lines
 
-	def _parse_character_entries(my):
+	def _parse_character_entries(my, api_data=[]):
 		"""Creates a list of character entries from masterCharacter."""
 		# Start by parsing the CSV.
 		# Store the CSV into understandable variable names.
-		character_entries = [CharacterEntry(entry) for entry in my.masterTexts['masterCharacter']]
+		character_entries = [CharacterEntry(entry) for entry in api_data]
 		# Store CSV entries in a dict such that their ID is their key.
 		my.characters = {c.id0:c for c in character_entries}
 		# Compile a list of all flower knights from the CSVs.
@@ -77,32 +77,32 @@ class MasterData(object):
 			else:
 				knights[name].add_entry(char)
 
-	def _parse_skill_entries(my):
+	def _parse_skill_entries(my, api_data=[]):
 		"""Creates a list of skill entries from masterCharacterSkill."""
-		skill_entries = [SkillEntry(entry) for entry in my.masterTexts['masterSkill']]
+		skill_entries = [SkillEntry(entry) for entry in api_data]
 		my.skills = {s.uniqueID:s for s in skill_entries}
 
-	def _parse_ability_entries(my):
+	def _parse_ability_entries(my, api_data=[]):
 		"""Creates a list of ability entries from masterCharacterLeaderSkill."""
-		ability_entries = [AbilityEntry(entry) for entry in my.masterTexts['masterAbility']]
+		ability_entries = [AbilityEntry(entry) for entry in api_data]
 		# Remove abilities related to Strengthening Synthesis.
 		ability_entries = [entry for entry in ability_entries if
 			u'合成' not in entry.shortDescJapanese]
 		my.abilities = {a.uniqueID:a for a in ability_entries}
 
-	def _parse_ability_desc_entries(my):
+	def _parse_ability_desc_entries(my, api_data=[]):
 		"""Creates a list of ability description entries from the master data.
 
 		It comes from masterCharacterLeaderSkillDescription.
 		"""
 
-		ability_desc_entries = [AbilityDescEntry(entry) for entry in my.masterTexts['masterAbilityDescs']]
+		ability_desc_entries = [AbilityDescEntry(entry) for entry in api_data]
 		my.ability_descs = {a.id0:a for a in ability_desc_entries}
 		
-	def _parse_equipment_entries(my):
+	def _parse_equipment_entries(my, api_data=[]):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
-		my.equipment_entries = [entry.split(',')[:-1] for entry in my.masterTexts['masterEquipment']]
-		my.equipment = [EquipmentEntry(entry) for entry in my.masterTexts['masterEquipment']]
+		my.equipment_entries = [entry.split(',')[:-1] for entry in api_data]
+		my.equipment = [EquipmentEntry(entry) for entry in api_data]
 
 	def __decode_getMaster_encoded(my, infilename, diagnostics=False):
 		"""Interprets getMaster's encoded data.
@@ -123,7 +123,7 @@ class MasterData(object):
 			bin_data_bytes = zlib.decompress(bin_data)
 			bin_data_str = bin_data_bytes.decode("utf-8")
 			jlist = json.loads(bin_data_str)
-			out = u"";
+			out = u""
 
 			for key in jlist:
 				element = jlist[key]
@@ -171,20 +171,6 @@ class MasterData(object):
 				print('Could not load {0} as plain text.'.format(infilename))
 		return False
 
-	def _decode_getMaster(my, output_result=False):
-		"""Gets getMaster's data.
-
-		@param output_result: If True, also outputs the decoded data to
-			DEFAULT_GETMASTER_OUTFILENAME from common.py . Defaults to False.
-		@returns On success, a string of the decoded data.
-			On failure, None.
-		"""
-		loader = MasterDataLoader()
-		api_data = loader.output_getMaster_plaintext()
-		if output_result:
-			loader.output_getMaster_plaintext()
-		return api_data
-
 	def load_getMaster(my):
 		"""Loads and parses getMaster.
 
@@ -192,10 +178,16 @@ class MasterData(object):
 		getMaster's filename in advance.
 		"""
 
-		# Open the master database
-		api_data = my._decode_getMaster(True)
+		# Open the master database.
+		loader = MasterDataLoader()
+		api_data = loader.master_json
+
+		# Output the result for debugging purposes
+		loader.output_getMaster_plaintext()
 		
 		# Extract relevant data from master database
+		# NOTE: Dead code due to format changes. Jan 23, 2020
+		"""
 		my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', api_data)
 		my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', api_data)
 		my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', api_data)
@@ -203,15 +195,16 @@ class MasterData(object):
 		my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', api_data)
 		my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', api_data)
 		my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', api_data)
+		"""
 
 		# Parse character and equipment entries
-		my._parse_skill_entries()
-		my._parse_ability_entries()
-		my._parse_ability_desc_entries()
-		my._parse_equipment_entries()
+		my._parse_skill_entries([dat for dat in api_data['masterCharacterSkill'].split('\n') if dat])
+		my._parse_ability_entries([dat for dat in api_data['masterCharacterLeaderSkill'].split('\n') if dat])
+		my._parse_ability_desc_entries([dat for dat in api_data['masterCharacterLeaderSkillDescription'].split('\n') if dat])
+		my._parse_equipment_entries([dat for dat in api_data['masterCharacterEquipment'].split('\n') if dat])
 		# Parse character entries AFTER ability and ability descriptions.
 		# We need to remove abilities that belong to non-flower knights.
-		my._parse_character_entries()
+		my._parse_character_entries([dat for dat in api_data['masterCharacter'].split('\n') if dat])
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.
