@@ -8,9 +8,7 @@ try:
 	from PIL import Image
 	_HAS_LIB = True
 except ImportError:
-	print('Warning: Library "Pillow" is not installed.')
-	print('You will not be able to do image manipulation.')
-	print('Install it with pip or easy_install.exe .')
+	print('Please use PIP to install Pillow for image manipulation.')
 
 class Imaging(object):
 	"""Manages all image processing.
