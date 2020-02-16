@@ -269,6 +269,7 @@ class CharacterEntry(BaseEntry):
 		'ability1ID',
 		'ability2ID',
 		'ability3ID',
+		'ability4ID', # Added Feb 15, 2020
 		'skill1ID',
 		'skill2ID',
 		'lvlOneHP',
