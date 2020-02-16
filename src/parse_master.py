@@ -47,7 +47,20 @@ class MasterData(object):
 
 	def _extract_section(my, section, rawdata):
 		"""Gets all text from one section of the master data."""
-		str_beyond_section = rawdata.partition(section + '\n')[2][1:]
+		# Find the section header
+		full_str_pos = 0
+		section_idx = 0
+		found_section = None
+		while full_str_pos < len(rawdata) and found_section != section:
+			section_idx = rawdata.find(section, full_str_pos)
+			if section_idx < 0:
+				print('Could not find the section called ' + section)
+				return ''
+			newline_idx = max(0, rawdata.find('\n', section_idx))
+			found_section = rawdata[section_idx:newline_idx].strip()
+			full_str_pos = section_idx + 1
+		# We found the header, so take all text after it
+		str_beyond_section = rawdata[section_idx + len(section):].lstrip()
 		str_until_next_section = str_beyond_section.partition('master')[0]
 		str_until_next_section = str_until_next_section.strip()
 		data_lines = str_until_next_section.split('\n')
@@ -186,25 +199,38 @@ class MasterData(object):
 		loader.output_getMaster_plaintext()
 		
 		# Extract relevant data from master database
-		# NOTE: Dead code due to format changes. Jan 23, 2020
-		"""
-		my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', api_data)
-		my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', api_data)
-		my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', api_data)
-		my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', api_data)
-		my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', api_data)
-		my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', api_data)
-		my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', api_data)
-		"""
+		
+		if loader.master_text:
+			# Parse data from the old format as a massive CSV string
+			mt = loader.master_text
+			my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', mt)
+			my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', mt)
+			my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', mt)
+			my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', mt)
+			my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', mt)
+			my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', mt)
+			my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', mt)
+			data_skill = my.masterTexts['masterSkill']
+			data_abil = my.masterTexts['masterAbility']
+			data_abil_desc = my.masterTexts['masterAbilityDescs']
+			data_equip = my.masterTexts['masterEquipment']
+			data_char = my.masterTexts['masterCharacter']
+		else:
+			# Parse data from the new format stored as a dict
+			data_skill = [dat for dat in api_data['masterCharacterSkill'].split('\n') if dat]
+			data_abil = [dat for dat in api_data['masterCharacterLeaderSkill'].split('\n') if dat]
+			data_abil_desc = [dat for dat in api_data['masterCharacterLeaderSkillDescription'].split('\n') if dat]
+			data_equip = [dat for dat in api_data['masterCharacterEquipment'].split('\n') if dat]
+			data_char = [dat for dat in api_data['masterCharacter'].split('\n') if dat]
 
 		# Parse character and equipment entries
-		my._parse_skill_entries([dat for dat in api_data['masterCharacterSkill'].split('\n') if dat])
-		my._parse_ability_entries([dat for dat in api_data['masterCharacterLeaderSkill'].split('\n') if dat])
-		my._parse_ability_desc_entries([dat for dat in api_data['masterCharacterLeaderSkillDescription'].split('\n') if dat])
-		my._parse_equipment_entries([dat for dat in api_data['masterCharacterEquipment'].split('\n') if dat])
+		my._parse_skill_entries(data_skill)
+		my._parse_ability_entries(data_abil)
+		my._parse_ability_desc_entries(data_abil_desc)
+		my._parse_equipment_entries(data_equip)
 		# Parse character entries AFTER ability and ability descriptions.
 		# We need to remove abilities that belong to non-flower knights.
-		my._parse_character_entries([dat for dat in api_data['masterCharacter'].split('\n') if dat])
+		my._parse_character_entries(data_char)
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.

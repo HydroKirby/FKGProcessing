@@ -25,7 +25,17 @@ class MasterDataLoader(object):
     """Loads all getMaster files and merges them into one data source."""
 
     def __init__(my):
-        my.master_json = my.load_and_combine_getMasters()
+        my.compat_mode = False
+        my.master_json = None
+        my.master_text = ''
+
+        loaded = my.load_and_combine_getMasters()
+        if type(loaded) is str:
+            # For backwards compatibility, allow saving plain text
+            my.master_text = loaded
+            my.compat_mode = True
+        else:
+            my.master_json = loaded
 
     def _get_default_inputs(self):
         return [fil for fil in scandir(INPUT_FOLDER) if fil.is_file()]
@@ -38,9 +48,16 @@ class MasterDataLoader(object):
         master_json = OrderedDict()
         for infilename in datafile_list:
             latest_dict = my.parse_getMaster(infilename)
+            if type(latest_dict) is str:
+                # For backwards compatibility, plain text is loadable
+                return latest_dict
             # Remove sections without data
             latest_dict = {k:v for k, v in latest_dict.items() if v}
             for key, val in latest_dict.items():
+                if type(val) is list:
+                    print('Key {0} is a list. Loading this is not supported.'.format(
+                        key))
+                    continue
                 if key not in master_json:
                     master_json[key] = ''
                 master_json[key] += val
@@ -49,7 +66,13 @@ class MasterDataLoader(object):
         return master_json
     
     def parse_getMaster(my, pathlike):
-        """Loads and interprets one getMaster file."""
+        """Loads and interprets one getMaster file.
+        
+        Expects zlib compressed JSON as the file contents.
+        However, plain text is supported as for backwards compatibility.
+
+        Returns json if the the file was json, or text if it was plain text.
+        """
         
         with open(pathlike, 'rb') as infile:
             raw_string = infile.read()
@@ -61,9 +84,14 @@ class MasterDataLoader(object):
         except zlib.error:
             print('Failed, so loading {0} as utf-8 encoded text'.format(
                 pathlike.name))
+        
         raw_string = raw_string.decode('utf-8')
-        json_dict  = json.loads(raw_string, object_pairs_hook=OrderedDict)
-
+        pre_decoded = type(raw_string) is str and raw_string.startswith('TimeStamp')
+        if pre_decoded:
+            print('This text file is the final, decoded master data. Deprecated!')
+            return raw_string
+        
+        json_dict = json.loads(raw_string, object_pairs_hook=OrderedDict)
         # Decoding done. Store the data in an understandable structure.
         master_json = OrderedDict()
         for key, content in json_dict.items():
@@ -71,6 +99,10 @@ class MasterDataLoader(object):
         return master_json
 
     def output_getMaster_json(my, fname=''):
+        if my.compat_mode:
+            output_getMaster_plaintext(fname)
+            return
+
         if not fname:
             fname = path_join(OUTPUT_FOLDER, 'bigjson')
         with open(fname, 'w', encoding='utf-8') as outfile:
@@ -79,6 +111,10 @@ class MasterDataLoader(object):
 
     # TODO: This method acts very differently from the rest. Refactor it.
     def output_getMaster_recompiled(my, fname=''):
+        if my.compat_mode:
+            output_getMaster_plaintext(fname)
+            return
+
         temp_json = OrderedDict()
         for key, content in my.master_json.items():
             temp_json[key] = standard_b64encode(
@@ -96,10 +132,16 @@ class MasterDataLoader(object):
         return recompiled_data
 
     def output_getMaster_plaintext(my, fname=''):
-        master_texts = 'TimeStamp:{0}\n\n'.format(
-            date.today().strftime('%d-%m-%Y') ) + \
-            '\n'.join( ['{0}\n\n{1}'.format(key, value) \
-            for key, value in my.master_json.items()] )
+        master_texts = ''
+        if my.compat_mode:
+            print('WARNING: Outputting in compatibility mode')
+            master_texts = my.master_text
+        else:
+            master_texts = 'TimeStamp:{0}\n\n'.format(
+                date.today().strftime('%d-%m-%Y') ) + \
+                '\n'.join( ['{0}\n\n{1}'.format(key, value) \
+                for key, value in my.master_json.items()] )
+
         if not fname:
             fname = path_join(OUTPUT_FOLDER, 'getMaster.txt')
         my._output_file(master_texts, fname, 'w')
@@ -113,7 +155,6 @@ class MasterDataLoader(object):
             encode = 'utf-8'
 
         makedirs(dirname(outfilename), exist_ok=True)
-
         with open(outfilename, open_mode, encoding=encode) as outfile:
             outfile.write(data)
         print('Wrote the output to {0}'.format(outfilename))
