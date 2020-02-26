@@ -59,16 +59,19 @@ class FlowerKnight(object):
 
 	def add_entries(my, entries):
 		"""Adds a list of CharacterEntry instances to this knight's data."""
-		if type(entries) is list:
-			for entry in entries:
-				# entries is a list of CharacterEntry instances.
-				my.add_entry(entry)
-		else:
-			# entries was a single CharacterEntry instance.
-			my.add_entry(entries)
+		# Force the param to be iterable
+		if type(entries) is not list:
+			entries = [entries]
+		for entry in entries:
+			my.add_entry(entry)
 
 	def add_entry(my, entry):
 		"""Adds a CharacterEntry instance to this knight's data."""
+		if int(entry.id0) >= 700000 and entry.fullName == 'ツツジ':
+			# This is an NPC character. Do not store their data.
+			# Otherwise, it might overwrite the playable character's data.
+			# An example is the one-star Tsutsuji/Azalea.
+			return
 		tier = entry.evolutionTier
 		isRarityGrown = entry.isRarityGrown == '1'
 		unknown03 = entry.unknown03 == '1'
@@ -380,9 +383,6 @@ class FlowerKnight(object):
 			})
 
 		#Generate specific portions of the table.
-		ability1DEPRECATED = my.tiers[1]['abilities'][0]
-		ability2DEPRECATED = ability3DEPRECATED = ability4DEPRECATED = ''
-
 		tier2StatsString = tier2AffString = ''
 		abilityString = '{{{0}, {1}, {2}}},'.format(
 			my.tiers[1]['abilities'][0], my.tiers[1]['abilities'][1],
@@ -396,9 +396,6 @@ class FlowerKnight(object):
 				tier2Aff1Bonus = {{ {tier2Aff1HP}, {tier2Aff1Atk}, {tier2Aff1Def} }},
 				tier2Aff2Bonus = {{ {tier2Aff2HP}, {tier2Aff2Atk}, {tier2Aff2Def} }},
 				''').lstrip().format(**formatDict)
-			my.tiers[1]['abilities'][0],
-			if my.tiers[2]['abilities'][1]:
-				ability2DEPRECATED = my.tiers[2]['abilities'][1]
 			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
 				my.tiers[2]['abilities'][0], my.tiers[2]['abilities'][1],
 				my.tiers[2]['abilities'][2])
@@ -413,10 +410,6 @@ class FlowerKnight(object):
 				tier3Aff1Bonus = {{ {tier3Aff1HP}, {tier3Aff1Atk}, {tier3Aff1Def} }},
 				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},
 				''').lstrip().format(**formatDict)
-			if my.tiers[3]['abilities'][0]:
-				ability3DEPRECATED = my.tiers[3]['abilities'][0]
-			if my.tiers[3]['abilities'][1]:
-				ability4DEPRECATED = my.tiers[3]['abilities'][1]
 			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
 				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1],
 				my.tiers[3]['abilities'][2])
@@ -432,20 +425,12 @@ class FlowerKnight(object):
 				tier4Aff1Bonus = {{ {tier4Aff1HP}, {tier4Aff1Atk}, {tier4Aff1Def} }},
 				tier4Aff2Bonus = {{ {tier4Aff2HP}, {tier4Aff2Atk}, {tier4Aff2Def} }},
 				''').lstrip().format(**formatDict)
-			if my.tiers[4]['abilities'][0]:
-				ability3DEPRECATED = my.tiers[4]['abilities'][0]
-			if my.tiers[4]['abilities'][1]:
-				ability4DEPRECATED = my.tiers[4]['abilities'][1]
 			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
 				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1],
 				my.tiers[4]['abilities'][2])
 			tier4SkillString = dedent('''
 				tier4skill = {tier4skill},
 				''').lstrip().format(**formatDict)
-
-		# Make a comma-separated list of the ability IDs.
-		abilityStringDEPRECATED = u', '.join([a for a in [ability1DEPRECATED, ability2DEPRECATED, ability3DEPRECATED, ability4DEPRECATED] if a])
-		abilityStringDEPRECATED = '{{ {0} }}'.format(abilityStringDEPRECATED)
 
 		# Add all of the generated strings to the string format table.
 		formatDict.update({
@@ -455,7 +440,6 @@ class FlowerKnight(object):
 			'tier3AffString':tier3AffString,
 			'tier4StatsString':tier4StatsString,
 			'tier4AffString':tier4AffString,
-			'abilityStringDEPRECATED':abilityStringDEPRECATED,
 			'abilityString':abilityString,
 			'tier4skill':tier4SkillString,
 		})
@@ -475,8 +459,7 @@ class FlowerKnight(object):
 			personalEquipOwnerID = {charID2},
 			dateAdded = {dateAdded},
 			skill = {skill},
-			{tier4skill}ability = {abilityStringDEPRECATED}, -- Deprecated. Use bundledAbilities.
-			bundledAbilities = {{ {abilityString} }},
+			{tier4skill}bundledAbilities = {{ {abilityString} }},
 			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
 			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
 			{tier2StatsString}{tier3StatsString}{tier4StatsString}speed = {speed},
