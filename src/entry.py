@@ -342,7 +342,7 @@ class CharacterEntry(BaseEntry):
 			super(CharacterEntry, my).__str__()
 
 class SkillEntry(BaseEntry):
-	"""Stores one line of data from the masterCharacter section."""
+	"""Stores one line of data from the masterCharacterSkill section."""
 	_CSV_NAMES = [
 		'uniqueID',
 		'nameJapanese',
@@ -568,3 +568,62 @@ class EquipmentEntry(BaseEntry):
 			pair[0], pair[1]) for pair in pairs])
 		lua_table += '}'
 		return lua_table
+
+class SkinEntry(BaseEntry):
+	"""Stores one line of data from the masterCharacterSkin section."""
+	_CSV_NAMES = [
+		# This ID matches the character's unique ID
+		'uniqueID',
+		'charID',
+		# replaceID for "different version" skins is uniqueID w/"000" appended
+		# Ex: If uniqueID is 134207000, replaceID is 134207
+		# replaceID for "exclusive" skins is just zero
+		# Ex: If uniqueID is 132901001, replaceID is 0
+		'replaceID',
+		# isSkin is set for any skins. When true, it implies
+		# (uniqueID != replaceID) and (isDiffVer or isExclusive)
+		'isSkin',
+		# For minor skin changes like Warunasubi/Nightshade without her mask
+		# skinName is always "別バージョン"
+		'isDiffVer',
+		# For skin-only characters like Young Cattleya or Swimsuit Anemone
+		# This flag is mutually exclusive with isDiffVer
+		# Example skinName: "モコモコした服(専用)" for Oenothera/Pinkladies
+		'isExclusive',
+		# Name category as shown on the skin selection modal
+		'skinName',
+		# Order of icons for on the skin selection modal
+		'pos',
+		# Perhaps this flag is only for Ping Pong Mum?
+		'unknown00',
+	]
+	# This defines which vars get shown in getlua()
+	_LUA_ORDER = [
+		'charID', 'replaceID', 'isDiffVer', 'isExclusive', 'skinName'
+	]
+	_MASTER_DATA_TYPE = 'skin'
+
+	def __init__(my, data_entry_csv):
+		super(SkinEntry, my).__init__(data_entry_csv)
+
+	def __lt__(my, other):
+		return my.uniqueID < other.uniqueID
+
+	def getlua(my, quoted=False):
+		"""Returns the stored data as a Lua list.
+
+		@param quoted: Boolean. When True, encloses string values
+			of this class' variables in double-quotes.
+
+		@returns: String. All variables of the class in Lua table format.
+		"""
+
+		string_transformer = get_quotify_or_do_nothing_func(quoted)
+
+		# Generate the Lua table.
+		lua_table = u', '.join([u'{0}={1}'.format(
+			name, string_transformer(my.values_dict[name])) \
+			for name in my._LUA_ORDER])
+		
+		# Surround the Lua table in angle brackets.
+		return u'{{{0}}}'.format(lua_table)
