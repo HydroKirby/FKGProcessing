@@ -738,21 +738,45 @@ class MasterData(object):
 		module_name = 'Module:Skin/Data'
 		def getid(entry):
 			return int(entry.uniqueID or 0)
-		sorted_entries = sorted(my.skins, key=getid)
-		entry_strings = ['{0} = {1},'.format(
-			entry.uniqueID, entry.getlua(True)) \
-			for entry in sorted_entries if entry.isSkin == '1']
-		all_entries = '\t' + '\n    '.join(entry_strings)
+		# Determine which entries to output
+		entries = sorted(my.skins, key=getid)
+		entries = [entry for entry in entries if entry.isSkin == '1']
+		# Make the table that resembles the master data's info
+		full_info_strings = ["['{0}'] = {1},".format(
+			entry.uniqueID, entry.getlua(True)) for entry in entries]
+		skin_id_to_info_as_str = '\t' + '\n    '.join(full_info_strings)
+		# Make the table relating character IDs back to the skin info
+		char_id_to_info = {}
+		for entry in entries:
+			# Convert to a number to cause proper sorting
+			char_id = int(entry.charID)
+			if not char_id in char_id_to_info:
+				char_id_to_info[char_id] = []
+			uid = "'{0}'".format(entry.uniqueID)
+			char_id_to_info[char_id].append(uid)
+		# With all data organized, stringify each line of info
+		char_id_to_info = {charID : ', '.join(uniqueIdTuple) \
+			for charID, uniqueIdTuple in char_id_to_info.items()}
+		strings_of_char_id_to_info = ["['{0}'] = {{{1}}},".format(
+			charID, infoStr) for charID, infoStr in \
+				sorted(char_id_to_info.items())]
+		char_id_to_info_as_str = '\t' + '\n    '.join(strings_of_char_id_to_info)
+		# Make the full page
 		output = u'\n'.join([
 			'--[[Category:Flower Knight description modules]]',
 			'--[[Category:Automatically updated modules]]',
 			'-- Relates skin IDs to their data.\n',
-			'return {',
+			'local p = {}\n',
 
 			# Write the page body.
-			all_entries,
+			'p.charIdToSkinIds = {',
+			char_id_to_info_as_str,
+			'}\n',
+			'p.skinIdToInfo = {',
+			skin_id_to_info_as_str,
+			'}\n',
 
 			# Write the page footer.
-			'}\n',
+			'return p'
 			])
 		return output
