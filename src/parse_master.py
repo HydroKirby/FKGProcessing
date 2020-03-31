@@ -754,29 +754,72 @@ class MasterData(object):
 				char_id_to_info[char_id] = []
 			uid = "'{0}'".format(entry.uniqueID)
 			char_id_to_info[char_id].append(uid)
+		# Make the list of character IDs that have exclusive skins
+		char_ids_with_exclusive_skins = set([int(entry.charID) for \
+			entry in entries if entry.isExclusive == '1'])
+		char_ids_with_exclusive_skins = ["['{0}'] = 1,".format(
+			charID) for charID in sorted(char_ids_with_exclusive_skins)]
+		char_ids_with_exclusive_skins = '    ' + '\n    '.join(
+			char_ids_with_exclusive_skins)
+		# Make the list of character IDs that have different version skins
+		char_ids_with_diff_ver_skins = set([int(entry.charID) for \
+			entry in entries if entry.isDiffVer == '1'])
+		char_ids_with_diff_ver_skins = ["['{0}'] = 1,".format(
+			charID) for charID in sorted(char_ids_with_diff_ver_skins)]
+		char_ids_with_diff_ver_skins = '    ' + '\n    '.join(
+			char_ids_with_diff_ver_skins)
 		# With all data organized, stringify each line of info
 		char_id_to_info = {charID : ', '.join(uniqueIdTuple) \
 			for charID, uniqueIdTuple in char_id_to_info.items()}
 		strings_of_char_id_to_info = ["['{0}'] = {{{1}}},".format(
 			charID, infoStr) for charID, infoStr in \
 				sorted(char_id_to_info.items())]
-		char_id_to_info_as_str = '\t' + '\n    '.join(strings_of_char_id_to_info)
+		char_id_to_info_as_str = '    ' + '\n    '.join(
+			strings_of_char_id_to_info)
 		# Make the full page
+		intro = dedent("""
+			--[[Category:Flower Knight description modules]]
+			--[[Category:Automatically updated modules]]
+			-- Relates skin IDs to their data.
+			--
+			-- Exclusive skins come with a character as a free bonus.
+			-- They have a very unique appearance and SD.
+			-- For example, obtaining ANY version of Cattleya instantly
+			-- earns you the exclusive 幼少期 / Early Childhood skin.
+			-- The in-game data labels these skins with (専用) / (Exclusive)
+			--
+			-- Different version skins are minor changes on specific skins.
+			-- You earn them by obtaining that character's skin at the
+			-- evolution tier which the different skin applies to.
+			-- For example, June Bride Water Lily (Suiren)'s evolved form
+			-- has an alternate picture that shows more hair. This skin
+			-- cannot be obtained with the original Water Lily.
+			""").lstrip()
 		output = u'\n'.join([
-			'--[[Category:Flower Knight description modules]]',
-			'--[[Category:Automatically updated modules]]',
-			'-- Relates skin IDs to their data.\n',
-			'local p = {}\n',
+			intro,
+			'local p = {}',
+			'',
 
 			# Write the page body.
 			'p.charIdToSkinIds = {',
 			char_id_to_info_as_str,
-			'}\n',
+			'}',
+			'',
 			'p.skinIdToInfo = {',
 			skin_id_to_info_as_str,
-			'}\n',
+			'}',
+			'',
+			'p.charIdsWithExclusiveSkins = {',
+			char_ids_with_exclusive_skins,
+			'}',
+			'',
+			'p.charIdsWithDiffVersions = {',
+			char_ids_with_diff_ver_skins,
+			'}',
+			'',
 
 			# Write the page footer.
-			'return p'
+			'return p',
+			'',
 			])
 		return output
