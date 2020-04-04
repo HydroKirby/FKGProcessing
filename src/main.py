@@ -89,17 +89,6 @@ def get_char_template(master_data):
 		output_text += template
 	return output_text
 
-def get_char_module(master_data):
-	"""Gets the text to fill in a character module.
-
-	If the user chooses to abort the operation, an empty string is returned.
-
-	@returns The full text for a character module.
-	"""
-	knights = master_data.choose_knights()
-	return u'\n\n==========================\n\n'.join(
-		[master_data.get_char_module(knight) for knight in knights if knight])
-
 def introspect(master_data, imaging):
 	"""Allows real-time introspection of the program and data."""
 	introspecting = True
@@ -152,13 +141,13 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 	ACT_FIND_CHAR = 'find'
 	ACT_SEE_ABILITIES = 'see abilities'
 	ACT_GET_CHAR_TEMPLATE = 'char template'
-	ACT_GET_CHAR_MODULE = 'char module'
 	ACT_DL_CHAR_IMAGES = 'dl char images'
 	ACT_DL_EQUIP_IMAGES = 'dl equip images'
 	ACT_WRITE_SKILL_LIST = 'skill list'
 	ACT_WRITE_ABILITY_LIST = 'ability list'
 	ACT_WRITE_CHAR_NAME_LIST = 'char list'
 	ACT_WRITE_EQUIP_LIST = 'equip list'
+	ACT_WRITE_SKIN_LIST = 'skin list'
 	ACT_WRITE_MASTER_CHAR_LIST = 'master char list'
 	ACT_FRAME_ICONS = 'frame'
 	action_list = {
@@ -169,7 +158,6 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_FIND_CHAR:'Find a character.',
 		ACT_SEE_ABILITIES:'See the list of unique abilities.',
 		ACT_GET_CHAR_TEMPLATE:'Output a Character template.',
-		ACT_GET_CHAR_MODULE:'Output a Character module.',
 		ACT_DL_CHAR_IMAGES:'Download all images for a character.',
 		ACT_DL_EQUIP_IMAGES:'Download all equipment images.',
 		ACT_WRITE_SKILL_LIST:'Write the Skill list (Skill ID:Skill Info).',
@@ -177,6 +165,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		ACT_WRITE_CHAR_NAME_LIST:'Write the Character list (FKG ID:JP Name).',
 		ACT_WRITE_EQUIP_LIST:'Write the Equipment list (Equip ID:Equip Info).',
 		ACT_WRITE_MASTER_CHAR_LIST:'Write the Master Character List (FKG ID:All Data).',
+		ACT_WRITE_SKIN_LIST:'Write the Skin list page (Skin ID:All Data)',
 		ACT_FRAME_ICONS:'Puts frames on all character icons in the "dl" folder.',
 	}
 	def list_actions():
@@ -208,8 +197,6 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			output_text = master_data.get_char_list_page()
 		elif user_input == ACT_GET_CHAR_TEMPLATE:
 			output_text = get_char_template(master_data)
-		elif user_input == ACT_GET_CHAR_MODULE:
-			output_text = get_char_module(master_data)
 		elif user_input == ACT_DL_CHAR_IMAGES:
 			output_text = download_character_images(master_data, networking)
 		elif user_input == ACT_DL_EQUIP_IMAGES:
@@ -218,6 +205,8 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 			output_text = master_data.get_skill_list_page()
 		elif user_input == ACT_WRITE_ABILITY_LIST:
 			output_text = master_data.get_bundled_ability_list_page()
+		elif user_input == ACT_WRITE_SKIN_LIST:
+			output_text = master_data.get_skin_info_page()
 		elif user_input == ACT_WRITE_MASTER_CHAR_LIST:
 			output_text = master_data.get_master_char_data_page()
 		elif user_input == ACT_WRITE_EQUIP_LIST:

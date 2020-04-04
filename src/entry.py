@@ -120,10 +120,9 @@ def split_and_check_count(data_entry_csv, expected_count):
 	"""
 
 	data_entry_csv = data_entry_csv.rstrip()
-	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
 	if data_entry_csv.endswith(','):
-		# The last data entry is empty and unnecessary.
-		entries = entries[:-1]
+		data_entry_csv = data_entry_csv[:-1]
+	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
 
 	actual_count = len(entries)
 	if actual_count < expected_count:
@@ -170,14 +169,6 @@ class BaseEntry(object):
 		# Add this type of master data section to the list of checked sections.
 		if my._MASTER_DATA_TYPE not in BaseEntry._WARN_WRONG_SIZE:
 			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = False
-		# If the CSV parsing failed and there has not been a message given
-		# about that, print an warning report.
-		if not success and not BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE]:
-			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
-				actual_count, my._MASTER_DATA_TYPE, len(my._CSV_NAMES)))
-			print('The format of getMaster may have changed.\n')
-			# Don't state the warning again.
-			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
 
 		# Store the values.
 		my.values_dict = dict(zip(my._CSV_NAMES, values))
@@ -191,6 +182,23 @@ class BaseEntry(object):
 		temp = dict(zip(range(len(my._CSV_NAMES)),
 			my._CSV_NAMES))
 		[setattr(my, temp[i], values[i]) for i in range(len(values))]
+		
+		# If the CSV parsing failed and there has not been a message given
+		# about that, print an warning report.
+		if not success and not BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE]:
+			print('WARNING: There are {0} values in a/an {1} entry instead of {2}.'.format(
+				actual_count, my._MASTER_DATA_TYPE, len(my._CSV_NAMES)))
+			print('The offending CSV was this:')
+			# Remove any trailing newlines.
+			print(data_entry_csv.rstrip())
+			if actual_count <= 1:
+				print('This is probably a parsing bug.')
+			else:
+				print('The format of getMaster may have changed. ' \
+					'This is the current interpretation:')
+				print(repr(my))
+			# Don't state the warning again.
+			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
 		
 		# Determine which values are strings.
 		# It helps to store this because strings need enclosed in double-quotes
@@ -260,9 +268,10 @@ class CharacterEntry(BaseEntry):
 		'gift',
 		'ability1ID',
 		'ability2ID',
+		'ability3ID',
 		'skill1ID',
 		'skill2ID',
-		'unknown00',
+		'unknown07', # Added Feb 15, 2020
 		'lvlOneHP',
 		'lvlMaxHP',
 		'lvlOneAtk',
@@ -270,7 +279,7 @@ class CharacterEntry(BaseEntry):
 		'lvlOneDef',
 		'lvlMaxDef',
 		'lvlOneSpd',
-		'lvlOneSpd',
+		'lvlMaxSpd', # Renamed Dec 24, 2019
 		'ampuleBonusHP',
 		'ampuleBonusAtk',
 		'ampuleBonusDef',
@@ -279,6 +288,7 @@ class CharacterEntry(BaseEntry):
 		'ampule2BonusDef',
 		'goldSellValue',
 		'sortCategory', # Unverified
+		'hasAlternateForm', # Unverified
 		'sortID', # Used when viewing the library and sorting by "図鑑No"
 		'isNotPreEvo',
 		'isFlowerKnight1',
@@ -332,7 +342,7 @@ class CharacterEntry(BaseEntry):
 			super(CharacterEntry, my).__str__()
 
 class SkillEntry(BaseEntry):
-	"""Stores one line of data from the masterCharacter section."""
+	"""Stores one line of data from the masterCharacterSkill section."""
 	_CSV_NAMES = [
 		'uniqueID',
 		'nameJapanese',
@@ -347,7 +357,8 @@ class SkillEntry(BaseEntry):
 		'unknown01',
 		'date00',
 		'date01',
-		'unknown02',]
+		'unknown02',
+	]
 	_MASTER_DATA_TYPE = 'skill'
 
 	def __init__(my, data_entry_csv):
@@ -388,7 +399,8 @@ class AbilityEntry(BaseEntry):
 		'ability3Val4',
 		'date00',
 		'date01',
-		'unknown00',]
+		'unknown00',
+	]
 	_MASTER_DATA_TYPE = 'ability'
 
 	def __init__(my, data_entry_csv):
@@ -427,7 +439,8 @@ class AbilityDescEntry(BaseEntry):
 		'ability3icon',
 		'ability3desc',
 		'ability4icon',
-		'ability4desc',]
+		'ability4desc',
+	]
 	_MASTER_DATA_TYPE = 'ability description'
 
 	def __init__(my, data_entry_csv):
@@ -478,7 +491,8 @@ class EquipmentEntry(BaseEntry):
 		'isPersonalEarring',
 		'dateMade',
 		'dateChanged',
-		'zero',]
+		'zero',
+	]
 	# Note 1: CSV "equipPart" has the following meanings.
 	# 300001: All gacha rings.
 	# 300002: All gacha bracelets.
@@ -554,3 +568,62 @@ class EquipmentEntry(BaseEntry):
 			pair[0], pair[1]) for pair in pairs])
 		lua_table += '}'
 		return lua_table
+
+class SkinEntry(BaseEntry):
+	"""Stores one line of data from the masterCharacterSkin section."""
+	_CSV_NAMES = [
+		# This ID matches the character's unique ID
+		'uniqueID',
+		'charID',
+		# replaceID for "different version" skins is uniqueID w/"000" appended
+		# Ex: If uniqueID is 134207000, replaceID is 134207
+		# replaceID for "exclusive" skins is just zero
+		# Ex: If uniqueID is 132901001, replaceID is 0
+		'replaceID',
+		# isSkin is set for any skins. When true, it implies
+		# (uniqueID != replaceID) and (isDiffVer or isExclusive)
+		'isSkin',
+		# For minor skin changes like Warunasubi/Nightshade without her mask
+		# skinName is always "別バージョン"
+		'isDiffVer',
+		# For skin-only characters like Young Cattleya or Swimsuit Anemone
+		# This flag is mutually exclusive with isDiffVer
+		# Example skinName: "モコモコした服(専用)" for Oenothera/Pinkladies
+		'isExclusive',
+		# Name category as shown on the skin selection modal
+		'skinName',
+		# Order of icons for on the skin selection modal
+		'pos',
+		# Perhaps this flag is only for Ping Pong Mum?
+		'unknown00',
+	]
+	# This defines which vars get shown in getlua()
+	_LUA_ORDER = [
+		'charID', 'replaceID', 'isDiffVer', 'isExclusive', 'skinName'
+	]
+	_MASTER_DATA_TYPE = 'skin'
+
+	def __init__(my, data_entry_csv):
+		super(SkinEntry, my).__init__(data_entry_csv)
+
+	def __lt__(my, other):
+		return my.uniqueID < other.uniqueID
+
+	def getlua(my, quoted=False):
+		"""Returns the stored data as a Lua list.
+
+		@param quoted: Boolean. When True, encloses string values
+			of this class' variables in double-quotes.
+
+		@returns: String. All variables of the class in Lua table format.
+		"""
+
+		string_transformer = get_quotify_or_do_nothing_func(quoted)
+
+		# Generate the Lua table.
+		lua_table = u', '.join([u'{0}={1}'.format(
+			name, string_transformer(my.values_dict[name])) \
+			for name in my._LUA_ORDER])
+		
+		# Surround the Lua table in angle brackets.
+		return u'{{{0}}}'.format(lua_table)

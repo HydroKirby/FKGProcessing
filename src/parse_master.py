@@ -1,10 +1,10 @@
 #!/usr/bin/python
 # coding=utf-8
 from __future__ import print_function
-import os, sys, math, re, random, zlib, hashlib, json, binascii, time
-from base64 import b64decode
+import os, sys
 import six
 from io import open
+from getmaster_loader import *
 from common import *
 from entry import *
 from flowerknight import *
@@ -27,7 +27,7 @@ class MasterData(object):
 	# When True, only store flower knights.
 	remove_characters = False
 
-	def __init__(my, infilename=''):
+	def __init__(my):
 		# Most of these are deprecated 
 		my.masterTexts = {}
 		my.characters = {}
@@ -38,21 +38,39 @@ class MasterData(object):
 		my.ability_descs = {}
 		my.equipment_entries = []
 		my.equipment = {}
+		my.skins = {}
 
 		# This is the new way to access the master data.
 		my.entries = {}
 		my.entry_ids = {}
-		my.load_getMaster(infilename)
+		my.load_getMaster()
 
 	def _extract_section(my, section, rawdata):
 		"""Gets all text from one section of the master data."""
-		return rawdata.partition(section + '\n')[2][1:].partition('master')[0].strip().split('\n')
+		# Find the section header
+		full_str_pos = 0
+		section_idx = 0
+		found_section = None
+		while full_str_pos < len(rawdata) and found_section != section:
+			section_idx = rawdata.find(section, full_str_pos)
+			if section_idx < 0:
+				print('Could not find the section called ' + section)
+				return ''
+			newline_idx = max(0, rawdata.find('\n', section_idx))
+			found_section = rawdata[section_idx:newline_idx].strip()
+			full_str_pos = section_idx + 1
+		# We found the header, so take all text after it
+		str_beyond_section = rawdata[section_idx + len(section):].lstrip()
+		str_until_next_section = str_beyond_section.partition('master')[0]
+		str_until_next_section = str_until_next_section.strip()
+		data_lines = str_until_next_section.split('\n')
+		return data_lines
 
-	def _parse_character_entries(my):
+	def _parse_character_entries(my, api_data=[]):
 		"""Creates a list of character entries from masterCharacter."""
 		# Start by parsing the CSV.
 		# Store the CSV into understandable variable names.
-		character_entries = [CharacterEntry(entry) for entry in my.masterTexts['masterCharacter']]
+		character_entries = [CharacterEntry(entry) for entry in api_data]
 		# Store CSV entries in a dict such that their ID is their key.
 		my.characters = {c.id0:c for c in character_entries}
 		# Compile a list of all flower knights from the CSVs.
@@ -72,161 +90,88 @@ class MasterData(object):
 			else:
 				knights[name].add_entry(char)
 
-	def _parse_skill_entries(my):
+	def _parse_skill_entries(my, api_data=[]):
 		"""Creates a list of skill entries from masterCharacterSkill."""
-		skill_entries = [SkillEntry(entry) for entry in my.masterTexts['masterSkill']]
+		skill_entries = [SkillEntry(entry) for entry in api_data]
 		my.skills = {s.uniqueID:s for s in skill_entries}
 
-	def _parse_ability_entries(my):
+	def _parse_ability_entries(my, api_data=[]):
 		"""Creates a list of ability entries from masterCharacterLeaderSkill."""
-		ability_entries = [AbilityEntry(entry) for entry in my.masterTexts['masterAbility']]
+		ability_entries = [AbilityEntry(entry) for entry in api_data]
 		# Remove abilities related to Strengthening Synthesis.
 		ability_entries = [entry for entry in ability_entries if
 			u'合成' not in entry.shortDescJapanese]
 		my.abilities = {a.uniqueID:a for a in ability_entries}
 
-	def _parse_ability_desc_entries(my):
+	def _parse_ability_desc_entries(my, api_data=[]):
 		"""Creates a list of ability description entries from the master data.
 
 		It comes from masterCharacterLeaderSkillDescription.
 		"""
 
-		ability_desc_entries = [AbilityDescEntry(entry) for entry in my.masterTexts['masterAbilityDescs']]
+		ability_desc_entries = [AbilityDescEntry(entry) for entry in api_data]
 		my.ability_descs = {a.id0:a for a in ability_desc_entries}
 		
-	def _parse_equipment_entries(my):
+	def _parse_equipment_entries(my, api_data=[]):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
-		my.equipment_entries = [entry.split(',')[:-1] for entry in my.masterTexts['masterEquipment']]
-		my.equipment = [EquipmentEntry(entry) for entry in my.masterTexts['masterEquipment']]
+		my.equipment_entries = [entry.split(',')[:-1] for entry in api_data]
+		my.equipment = [EquipmentEntry(entry) for entry in api_data]
 
-	def __decode_getMaster_encoded(my, infilename, diagnostics=False):
-		"""Interprets getMaster's encoded data.
+	def _parse_skin_entries(my, api_data=[]):
+		"""Creates a list of skin entries from masterCharacterSkin."""
+		my.skin_entries = [entry.split(',')[:-1] for entry in api_data]
+		my.skins = [SkinEntry(entry) for entry in api_data]
 
-		Only call through _decode_getMaster.
-
-		@param infilename: The raw getMaster file's name.
-		@param diagnostics: If True, prints what the function is doing.
-			Defaults to False.
-		@returns On success, a string of the decoded data.
-			On failure, False.
-		"""
-
-		with open(infilename, 'rb') as infile:
-			bin_data = infile.read()
-
-		try:
-			bin_data_bytes = zlib.decompress(bin_data)
-			bin_data_str = bin_data_bytes.decode("utf-8")
-			jlist = json.loads(bin_data_str)
-			out = u"";
-
-			for key in jlist:
-				element = jlist[key]
-				try:
-					if element:
-						content = b64decode(element).decode('utf-8')
-					else:
-						content = u'nil'
-					out += u'\n{0}\n\n{1}'.format(key, content)
-				except (binascii.Error, TypeError):
-					# This element might not be encrypted.
-					content = element
-					out += u'\n{0}\n\n{1}'.format(key, content)
-
-			if diagnostics:
-				print('Loaded {0} as zlib-compressed data.'.format(infilename))
-			return out
-		except:
-			if diagnostics:
-				print('Could not load {0} as zlib-compressed data.'.format(
-					infilename))
-		return False
-
-	def __decode_getMaster_plain_text(my, infilename, diagnostics=False):
-		"""Interprets getMaster's data as a pre-decoded text file.
-
-		Only call through _decode_getMaster.
-
-		@param infilename: The decoded getMaster file's name.
-		@param diagnostics: If True, prints what the function is doing.
-			Defaults to False.
-		@returns On success, a string of the decoded data.
-			On failure, False.
-		"""
-
-		try:
-			# Assume it is the pre-decoded data.
-			with open(infilename, 'rt', encoding='utf-8') as infile:
-				bin_data = infile.read()
-			if diagnostics:
-				print('Loaded {0} as plain text.'.format(infilename))
-			return bin_data
-		except UnicodeDecodeError:
-			if diagnostics:
-				print('Could not load {0} as plain text.'.format(infilename))
-		return False
-
-	def _decode_getMaster(my, infilename='', diagnostics=False, output_result=False):
-		"""Gets getMaster's data.
-
-		@param infilename: The raw or decoded getMaster file's name.
-			If unset, defaults to DEFAULT_GETMASTER_INFILENAME from common.py .
-		@param diagnostics: If True, prints what the function is doing.
-			Defaults to False.
-		@param output_result: If True, also outputs the decoded data to
-			DEFAULT_GETMASTER_OUTFILENAME from common.py . Defaults to False.
-		@returns On success, a string of the decoded data.
-			On failure, None.
-		"""
-		if not infilename:
-			infilename = DEFAULT_GETMASTER_INFILENAME
-
-		# Try as encoded (raw) data directly taken from in-game.
-		master_data = my.__decode_getMaster_encoded(infilename, diagnostics)
-		if not master_data:
-			# Try as pre-decoded plain text.
-			master_data = my.__decode_getMaster_plain_text(
-				infilename, diagnostics)
-		if not master_data:
-			# Both methods failed. This isn't the master data file?
-			return None
-
-		if output_result:
-			outfilename = DEFAULT_GETMASTER_OUTFILENAME
-			with open(outfilename, 'w', encoding='utf-8') as outfile:
-				outfile.write(time.strftime('Timestamp: %a, %m-%d-%Y\n', time.gmtime()))
-				outfile.write(master_data)
-			if diagnostics:
-				print('Wrote the output to {0}.'.format(outfilename))
-		return master_data
-
-	def load_getMaster(my, infilename=''):
+	def load_getMaster(my):
 		"""Loads and parses getMaster.
 
 		This function is called automatically if the constructor is given
 		getMaster's filename in advance.
 		"""
 
-		# Open the master database
-		api_data = my._decode_getMaster(infilename, True, True)
+		# Open the master database.
+		loader = MasterDataLoader()
+		api_data = loader.master_json
+
+		# Output the result for debugging purposes
+		loader.output_getMaster_plaintext()
 		
 		# Extract relevant data from master database
-		my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', api_data)
-		my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', api_data)
-		my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', api_data)
-		my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', api_data)
-		my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', api_data)
-		my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', api_data)
-		my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', api_data)
+		
+		if loader.master_text:
+			# Parse data from the old format as a massive CSV string
+			mt = loader.master_text
+			my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', mt)
+			my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', mt)
+			my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', mt)
+			my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', mt)
+			my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', mt)
+			my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', mt)
+			my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', mt)
+			data_skill = my.masterTexts['masterSkill']
+			data_abil = my.masterTexts['masterAbility']
+			data_abil_desc = my.masterTexts['masterAbilityDescs']
+			data_equip = my.masterTexts['masterEquipment']
+			data_char = my.masterTexts['masterCharacter']
+			data_skin = my.masterTexts['masterCharacterSkin']
+		else:
+			# Parse data from the new format stored as a dict
+			data_skill = [dat for dat in api_data['masterCharacterSkill'].split('\n') if dat]
+			data_abil = [dat for dat in api_data['masterCharacterLeaderSkill'].split('\n') if dat]
+			data_abil_desc = [dat for dat in api_data['masterCharacterLeaderSkillDescription'].split('\n') if dat]
+			data_equip = [dat for dat in api_data['masterCharacterEquipment'].split('\n') if dat]
+			data_char = [dat for dat in api_data['masterCharacter'].split('\n') if dat]
+			data_skin = [dat for dat in api_data['masterCharacterSkin'].split('\n') if dat]
 
 		# Parse character and equipment entries
-		my._parse_skill_entries()
-		my._parse_ability_entries()
-		my._parse_ability_desc_entries()
-		my._parse_equipment_entries()
+		my._parse_skill_entries(data_skill)
+		my._parse_ability_entries(data_abil)
+		my._parse_ability_desc_entries(data_abil_desc)
+		my._parse_equipment_entries(data_equip)
+		my._parse_skin_entries(data_skin)
 		# Parse character entries AFTER ability and ability descriptions.
 		# We need to remove abilities that belong to non-flower knights.
-		my._parse_character_entries()
+		my._parse_character_entries(data_char)
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.
@@ -709,48 +654,6 @@ class MasterData(object):
 			print('There is no knight with the name {0}.'.format(name_or_id))
 		return None
 
-	def get_char_module(my, char_name_or_id):
-		"""Outputs a single character's module."""
-		knight = my.get_knight(char_name_or_id)
-		skill = my.skills[knight.skill]
-		bloomable = knight.bloomability != FlowerKnight.NO_BLOOM
-		# Ability 1 is used by pre-evo and evo tiers.
-		ability1 = knight.tiers[1]['abilities'][0]
-		# Ability 2 is used by evo and bloom tiers.
-		ability2 = knight.tiers[2]['abilities'][1]
-		if bloomable:
-			# Abilities 3 and 4 replace abilities 1 and 2 after blooming.
-			ability3 = knight.tiers[3]['abilities'][0]
-			ability4 = knight.tiers[3]['abilities'][1]
-		
-		module_name = 'Module:' + knight.fullName
-
-		# TODO: Sanitize user data. It needs to start with a new line and end with }.
-		userData = ''
-
-		output = '''--[[Category:Flower Knight data modules]]
-			-- Character module for {fullName}
-			-- WARNING: This character's affection data is wrong.
-			local p = {{}},
-
-			-- Wikia editors can and should edit the userData table.
-			p.userData = {{
-				{userData}
-			}}
-
-			-- DO NOT EDIT!
-			-- The master data comes from the game's data itself.
-			p.masterData = {masterData}
-
-			return p
-
-			'''.format(fullName=knight.fullName, userData=userData,
-				masterData=knight.get_lua(quoted=True))
-
-		output = lua_indentify(output)
-
-		return output
-
 	def find_referenced_abilities(my):
 		"""Finds all abilities that are referenced multiple times."""
 		# Forewarning: The code below was thrown together as a hack job.
@@ -824,34 +727,99 @@ class MasterData(object):
 		#Assembles the template data via repeated join and concatenations.
 		template_text = ''.join(["{{CharacterStat\n|",
 			"\n|JP = ", knight.fullName,
-			"\n|ScientificName = ",
-			"\n|CommonName = ",
 			"\n|languageoftheflowers = ", meaning[5],
-			"\n|RomajiName = ",
-			"\n|NutakuName = ",
 			"\n}}",])
 		
-		if CmdPrint: print(template_text)
-		#rare_text()
 		return template_text
 
-def rarityStar(n):
-	return u"★" * int(n)
+	def get_skin_info_page(my):
+		"""Outputs the table of skin IDs and their related info."""
+		# Write the page header.
+		module_name = 'Module:Skin/Data'
+		def getid(entry):
+			return int(entry.uniqueID or 0)
+		# Determine which entries to output
+		entries = sorted(my.skins, key=getid)
+		entries = [entry for entry in entries if entry.isSkin == '1']
+		# Make the table that resembles the master data's info
+		full_info_strings = ["['{0}'] = {1},".format(
+			entry.uniqueID, entry.getlua(True)) for entry in entries]
+		skin_id_to_info_as_str = '\t' + '\n    '.join(full_info_strings)
+		# Make the table relating character IDs back to the skin info
+		char_id_to_info = {}
+		for entry in entries:
+			# Convert to a number to cause proper sorting
+			char_id = int(entry.charID)
+			if not char_id in char_id_to_info:
+				char_id_to_info[char_id] = []
+			uid = "'{0}'".format(entry.uniqueID)
+			char_id_to_info[char_id].append(uid)
+		# Make the list of character IDs that have exclusive skins
+		char_ids_with_exclusive_skins = set([int(entry.charID) for \
+			entry in entries if entry.isExclusive == '1'])
+		char_ids_with_exclusive_skins = ["['{0}'] = 1,".format(
+			charID) for charID in sorted(char_ids_with_exclusive_skins)]
+		char_ids_with_exclusive_skins = '    ' + '\n    '.join(
+			char_ids_with_exclusive_skins)
+		# Make the list of character IDs that have different version skins
+		char_ids_with_diff_ver_skins = set([int(entry.charID) for \
+			entry in entries if entry.isDiffVer == '1'])
+		char_ids_with_diff_ver_skins = ["['{0}'] = 1,".format(
+			charID) for charID in sorted(char_ids_with_diff_ver_skins)]
+		char_ids_with_diff_ver_skins = '    ' + '\n    '.join(
+			char_ids_with_diff_ver_skins)
+		# With all data organized, stringify each line of info
+		char_id_to_info = {charID : ', '.join(uniqueIdTuple) \
+			for charID, uniqueIdTuple in char_id_to_info.items()}
+		strings_of_char_id_to_info = ["['{0}'] = {{{1}}},".format(
+			charID, infoStr) for charID, infoStr in \
+				sorted(char_id_to_info.items())]
+		char_id_to_info_as_str = '    ' + '\n    '.join(
+			strings_of_char_id_to_info)
+		# Make the full page
+		intro = dedent("""
+			--[[Category:Flower Knight description modules]]
+			--[[Category:Automatically updated modules]]
+			-- Relates skin IDs to their data.
+			--
+			-- Exclusive skins come with a character as a free bonus.
+			-- They have a very unique appearance and SD.
+			-- For example, obtaining ANY version of Cattleya instantly
+			-- earns you the exclusive 幼少期 / Early Childhood skin.
+			-- The in-game data labels these skins with (専用) / (Exclusive)
+			--
+			-- Different version skins are minor changes on specific skins.
+			-- You earn them by obtaining that character's skin at the
+			-- evolution tier which the different skin applies to.
+			-- For example, June Bride Water Lily (Suiren)'s evolved form
+			-- has an alternate picture that shows more hair. This skin
+			-- cannot be obtained with the original Water Lily.
+			""").lstrip()
+		output = u'\n'.join([
+			intro,
+			'local p = {}',
+			'',
 
-def affectionCalc(Heart, Blossom):
-	return str(math.floor((float(Heart) + float(Blossom)) * 1.2))
-	
-def skillLv5Calc(InitSkill,LevelSkill,SkillUpMultiplier):
+			# Write the page body.
+			'p.charIdToSkinIds = {',
+			char_id_to_info_as_str,
+			'}',
+			'',
+			'p.skinIdToInfo = {',
+			skin_id_to_info_as_str,
+			'}',
+			'',
+			'p.charIdsWithExclusiveSkins = {',
+			char_ids_with_exclusive_skins,
+			'}',
+			'',
+			'p.charIdsWithDiffVersions = {',
+			char_ids_with_diff_ver_skins,
+			'}',
+			'',
 
-	Skill     = int(InitSkill)
-	SkillPlus = int(LevelSkill)
-	SkillExp  = int(math.floor(float(SkillUpMultiplier) * 4))
-	Skill5    = Skill + (SkillPlus * SkillExp)
-
-	return str(Skill5)
-
-def rare_text():
-	RNG1 = random.randrange(0,9)
-	RNG2 = random.randrange(0,9)
-	
-	if (RNG1 == RNG2): print("\n\n" + u"団長様、たまには私のことも構ってくださいね？")
+			# Write the page footer.
+			'return p',
+			'',
+			])
+		return output

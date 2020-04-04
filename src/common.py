@@ -19,8 +19,6 @@ english_nameList = ["Nerine"]
 DL_FAIL, # The download failed.
 DL_QUIT) = range(3) # The user forcefully stopped the download.
 
-CmdPrint = True
-
 attribList = {
 	'1':'Slash',
 	'2':'Blunt',

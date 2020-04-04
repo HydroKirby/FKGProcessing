@@ -1,9 +1,11 @@
 # Junk made by the project.
-getMaster*
+getMaster
 result.txt
 getMasterDecoded.txt
 dl/
 decodes/
+src/inputs/
+src/outputs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
