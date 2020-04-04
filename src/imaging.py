@@ -43,12 +43,24 @@ class Imaging(object):
 	'../res/stage-preEvolved.png',
 	'../res/stage-evolved.png',
 	'../res/stage-bloom.png']
+	MEMORY_FRAMES = [
+	'../res/rarity-memory-frame3.png',
+	'../res/rarity-memory-frame4.png',
+	'../res/rarity-memory-frame5.png',
+	'../res/rarity-memory-frame6.png']
+	MEMORY_PLATES = [
+	'../res/rarity-nameplate3.png',
+	'../res/rarity-nameplate4.png',
+	'../res/rarity-nameplate5.png',
+	'../res/rarity-nameplate6.png']
 
 	def __init__(my):
 		my.icon_bgs = [my.load_image(filename) for filename in Imaging.ICON_BACKGROUNDS]
 		my.icon_frames = [my.load_image(filename) for filename in Imaging.ICON_FRAMES]
 		my.icon_types = [my.load_image(filename) for filename in Imaging.ICON_TYPES]
 		my.icon_stages = [my.load_image(filename) for filename in Imaging.ICON_STAGES]
+		my.fm_frames = [my.load_image(filename) for filename in Imaging.MEMORY_FRAMES]
+		my.fm_plates = [my.load_image(filename) for filename in Imaging.MEMORY_PLATES]
 
 	def load_image(my, filename):
 		"""Loads an image or returns the image as-is."""
@@ -80,7 +92,22 @@ class Imaging(object):
 		result = Image.new("RGBA", bottom_image.size)
 		result = Image.alpha_composite(result, bottom_image)
 		result = Image.alpha_composite(result, top_image)
-		result = Image.alpha_composite(result, top_image)
+		return result
+
+	def paste_layer(my, top_image, bottom_image, position):
+		"""Merges two images with different resolutions.
+		@param top_image: An Image instance or filename. The overlay image.
+		@param bottom_image: An Image instance or filename. The bottom image.
+		@param position: A set of two integers. Specifies the coordinates of the top image within the canvas.
+		@returns An Image instance where the passed images are merged, or
+			None if the image library is unavailable.
+		"""
+		if not _HAS_LIB: my._print_no_library_warning(); return None
+		top_image = my.load_image(top_image)
+		bottom_image = my.load_image(bottom_image)
+		result = Image.new("RGBA", bottom_image.size)
+		result.paste(top_image, position)
+		result = my.apply_layer(result, bottom_image)
 		return result
 
 	def get_framed_icon(my, icon_filename, outfilename, rarity, typing, stage=None):
@@ -108,6 +135,27 @@ class Imaging(object):
 		result = my.apply_layer(frame, result)
 		result = my.apply_layer(icon_typing, result)
 		if stage: result = my.apply_layer(stage_level, result)
+		# Save and return the result.
+		result.save(outfilename, 'png')
+		return result
+
+	def get_framed_memory(my, fm_wallpaper, fm_title, outfilename, rarity):
+		"""Produces the fully framed for a Flower Memory wallpaper.
+		@param fm_wallpaper: An Image instance or filename.
+			The wallpaper picture to use as a base.
+		@param fm_title: An Image instance or filename.
+			The title name picture to use as a base.
+		@param outfilename: String. The output file's name.
+		@returns An Image instance of the framed character icon on success,
+			or None on failure.
+		"""
+		# Select the layers to use, based on icon arrays.
+		fm_frame = my.fm_frames[rarity - 3]
+		fm_plate = my.fm_plates[rarity - 3]
+		# Apply the layers.
+		result = my.apply_layer(fm_frame, fm_wallpaper)
+		result = my.paste_layer(fm_plate, result,(155,449))
+		result = my.paste_layer(fm_title, result,(156,524))
 		# Save and return the result.
 		result.save(outfilename, 'png')
 		return result
