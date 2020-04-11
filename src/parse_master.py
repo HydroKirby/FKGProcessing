@@ -741,43 +741,48 @@ class MasterData(object):
 		# Determine which entries to output
 		entries = sorted(my.skins, key=getid)
 		entries = [entry for entry in entries if entry.isSkin == '1']
+
 		# Make the table that resembles the master data's info
 		full_info_strings = ["['{0}'] = {1},".format(
 			entry.uniqueID, entry.getlua(True)) for entry in entries]
-		skin_id_to_info_as_str = '\t' + '\n    '.join(full_info_strings)
+		skin_id_to_info_as_str = '    ' + '\n    '.join(full_info_strings)
+
 		# Make the table relating character IDs back to the skin info
-		char_id_to_info = {}
+		lib_id_to_info = {}
 		for entry in entries:
 			# Convert to a number to cause proper sorting
-			char_id = int(entry.charID)
-			if not char_id in char_id_to_info:
-				char_id_to_info[char_id] = []
+			char_id = int(entry.libraryID)
+			if not char_id in lib_id_to_info:
+				lib_id_to_info[char_id] = []
 			uid = "'{0}'".format(entry.uniqueID)
-			char_id_to_info[char_id].append(uid)
+			lib_id_to_info[char_id].append(uid)
+
 		# Make the list of character IDs that have exclusive skins
-		char_ids_with_exclusive_skins = set([int(entry.charID) for \
+		lib_ids_with_exclusive_skins = set([int(entry.libraryID) for \
 			entry in entries if entry.isExclusive == '1'])
-		char_ids_with_exclusive_skins = ["['{0}'] = 1,".format(
-			charID) for charID in sorted(char_ids_with_exclusive_skins)]
-		char_ids_with_exclusive_skins = '    ' + '\n    '.join(
-			char_ids_with_exclusive_skins)
+		lib_ids_with_exclusive_skins = ["['{0}'] = 1,".format(
+			charID) for charID in sorted(lib_ids_with_exclusive_skins)]
+		lib_ids_with_exclusive_skins = '    ' + '\n    '.join(
+			lib_ids_with_exclusive_skins)
+
 		# Make the list of character IDs that have different version skins
-		char_ids_with_diff_ver_skins = set([int(entry.charID) for \
+		lib_ids_with_diff_ver_skins = set([int(entry.libraryID) for \
 			entry in entries if entry.isDiffVer == '1'])
-		char_ids_with_diff_ver_skins = ["['{0}'] = 1,".format(
-			charID) for charID in sorted(char_ids_with_diff_ver_skins)]
-		char_ids_with_diff_ver_skins = '    ' + '\n    '.join(
-			char_ids_with_diff_ver_skins)
+		lib_ids_with_diff_ver_skins = ["['{0}'] = 1,".format(
+			charID) for charID in sorted(lib_ids_with_diff_ver_skins)]
+		lib_ids_with_diff_ver_skins = '    ' + '\n    '.join(
+			lib_ids_with_diff_ver_skins)
+
 		# With all data organized, stringify each line of info
-		char_id_to_info = {charID : ', '.join(uniqueIdTuple) \
-			for charID, uniqueIdTuple in char_id_to_info.items()}
-		strings_of_char_id_to_info = ["['{0}'] = {{{1}}},".format(
+		lib_id_to_info = {charID : ', '.join(uniqueIdTuple) \
+			for charID, uniqueIdTuple in lib_id_to_info.items()}
+		lib_id_to_info = ["['{0}'] = {{{1}}},".format(
 			charID, infoStr) for charID, infoStr in \
-				sorted(char_id_to_info.items())]
-		char_id_to_info_as_str = '    ' + '\n    '.join(
-			strings_of_char_id_to_info)
+				sorted(lib_id_to_info.items())]
+		lib_id_to_info = '    ' + '\n    '.join(lib_id_to_info)
+
 		# Make the full page
-		intro = dedent("""
+		intro = dedent(u"""
 			--[[Category:Flower Knight description modules]]
 			--[[Category:Automatically updated modules]]
 			-- Relates skin IDs to their data.
@@ -795,31 +800,26 @@ class MasterData(object):
 			-- has an alternate picture that shows more hair. This skin
 			-- cannot be obtained with the original Water Lily.
 			""").lstrip()
-		output = u'\n'.join([
-			intro,
-			'local p = {}',
-			'',
+		output = dedent(u"""
+		{0}
 
-			# Write the page body.
-			'p.charIdToSkinIds = {',
-			char_id_to_info_as_str,
-			'}',
-			'',
-			'p.skinIdToInfo = {',
-			skin_id_to_info_as_str,
-			'}',
-			'',
-			'p.charIdsWithExclusiveSkins = {',
-			char_ids_with_exclusive_skins,
-			'}',
-			'',
-			'p.charIdsWithDiffVersions = {',
-			char_ids_with_diff_ver_skins,
-			'}',
-			'',
+		return {{
+		libIdToSkinIds = {{
+		{1}
+		}},
 
-			# Write the page footer.
-			'return p',
-			'',
-			])
+		skinIdToInfo = {{
+		{2}
+		}},
+
+		libIdsWithExclusiveSkins = {{
+		{3}
+		}},
+
+		libIdsWithDiffVersions = {{
+		{4}
+		}},
+		}}
+		""").lstrip().format(intro, lib_id_to_info, skin_id_to_info_as_str,
+			lib_ids_with_exclusive_skins, lib_ids_with_diff_ver_skins)
 		return output

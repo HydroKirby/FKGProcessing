@@ -141,6 +141,7 @@ class FlowerKnight(object):
 		# pics aren't used in the library / 図鑑.
 		my.charID1 = entry.sortID
 		my.charID2 = entry.charID2
+		my.libID = entry.libraryID
 
 	def _add_tier2_entry(my, entry):
 		"""Stores the CharacterEntry's data as the evolved info."""
@@ -294,6 +295,7 @@ class FlowerKnight(object):
 			'id':my.tiers[1]['id'],
 			'charID':my.charID1,
 			'charID2':my.charID2,
+			'libID':my.libID,
 			'type':my.type,
 			'rarity':my.rarity,
 			'isEvent':my.is_event,
@@ -447,6 +449,7 @@ class FlowerKnight(object):
 		lua_table = dedent(u'''
 			{{id = {id},
 			charID = {charID},
+			libID = {libID},
 			name = {japanese},
 			reading = "{reading}",
 			type = {type},

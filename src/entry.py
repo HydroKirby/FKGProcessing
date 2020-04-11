@@ -309,7 +309,7 @@ class CharacterEntry(BaseEntry):
 		'isBloomedPowersOnly',
 		'variant',
 		'reading',
-		'libraryID',
+		'libraryID', # Note 11-Apr-2020: We now know this is used to matching skins to characters
 		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
 		'isEventKnight', # Added 1/22/2018. When 1, it's an event character of any evolution tier. Doesn't include serial code girls.
 		'date0',
@@ -574,7 +574,7 @@ class SkinEntry(BaseEntry):
 	_CSV_NAMES = [
 		# This ID matches the character's unique ID
 		'uniqueID',
-		'charID',
+		'libraryID',
 		# replaceID for "different version" skins is uniqueID w/"000" appended
 		# Ex: If uniqueID is 134207000, replaceID is 134207
 		# replaceID for "exclusive" skins is just zero
@@ -599,7 +599,7 @@ class SkinEntry(BaseEntry):
 	]
 	# This defines which vars get shown in getlua()
 	_LUA_ORDER = [
-		'charID', 'replaceID', 'isDiffVer', 'isExclusive', 'skinName'
+		'libraryID', 'replaceID', 'isDiffVer', 'isExclusive', 'skinName'
 	]
 	_MASTER_DATA_TYPE = 'skin'
 
