@@ -5,9 +5,13 @@ import json
 from datetime import date
 from collections import OrderedDict
 from os import scandir, makedirs
-from os.path import isfile, dirname, normpath, join as path_join
+from os.path import isfile, dirname, normpath, exists, abspath, join as path_join
 
 __doc__ = """Handles the initial loading of any getMaster files.
+
+getmaster_loader is for decoding the data.
+parse_master is for interpreting and organizing the data.
+getmaster_outputter is for outputting the organized data for the Wikia.
 
 If there are multiple files to load, their data is blindly combined.
 
@@ -38,6 +42,9 @@ class MasterDataLoader(object):
             my.master_json = loaded
 
     def _get_default_inputs(self):
+        if not exists(INPUT_FOLDER):
+            raise FileNotFoundError('Please put the getMaster files into ' + \
+                abspath(INPUT_FOLDER))
         return [fil for fil in scandir(INPUT_FOLDER) if fil.is_file()]
 
     def load_and_combine_getMasters(my, datafile_list=[]):
