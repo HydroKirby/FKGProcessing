@@ -194,7 +194,7 @@ def action_prompt(master_data, input_name_or_id=None, english_name=''):
 		elif user_input == ACT_UNIT_TEST:
 			UnitTest().run_tests()
 		elif user_input == ACT_WRITE_CHAR_NAME_LIST:
-			output_text = master_data.get_char_list_page()
+			output_text = master_data.outputter.get_char_list_page()
 		elif user_input == ACT_GET_CHAR_TEMPLATE:
 			output_text = get_char_template(master_data)
 		elif user_input == ACT_DL_CHAR_IMAGES:

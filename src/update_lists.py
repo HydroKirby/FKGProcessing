@@ -74,6 +74,16 @@ class ListUpdaterBot(object):
         text = my.master_data.get_new_equipment_names_page(page)
         my.save(text, page)
 
+    def update_skin_list(my):
+        page = pywikibot.Page(my.site, u'Module:Skin/Data')
+        text = my.master_data.outputter.get_skin_info_page()
+        my.save(text, page)
+
+    def update_char_list(my):
+        page = pywikibot.Page(my.site, u'Module:KnightIdAndName/Data')
+        text = my.master_data.outputter.get_char_list_page()
+        my.save(text, page)
+
     def update_character_images(my, auto=False):
         if auto:
             print('Not implemented yet!')
@@ -96,6 +106,8 @@ class ListUpdaterBot(object):
         my.update_equipment_list()
         my.update_equipment_names()
         my.update_ingame_char_data()
+        my.update_skin_list()
+        my.update_char_list()
 
 def run(argv=[]):
     bot = ListUpdaterBot()
