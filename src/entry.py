@@ -120,11 +120,15 @@ def split_and_check_count(data_entry_csv, expected_count):
 	"""
 
 	data_entry_csv = data_entry_csv.rstrip()
-	if data_entry_csv.endswith(','):
-		data_entry_csv = data_entry_csv[:-1]
 	entries = [remove_quotes(entry) for entry in data_entry_csv.split(',')]
 
 	actual_count = len(entries)
+	if data_entry_csv.endswith(',') and entries[-1] == '':
+		# Accomodate for the SOMETIMES trailing comma
+		data_entry_csv = data_entry_csv[:-1]
+		entries = entries[:-1]
+		actual_count = len(entries)
+
 	if actual_count < expected_count:
 		# Add empty strings to fill in the blanks.
 		entries += ['' for i in range(expected_count - actual_count)]
@@ -321,6 +325,7 @@ class CharacterEntry(BaseEntry):
 		'rarityGrownID',
 		'isRarityGrown', # Added 3/12/2018.
 		'canRarityGrow', # Added 3/12/2018.
+		'date2', # Seems to be added around 01-Jan-2020
 		]
 	_MASTER_DATA_TYPE = 'character'
 
@@ -358,6 +363,7 @@ class SkillEntry(BaseEntry):
 		'date00',
 		'date01',
 		'unknown02',
+		'unknown03', # Added 28-Apr-2020
 	]
 	_MASTER_DATA_TYPE = 'skill'
 
@@ -596,6 +602,7 @@ class SkinEntry(BaseEntry):
 		'pos',
 		# Perhaps this flag is only for Ping Pong Mum?
 		'unknown00',
+		'unknown01',
 	]
 	# This defines which vars get shown in getlua()
 	_LUA_ORDER = [
