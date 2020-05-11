@@ -44,6 +44,7 @@ giftList = {
 
 # Maps a rarity to its maxmimum levels per evolution tier.
 maxLevel = {
+	'1':['1','1','1'],
 	'2':['50','60','80'],
 	'3':['50','60','80'],
 	'4':['50','60','80'],
