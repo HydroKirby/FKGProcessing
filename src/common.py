@@ -23,7 +23,8 @@ attribList = {
 	'1':'Slash',
 	'2':'Blunt',
 	'3':'Pierce',
-	'4':'Magic'
+	'4':'Magic',
+	'5':'All-Purpose',
 	}
 
 nationList = {
