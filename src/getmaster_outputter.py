@@ -301,17 +301,9 @@ class MasterDataOutputter(object):
 		lib_ids_with_exclusive_skins = set([int(entry.libraryID) for \
 			entry in entries if entry.isExclusive == '1'])
 		lib_ids_with_exclusive_skins = ["['{0}'] = 1,".format(
-			charID) for charID in sorted(lib_ids_with_exclusive_skins)]
+			char_id) for char_id in sorted(lib_ids_with_exclusive_skins)]
 		lib_ids_with_exclusive_skins = '    ' + '\n    '.join(
 			lib_ids_with_exclusive_skins)
-
-		# Make the list of character IDs that have different version skins
-		lib_ids_with_diff_ver_skins = set([int(entry.libraryID) for \
-			entry in entries if entry.isDiffVer == '1'])
-		lib_ids_with_diff_ver_skins = ["['{0}'] = 1,".format(
-			charID) for charID in sorted(lib_ids_with_diff_ver_skins)]
-		lib_ids_with_diff_ver_skins = '    ' + '\n    '.join(
-			lib_ids_with_diff_ver_skins)
 
 		# With all data organized, stringify each line of info
 		lib_id_to_info = {charID : ', '.join(uniqueIdTuple) \
@@ -320,6 +312,14 @@ class MasterDataOutputter(object):
 			charID, infoStr) for charID, infoStr in \
 				sorted(lib_id_to_info.items())]
 		lib_id_to_info = '    ' + '\n    '.join(lib_id_to_info)
+
+		# Make the like of unique knight ids who have minor variants
+		unique_char_ids_with_minor_skins = set([int(entry.replaceID) for \
+			entry in entries if entry.isDiffVer == '1'])
+		unique_char_ids_with_minor_skins = ["['{0}'] = 1,".format(
+			pre_evo_id) for pre_evo_id in sorted(unique_char_ids_with_minor_skins)]
+		unique_char_ids_with_minor_skins = '    ' + '\n    '.join(
+			unique_char_ids_with_minor_skins)
 
 		# Make the full page
 		intro = dedent(u"""
@@ -356,12 +356,12 @@ class MasterDataOutputter(object):
 		{3}
 		}},
 
-		libIdsWithDiffVersions = {{
+		uniqueCharIdsWithMinorSkins = {{
 		{4}
 		}},
 		}}
 		""").lstrip().format(intro, lib_id_to_info, skin_id_to_info_as_str,
-			lib_ids_with_exclusive_skins, lib_ids_with_diff_ver_skins)
+			lib_ids_with_exclusive_skins, unique_char_ids_with_minor_skins)
 		return output
 
 	def get_char_list_page(self):
