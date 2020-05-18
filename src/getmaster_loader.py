@@ -47,31 +47,96 @@ class MasterDataLoader(object):
                 abspath(INPUT_FOLDER))
         return [fil for fil in scandir(INPUT_FOLDER) if fil.is_file()]
 
-    def load_and_combine_getMasters(my, datafile_list=[]):
+    def _append_dict_entry(self, the_dict, key, to_append):
+        if key not in the_dict:
+            if type(to_append) is str:
+                the_dict[key] = ''
+            else:
+                the_dict[key] = []
+        the_dict[key] += to_append
+
+    def load_and_combine_getMasters(self, datafile_list=[]):
         """Finds all getMaster files and merges them into a dict."""
         if not datafile_list:
-            datafile_list = my._get_default_inputs()
+            datafile_list = self._get_default_inputs()
 
-        master_json = OrderedDict()
+        master_json = {}
         for infilename in datafile_list:
-            latest_dict = my.parse_getMaster(infilename)
+            latest_dict = self.parse_getMaster(infilename)
             if type(latest_dict) is str:
                 # For backwards compatibility, plain text is loadable
                 return latest_dict
             # Remove sections without data
-            latest_dict = {k:v for k, v in latest_dict.items() if v}
-            for key, val in latest_dict.items():
-                if type(val) is list:
-                    print('Key {0} is a list. Loading this is not supported.'.format(
-                        key))
-                    continue
-                if key not in master_json:
-                    master_json[key] = ''
-                master_json[key] += val
-
-        my.master_json = master_json
+            for key, val in self._recursive_build_tree(latest_dict).items():
+                self._append_dict_entry(master_json, key, val)
+            # print('master_json is size ' + str(len(master_json)))
+        self.master_json = master_json
         return master_json
-    
+
+    # This static vars and hidden fn are for debugging FM parsing
+    first_fm_output = True
+    listed = set()
+    def __debug_say_append(self, tosay):
+        if tosay not in self.listed:
+            # print('Appending key ' + tosay)
+            self.listed.add(tosay)
+
+    first_fm_output = True
+    def __debug_output_fm_decodes(self, val):
+        fname = path_join(OUTPUT_FOLDER, 'masterSyncDataDecoded.json')
+        # By default, we are APPENDING new data to the existing file
+        open_mode = 'a'
+        if self.first_fm_output:
+            self.first_fm_output = False
+            # Overwrite the old file with new contents
+            open_mode = 'w'
+        self._output_file(str(val), fname, open_mode)
+
+    def _parse_master_sync_list(self, val):
+        """Parses the split-up list of dicts that compose masterSyncData.
+
+        masterSyncData holds the FM data.
+        I don't know if I will be using this fn in the future.
+        """
+
+        # For debugging, output the whole thing to a file
+        self.__debug_output_fm_decodes(val)
+
+        # Remove empty entries
+        val = [i for i in val if i]
+        sub_merged = {}
+
+        # The rest of this function is unused
+        """
+        for inner_dict_or_list in val:
+            inner_tree = self._recursive_build_tree(inner_dict_or_list)
+            # Merge inner_tree into sub_merged
+            for inner_key, inner_val in inner_tree.items():
+                self.__debug_say_append(inner_key)
+                self._append_dict_entry(
+                    sub_merged, inner_key, inner_val)
+        # "val" is now reformated to be a dict
+        """
+
+        return sub_merged
+
+    def _recursive_build_tree(self, my_dict):
+        """Parses the whole tree of data stored in a master data file."""
+        merged = {}
+        assert type(my_dict) in (dict, OrderedDict), \
+            'Data type of param is wrong: ' + str(type(my_dict))
+        # Remove empty entries
+        my_dict = {k:v for k, v in my_dict.items() if v}
+        for key, val in my_dict.items():
+            if type(val) is list:
+                # We could assign "val" to the fn output.
+                # Currently, I'm not using this fn for anything
+                self._parse_master_sync_list(val)
+            # Merge sub_merged into merged
+            self._append_dict_entry(merged, key, val)
+            # print('merged is size ' + str(len(merged)))
+        return merged
+
     def parse_getMaster(my, pathlike):
         """Loads and interprets one getMaster file.
         
@@ -98,9 +163,9 @@ class MasterDataLoader(object):
             print('This text file is the final, decoded master data. Deprecated!')
             return raw_string
         
-        json_dict = json.loads(raw_string, object_pairs_hook=OrderedDict)
+        json_dict = json.loads(raw_string)
         # Decoding done. Store the data in an understandable structure.
-        master_json = OrderedDict()
+        master_json = {}
         for key, content in json_dict.items():
             master_json[key] = content
         return master_json

@@ -9,6 +9,7 @@ from common import *
 from entry import *
 from flowerknight import *
 from getmaster_outputter import MasterDataOutputter
+import flower_memory
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -76,6 +77,8 @@ class MasterData(object):
 
 	def _parse_character_entries(my, api_data=[]):
 		"""Creates a list of character entries from masterCharacter."""
+		if not len(api_data):
+			print('There are no character entries. Parsing bug?')
 		# Start by parsing the CSV.
 		# Store the CSV into understandable variable names.
 		character_entries = [CharacterEntry(entry) for entry in api_data]
@@ -100,11 +103,15 @@ class MasterData(object):
 
 	def _parse_skill_entries(my, api_data=[]):
 		"""Creates a list of skill entries from masterCharacterSkill."""
+		if not len(api_data):
+			print('There are no skill entries. Parsing bug?')
 		skill_entries = [SkillEntry(entry) for entry in api_data]
 		my.skills = {s.uniqueID:s for s in skill_entries}
 
 	def _parse_ability_entries(my, api_data=[]):
 		"""Creates a list of ability entries from masterCharacterLeaderSkill."""
+		if not len(api_data):
+			print('There are no ability entries. Parsing bug?')
 		ability_entries = [AbilityEntry(entry) for entry in api_data]
 		# Remove abilities related to Strengthening Synthesis.
 		ability_entries = [entry for entry in ability_entries if
@@ -117,16 +124,22 @@ class MasterData(object):
 		It comes from masterCharacterLeaderSkillDescription.
 		"""
 
+		if not len(api_data):
+			print('There are no ability description entries. Parsing bug?')
 		ability_desc_entries = [AbilityDescEntry(entry) for entry in api_data]
 		my.ability_descs = {a.id0:a for a in ability_desc_entries}
 		
 	def _parse_equipment_entries(my, api_data=[]):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
+		if not len(api_data):
+			print('There are no equipment entries. Parsing bug?')
 		my.equipment_entries = [entry.split(',')[:-1] for entry in api_data]
 		my.equipment = [EquipmentEntry(entry) for entry in api_data]
 
 	def _parse_skin_entries(my, api_data=[]):
 		"""Creates a list of skin entries from masterCharacterSkin."""
+		if not len(api_data):
+			print('There are no skin entries. Parsing bug?')
 		my.skin_entries = [entry.split(',')[:-1] for entry in api_data]
 		my.skins = [SkinEntry(entry) for entry in api_data]
 
@@ -140,6 +153,7 @@ class MasterData(object):
 		# Open the master database.
 		loader = MasterDataLoader()
 		api_data = loader.master_json
+		my.api_data = api_data
 
 		# Output the result for debugging purposes
 		loader.output_getMaster_plaintext()
@@ -180,6 +194,9 @@ class MasterData(object):
 		# Parse character entries AFTER ability and ability descriptions.
 		# We need to remove abilities that belong to non-flower knights.
 		my._parse_character_entries(data_char)
+		# Do specialized processing for FMs
+		# TODO: Put the other "Entry" instances into the entries dict
+		my.entries['fm'] = flower_memory.FMParser(api_data['masterSyncData'])
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.
