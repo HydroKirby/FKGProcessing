@@ -9,7 +9,7 @@ from common import *
 from entry import *
 from flowerknight import *
 from getmaster_outputter import MasterDataOutputter
-import flower_memory
+from parse_syncdata import SyncDataParser
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -196,7 +196,8 @@ class MasterData(object):
 		my._parse_character_entries(data_char)
 		# Do specialized processing for FMs
 		# TODO: Put the other "Entry" instances into the entries dict
-		my.entries['fm'] = flower_memory.FMParser(api_data['masterSyncData'])
+		sync_parser = SyncDataParser(api_data['masterSyncData'])
+		my.entries['fm'] = sync_parser.synced['master_flower_memorys']
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.
