@@ -384,7 +384,6 @@ class AbilityEntry(BaseEntry):
 	"""
 	_CSV_NAMES = [
 		'uniqueID',
-		'shortDescJapanese', # Used for synthesis mats.
 		'ability1ID',
 		'ability1Val0',
 		'ability1Val1',
@@ -419,7 +418,6 @@ class AbilityEntry(BaseEntry):
 		"""Returns the stored data as a Lua list."""
 		# Copy our dict of named values. Then remove the unneeded elements.
 		temp_dict = dict(my.values_dict)
-		temp_dict.pop('shortDescJapanese')
 		# Get a function that double-quotes strings if requested.
 		string_transformer = get_quotify_or_do_nothing_func(quoted)
 		# Compile a list of variable names-values pairs.
