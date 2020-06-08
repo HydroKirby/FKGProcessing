@@ -114,8 +114,7 @@ class MasterData(object):
 			print('There are no ability entries. Parsing bug?')
 		ability_entries = [AbilityEntry(entry) for entry in api_data]
 		# Remove abilities related to Strengthening Synthesis.
-		ability_entries = [entry for entry in ability_entries if
-			u'合成' not in entry.shortDescJapanese]
+		ability_entries = [entry for entry in ability_entries]
 		my.abilities = {a.uniqueID:a for a in ability_entries}
 
 	def _parse_ability_desc_entries(my, api_data=[]):
