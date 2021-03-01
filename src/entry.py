@@ -363,7 +363,6 @@ class SkillEntry(BaseEntry):
 		'date00',
 		'date01',
 		'unknown02',
-		'unknown03', # Added 28-Apr-2020
 	]
 	_MASTER_DATA_TYPE = 'skill'
 
@@ -493,8 +492,6 @@ class EquipmentEntry(BaseEntry):
 		'commonEquipPlusValue',
 		'personalEquipSortID',
 		'isPersonalEarring',
-		'dateMade',
-		'dateChanged',
 		'zero',
 	]
 	# Note 1: CSV "equipPart" has the following meanings.
