@@ -81,9 +81,9 @@ class FlowerKnight(object):
 		elif tier == '2':
 			my._add_tier2_entry(entry)
 		elif (tier == '3' and not isRarityGrown) or \
-			(tier == '99' and isRarityGrown and not unknown03 and unknown04):
+			(tier == '98' and isRarityGrown and not unknown03 and unknown04):
 			# tier = 3 means it is a 5* or 6* that can bloom.
-			# tier = 99 means it is a 2-4* that can go beyond evolution.
+			# tier = 98 and tier = 99 means it is a 2-4* that can go beyond evolution.
 			my._add_tier3_entry(entry)
 		elif (tier == '4' and isRarityGrown) or \
 			(tier == '99' and isRarityGrown and unknown03 and not unknown04):
