@@ -110,7 +110,7 @@ class Imaging(object):
 		result = my.apply_layer(result, bottom_image)
 		return result
 
-	def get_framed_icon(my, icon_filename, outfilename, rarity, typing, stage=None):
+	def get_framed_icon(my, icon_filename, outfilename, rarity, typing=None, stage=None):
 		"""Produces the full icon for a character.
 
 		@param icon_filename: An Image instance or filename.
@@ -126,15 +126,15 @@ class Imaging(object):
 		if not char_icon:
 			return None
 		# Select the layers to use.
-		icon_typing = my.icon_types[typing - 1]
 		frame = my.icon_frames[rarity - 1]
 		bg = my.icon_bgs[rarity - 1]
-		if stage: stage_level = my.icon_stages[stage - 1]
+		if typing : icon_typing = my.icon_types[typing - 1]
+		if stage  : stage_level = my.icon_stages[stage - 1]
 		# Apply the layers.
 		result = my.apply_layer(char_icon, bg)
 		result = my.apply_layer(frame, result)
-		result = my.apply_layer(icon_typing, result)
-		if stage: result = my.apply_layer(stage_level, result)
+		if typing : result = my.apply_layer(icon_typing, result)
+		if stage  : result = my.apply_layer(stage_level, result)
 		# Save and return the result.
 		result.save(outfilename, 'png')
 		return result
