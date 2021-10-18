@@ -38,7 +38,6 @@ ASSET_DIRECTORY = "../asset_fm"
 
 (IMG_CHARA_ICON,IMG_PORTRAIT,IMG_FULLCG,IMG_FM_ICON,IMG_FM_PLATE) = range(5)
 
-
 class ImageClass(object):
 	def __init__(my, entrylist):
 		(my.imgDirLink,
@@ -51,7 +50,6 @@ class DownloadImage(object):
 		my.getEquipURL = "http://dugrqaqinbtcq.cloudfront.net/product/ynnFQcGDLfaUcGhp/assets/ultra/images/item/100x100/{0}.png"
 		my.getPlateURL = "http://dugrqaqinbtcq.cloudfront.net/product/ynnFQcGDLfaUcGhp/assets/ultra/images/flower_memory/general/{0}/{1}.bin"
 
-		
 	def getCharacterImage(my, flowerKnightEntry):
 		
 		IMG_FULLCG   = ImageClass(["character/dmm/stand","stand_","stand_"])
@@ -88,17 +86,6 @@ class DownloadImage(object):
 		else:
 			print("Successfully framed {0}{1}.png".format("Fm_wallpaper_",flowerMemoryEntry['itemId']))
 			#os.remove(IMG_FM_TITLE.imgSaveName)))
-
-		fm_image_filename = os.path.join(ASSET_DIRECTORY,"{0}{1}.png".format(IMG_FM_IMAGE.imgSaveName,flowerMemoryEntry['itemId']))
-		fm_image_output_filename = os.path.join(ASSET_DIRECTORY,"{0}{1}.png".format("Fm_wallpaper_",flowerMemoryEntry['itemId']))
-		fm_title_filename = os.path.join(ASSET_DIRECTORY,"{0}{1}.png".format(IMG_FM_TITLE.imgSaveName,flowerMemoryEntry['itemId']))
-		try:
-			IconMerger.get_framed_memory(fm_image_filename, fm_title_filename, fm_image_output_filename, int(flowerMemoryEntry['rarity']))
-		except Exception as e:
-			print(e)
-		else:
-			print("Successfully framed {0}{1}.png".format("Fm_wallpaper_",flowerMemoryEntry['itemId']))
-			os.remove(IMG_FM_TITLE.imgSaveName)))
 		
 	def getFilenameHash(my, predicate, inputID):
 		#Calculate the hashed filename of the character images.
