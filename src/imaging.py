@@ -34,6 +34,12 @@ class Imaging(object):
 	'../res/rarity-frame4.png',
 	'../res/rarity-frame5.png',
 	'../res/rarity-frame6.png']
+	ICON_HALF_FRAMES = [
+	'../res/rarity-halframe2.png',
+	'../res/rarity-halframe3.png',
+	'../res/rarity-halframe4.png',
+	'../res/rarity-halframe5.png',
+	'../res/rarity-halframe6.png']
 	ICON_TYPES = [
 	'../res/type-slash.png',
 	'../res/type-blunt.png',
@@ -57,6 +63,7 @@ class Imaging(object):
 	def __init__(my):
 		my.icon_bgs = [my.load_image(filename) for filename in Imaging.ICON_BACKGROUNDS]
 		my.icon_frames = [my.load_image(filename) for filename in Imaging.ICON_FRAMES]
+		my.icon_half_frames = [my.load_image(filename) for filename in Imaging.ICON_HALF_FRAMES]
 		my.icon_types = [my.load_image(filename) for filename in Imaging.ICON_TYPES]
 		my.icon_stages = [my.load_image(filename) for filename in Imaging.ICON_STAGES]
 		my.fm_frames = [my.load_image(filename) for filename in Imaging.MEMORY_FRAMES]
@@ -139,6 +146,30 @@ class Imaging(object):
 		result.save(outfilename, 'png')
 		return result
 
+	def get_framed_halficon(my, icon_filename, outfilename, rarity):
+		"""Produces the half-height icon for a character.
+
+		@param icon_filename: An Image instance or filename.
+			The character icon to use as a base.
+		@param outfilename: String. The output file's name.
+		@returns An Image instance of the framed character icon on success,
+			or None on failure.
+		"""
+
+		if not _HAS_LIB: my._print_no_library_warning(); return None
+		# Load the icon. Cancel on failure.
+		char_icon = my.load_image(icon_filename)
+		if not char_icon:
+			return None
+		# Select the layers to use.
+		frame = my.icon_half_frames[rarity - 2]
+		# Apply the layers.
+		result = my.paste_layer(char_icon, frame,(0,1))
+		result = my.apply_layer(frame, result)
+		# Save and return the result.
+		result.save(outfilename, 'png')
+		return result
+
 	def get_framed_memory(my, fm_wallpaper, fm_title, outfilename, rarity):
 		"""Produces the fully framed for a Flower Memory wallpaper.
 		@param fm_wallpaper: An Image instance or filename.
@@ -152,6 +183,10 @@ class Imaging(object):
 		# Select the layers to use, based on icon arrays.
 		fm_frame = my.fm_frames[rarity - 3]
 		fm_plate = my.fm_plates[rarity - 3]
+		# Crop the wallpaper if exceeds the width of the wallpaper frame, Flower Memory 1000031, 1000044, 1000046 was guilty of this.
+		if Image.open(fm_wallpaper).size[0] == 1138:
+			fm_wallpaper = Image.open(fm_wallpaper).crop((1,0,1137,640)).convert('RGBA')
+			print("{0} {1}".format(fm_wallpaper.size[0],fm_wallpaper.size[1]))
 		# Apply the layers.
 		result = my.apply_layer(fm_frame, fm_wallpaper)
 		result = my.paste_layer(fm_plate, result,(155,449))
