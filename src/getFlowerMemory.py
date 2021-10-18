@@ -35,8 +35,10 @@ except ImportError:
 RAWDATA_NEW = [f for f in glob("inputs/*.zlib")]
 MASTERDATA_CURRENT = "getMaster_latest.txt"
 ASSET_DIRECTORY = "../asset_fm"
+GET_WALLPAPER = True
 
 (IMG_CHARA_ICON,IMG_PORTRAIT,IMG_FULLCG,IMG_FM_ICON,IMG_FM_PLATE) = range(5)
+
 
 class ImageClass(object):
 	def __init__(my, entrylist):
@@ -50,6 +52,7 @@ class DownloadImage(object):
 		my.getEquipURL = "http://dugrqaqinbtcq.cloudfront.net/product/ynnFQcGDLfaUcGhp/assets/ultra/images/item/100x100/{0}.png"
 		my.getPlateURL = "http://dugrqaqinbtcq.cloudfront.net/product/ynnFQcGDLfaUcGhp/assets/ultra/images/flower_memory/general/{0}/{1}.bin"
 
+		
 	def getCharacterImage(my, flowerKnightEntry):
 		
 		IMG_FULLCG   = ImageClass(["character/dmm/stand","stand_","stand_"])
@@ -79,16 +82,16 @@ class DownloadImage(object):
 		fm_image_filename = os.path.join(ASSET_DIRECTORY,"{0}{1}.png".format(IMG_FM_IMAGE.imgSaveName,flowerMemoryEntry['itemId']))
 		fm_image_output_filename = os.path.join(ASSET_DIRECTORY,"{0}{1}.png".format("Fm_wallpaper_",flowerMemoryEntry['itemId']))
 		fm_title_filename = os.path.join(ASSET_DIRECTORY,"{0}{1}.png".format(IMG_FM_TITLE.imgSaveName,flowerMemoryEntry['itemId']))
-		try:
-			IconMerger.get_framed_memory(fm_image_filename, fm_title_filename, fm_image_output_filename, int(flowerMemoryEntry['rarity']))
-		except Exception as e:
-			print(e)
-		else:
-			print("Successfully framed {0}{1}.png".format("Fm_wallpaper_",flowerMemoryEntry['itemId']))
-			#os.remove(IMG_FM_TITLE.imgSaveName)))
+		if GET_WALLPAPER:
+			try:
+				IconMerger.get_framed_memory(fm_image_filename, fm_title_filename, fm_image_output_filename, int(flowerMemoryEntry['rarity']))
+			except Exception as e:
+				print(e)
+			else:
+				print("Successfully framed {0}{1}.png".format("Fm_wallpaper_",flowerMemoryEntry['itemId']))
 		
 	def getFilenameHash(my, predicate, inputID):
-		#Calculate the hashed filename of the character images.
+		#Calculate the hashed filename of the Flower Memory images.
 		KeyName = predicate + str(inputID)
 		return md5(KeyName.encode('utf-8')).hexdigest()
 		
@@ -100,12 +103,6 @@ class DownloadImage(object):
 		
 		#Pass the variables to download function call.
 		my.getDownloadImage(ImgFileLink,ImgFileName)
-	
-	def downloadEquipImage(my, equipID):
-		ImgFileLink =  my.getEquipURL.format(equipID)
-		ImgFileName = "equip_{0}.png".format(equipID)
-		
-		return my.getDownloadImage(ImgFileLink,ImgFileName)
 		
 	def getDownloadImage(my,inputLink,outputImageName,decFlag=False):
 		outputFile = os.path.join(ASSET_DIRECTORY, outputImageName)
