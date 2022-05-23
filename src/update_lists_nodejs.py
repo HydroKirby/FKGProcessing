@@ -17,7 +17,7 @@ class ListUpdaterBot(object):
         my.site = pywikibot.Site()
         my.comment = u'Automatic update by bot.'
         my.dry = False
-        my.json_dir = Path(r'X:\AHPP Exteria\fleur\research\api\FKGProcessing-master\voice\jsnode\editlist.json')
+        my.json_dir = Path(r'.\editlist.json')
 
     def save(my, text, page, comment=None, minorEdit=True,
              botflag=True):
