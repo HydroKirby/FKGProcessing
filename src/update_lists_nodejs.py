@@ -36,14 +36,9 @@ class ListUpdaterBot(object):
                         u'Do you want to accept these changes?',
                         default=False, automatic_quit=False):
                     try:
-                        #page.text = text
-                        # Save the page
-                        #page.save(summary=comment or my.comment,
-                        #          minor=minorEdit, botflag=botflag)
-                        #print('"{0}":"{1}"'.format(page.title(),text.replace('\n','\\n').replace('"','\"')))
                         json_data[page.title()] = {
                                "name":page.title(),
-                               "content":text, #.replace('\n','\\n').replace('"','\"'),
+                               "content":text,
                                "dryrun":0,
                                "liverun":0
                             }
