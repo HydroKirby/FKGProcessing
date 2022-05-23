@@ -390,6 +390,7 @@ class AbilityEntry(BaseEntry):
 		'ability1Val2',
 		'ability1Val3',
 		'ability1Val4',
+		'ability1Val6',
 		'ability2ID',
 		'ability2Val5',
 		'ability2Val0',
@@ -397,6 +398,7 @@ class AbilityEntry(BaseEntry):
 		'ability2Val2',
 		'ability2Val3',
 		'ability2Val4',
+		'ability2Val6',
 		'ability3ID',
 		'ability3Val5',
 		'ability3Val0',
@@ -404,6 +406,7 @@ class AbilityEntry(BaseEntry):
 		'ability3Val2',
 		'ability3Val3',
 		'ability3Val4',
+		'ability3Val6',
 	]
 	_MASTER_DATA_TYPE = 'ability'
 
