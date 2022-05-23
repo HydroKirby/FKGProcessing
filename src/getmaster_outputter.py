@@ -280,7 +280,7 @@ class MasterDataOutputter(object):
 			return int(entry.uniqueID or 0)
 		# Determine which entries to output
 		entries = sorted(self.md.skins, key=getid)
-		entries = [entry for entry in entries if entry.isSkin == '1']
+		entries = [entry for entry in entries if entry.isSkin == '1' or entry.isSkin == '2']
 
 		# Make the table that resembles the master data's info
 		full_info_strings = ["['{0}'] = {1},".format(
@@ -304,6 +304,14 @@ class MasterDataOutputter(object):
 			char_id) for char_id in sorted(lib_ids_with_exclusive_skins)]
 		lib_ids_with_exclusive_skins = '    ' + '\n    '.join(
 			lib_ids_with_exclusive_skins)
+
+		# Make the list of character IDs that have paid skins
+		lib_ids_with_paid_skins = set([int(entry.libraryID) for \
+			entry in entries if entry.isSkin == '2'])
+		lib_ids_with_paid_skins = ["['{0}'] = 1,".format(
+			char_id) for char_id in sorted(lib_ids_with_paid_skins)]
+		lib_ids_with_paid_skins = '    ' + '\n    '.join(
+			lib_ids_with_paid_skins)
 
 		# With all data organized, stringify each line of info
 		lib_id_to_info = {charID : ', '.join(uniqueIdTuple) \
@@ -333,6 +341,12 @@ class MasterDataOutputter(object):
 			-- earns you the exclusive 幼少期 / Early Childhood skin.
 			-- The in-game data labels these skins with (専用) / (Exclusive)
 			--
+			-- Paid skins are available for purchase by spending Flower Stones.
+			-- Like Exclusive skins, they have a very unique appearance and SD.
+			-- For example, purchasing the wedding skin for Blushing Bride 
+			-- allows you to apply the skin to any version of Blushing Bride.
+			-- These skins are NOT labelled as (専用) / (Exclusive)
+			--
 			-- Different version skins are minor changes on specific skins.
 			-- You earn them by obtaining that character's skin at the
 			-- evolution tier which the different skin applies to.
@@ -356,12 +370,16 @@ class MasterDataOutputter(object):
 		{3}
 		}},
 
-		uniqueCharIdsWithMinorSkins = {{
+		libIdsWithPaidSkins = {{
 		{4}
+		}},
+
+		uniqueCharIdsWithMinorSkins = {{
+		{5}
 		}},
 		}}
 		""").lstrip().format(intro, lib_id_to_info, skin_id_to_info_as_str,
-			lib_ids_with_exclusive_skins, unique_char_ids_with_minor_skins)
+			lib_ids_with_exclusive_skins, lib_ids_with_paid_skins, unique_char_ids_with_minor_skins)
 		return output
 
 	def get_char_list_page(self):
