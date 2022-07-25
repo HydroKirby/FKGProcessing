@@ -496,6 +496,8 @@ class EquipmentEntry(BaseEntry):
 		'personalEquipSortID',
 		'isPersonalEarring',
 		'zero',
+		'extra1',
+		'extra2',
 	]
 	# Note 1: CSV "equipPart" has the following meanings.
 	# 300001: All gacha rings.
