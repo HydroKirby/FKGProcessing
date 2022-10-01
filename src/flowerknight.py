@@ -171,6 +171,8 @@ class FlowerKnight(object):
 		my.tiers[3]['skill'] = entry.skill1ID
 		my.tiers[3]['lvlCap'] = maxLevel[my.rarity][2]
 		my.tiers[3]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
+		if entry.ability4ID != "0":
+			my.tiers[3]['abilities'] += [entry.ability4ID, entry.ability5ID, entry.ability6ID]
 		my.tiers[3]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[3]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[3]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -191,6 +193,8 @@ class FlowerKnight(object):
 		my.tiers[4]['lvlCap'] = maxLevel['6'][2]
 		my.tiers[4]['skill'] = entry.skill1ID
 		my.tiers[4]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
+		if entry.ability4ID != "0":
+			my.tiers[3]['abilities'] += [entry.ability4ID, entry.ability5ID, entry.ability6ID]
 		my.tiers[4]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[4]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[4]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -398,7 +402,7 @@ class FlowerKnight(object):
 				tier2Aff1Bonus = {{ {tier2Aff1HP}, {tier2Aff1Atk}, {tier2Aff1Def} }},
 				tier2Aff2Bonus = {{ {tier2Aff2HP}, {tier2Aff2Atk}, {tier2Aff2Def} }},
 				''').lstrip().format(**formatDict)
-			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
+			abilityString += '\n    {{{0}, {1}, {2}}},'.format(
 				my.tiers[2]['abilities'][0], my.tiers[2]['abilities'][1],
 				my.tiers[2]['abilities'][2])
 
@@ -412,9 +416,8 @@ class FlowerKnight(object):
 				tier3Aff1Bonus = {{ {tier3Aff1HP}, {tier3Aff1Atk}, {tier3Aff1Def} }},
 				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},
 				''').lstrip().format(**formatDict)
-			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
-				my.tiers[3]['abilities'][0], my.tiers[3]['abilities'][1],
-				my.tiers[3]['abilities'][2])
+			abilityString += '\n    {{{0}}},'.format(
+				', '.join([abilityid for abilityid in my.tiers[3]['abilities']]))
 
 		tier4StatsString = tier4AffString = ''
 		tier4SkillString = ''
@@ -427,9 +430,8 @@ class FlowerKnight(object):
 				tier4Aff1Bonus = {{ {tier4Aff1HP}, {tier4Aff1Atk}, {tier4Aff1Def} }},
 				tier4Aff2Bonus = {{ {tier4Aff2HP}, {tier4Aff2Atk}, {tier4Aff2Def} }},
 				''').lstrip().format(**formatDict)
-			abilityString = abilityString + '\n    {{{0}, {1}, {2}}},'.format(
-				my.tiers[4]['abilities'][0], my.tiers[4]['abilities'][1],
-				my.tiers[4]['abilities'][2])
+			abilityString += '\n    {{{0}}},'.format(
+				', '.join([abilityid for abilityid in my.tiers[4]['abilities']]))
 			tier4SkillString = dedent('''
 				tier4skill = {tier4skill},
 				''').lstrip().format(**formatDict)
