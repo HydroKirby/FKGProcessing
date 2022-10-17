@@ -276,6 +276,9 @@ class CharacterEntry(BaseEntry):
 		'ability4ID',
 		'ability5ID',
 		'ability6ID',
+		'ability7ID',
+		'ability8ID',
+		'ability9ID',
 		'skill1ID',
 		'skill2ID',
 		'unknown07', # Added Feb 15, 2020

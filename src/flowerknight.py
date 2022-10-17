@@ -171,8 +171,10 @@ class FlowerKnight(object):
 		my.tiers[3]['skill'] = entry.skill1ID
 		my.tiers[3]['lvlCap'] = maxLevel[my.rarity][2]
 		my.tiers[3]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
-		if entry.ability4ID != "0":
+		if entry.ability4ID != "0" or entry.ability5ID != "0" or entry.ability6ID != "0":
 			my.tiers[3]['abilities'] += [entry.ability4ID, entry.ability5ID, entry.ability6ID]
+		if entry.ability7ID != "0" or entry.ability8ID != "0" or entry.ability9ID != "0":
+			my.tiers[3]['abilities'] += [entry.ability7ID, entry.ability8ID, entry.ability9ID]
 		my.tiers[3]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[3]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[3]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
@@ -193,8 +195,10 @@ class FlowerKnight(object):
 		my.tiers[4]['lvlCap'] = maxLevel['6'][2]
 		my.tiers[4]['skill'] = entry.skill1ID
 		my.tiers[4]['abilities'] = [entry.ability1ID, entry.ability2ID, entry.ability3ID]
-		if entry.ability4ID != "0":
-			my.tiers[3]['abilities'] += [entry.ability4ID, entry.ability5ID, entry.ability6ID]
+		if entry.ability4ID != "0" or entry.ability5ID != "0" or entry.ability6ID != "0":
+			my.tiers[4]['abilities'] += [entry.ability4ID, entry.ability5ID, entry.ability6ID]
+		if entry.ability7ID != "0" or entry.ability8ID != "0" or entry.ability9ID != "0":
+			my.tiers[4]['abilities'] += [entry.ability7ID, entry.ability8ID, entry.ability9ID]
 		my.tiers[4]['lvlOne'] = [entry.lvlOneHP, entry.lvlOneAtk, entry.lvlOneDef]
 		my.tiers[4]['lvlMax'] = [entry.lvlMaxHP, entry.lvlMaxAtk, entry.lvlMaxDef]
 		my.tiers[4]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
