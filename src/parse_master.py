@@ -93,7 +93,7 @@ class MasterData(object):
 			name = remove_quotes(char.fullName)
 			if char.isFlowerKnight1 != '1':
 				# This is not a flower knight. Remove its ability.
-				if char.ability1ID in my.abilities:
+				if char.ability1ID in my.abilities and char.ability1ID != '1':
 					my.abilities.pop(char.ability1ID)
 				unique_characters[name] = char
 			elif name not in knights:
