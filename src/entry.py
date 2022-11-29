@@ -186,7 +186,7 @@ class BaseEntry(object):
 		temp = dict(zip(range(len(my._CSV_NAMES)),
 			my._CSV_NAMES))
 		[setattr(my, temp[i], values[i]) for i in range(len(values))]
-		
+
 		# If the CSV parsing failed and there has not been a message given
 		# about that, print an warning report.
 		if not success and not BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE]:
@@ -203,7 +203,7 @@ class BaseEntry(object):
 				print(repr(my))
 			# Don't state the warning again.
 			BaseEntry._WARN_WRONG_SIZE[my._MASTER_DATA_TYPE] = True
-		
+
 		# Determine which values are strings.
 		# It helps to store this because strings need enclosed in double-quotes
 		# in the Lua code.
@@ -239,7 +239,7 @@ class BaseEntry(object):
 		lua_table = u', '.join([u'{0}={1}'.format(
 			name, string_transformer(my.values_dict[name])) \
 			for name in sorted(my._CSV_NAMES)])
-		
+
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)
 
@@ -424,16 +424,34 @@ class AbilityEntry(BaseEntry):
 
 	def getlua(my, quoted=False):
 		"""Returns the stored data as a Lua list."""
-		# Copy our dict of named values. Then remove the unneeded elements.
-		temp_dict = dict(my.values_dict)
-		# Get a function that double-quotes strings if requested.
-		string_transformer = get_quotify_or_do_nothing_func(quoted)
-		# Compile a list of variable names-values pairs.
-		lua_list = u', '.join([u'{0}={1}'.format(
-			k, string_transformer(v)) \
-			for k, v in sorted(temp_dict.items())])
+		#New CSV format
+		my.abilityList1 = [
+			my.ability1ID, my.ability1Val0,
+			my.ability1Val1, my.ability1Val2, my.ability1Val3,
+			my.ability1Val4, my.ability1Val5, my.ability1Val6,
+		]
+		my.abilityList2 = [
+			my.ability2ID, my.ability2Val0,
+			my.ability2Val1, my.ability2Val2, my.ability2Val3,
+			my.ability2Val4, my.ability2Val5, my.ability2Val6,
+		]
+		my.abilityList3 = [
+			my.ability3ID, my.ability3Val0,
+			my.ability3Val1, my.ability3Val2, my.ability3Val3,
+			my.ability3Val4, my.ability3Val5, my.ability3Val6,
+		]
+        #Flags used to prune unused abilities.
+		my.abilityFlag2 = sum(int(p) for p in my.abilityList2) != 0
+		my.abilityFlag3 = sum(int(p) for p in my.abilityList3) != 0
+
+        #Append abilities
+		lua_list = [u'{{{0}}}'.format(",".join(my.abilityList1))]
+		if my.abilityFlag2 or my.abilityFlag3:
+			lua_list.append(u'{{{0}}}'.format(",".join(my.abilityList2)))
+		if my.abilityFlag3:
+			lua_list.append(u'{{{0}}}'.format(",".join(my.abilityList3)))
 		# Relate the list of values to the unique ID.
-		return u'[{0}] = {{{1}}},'.format(my.uniqueID, lua_list)
+		return u'[{0}]={{{1}}},'.format(my.uniqueID, ",".join(lua_list))
 
 class AbilityDescEntry(BaseEntry):
 	"""Stores one line of data from the ability description section.
@@ -504,6 +522,7 @@ class EquipmentEntry(BaseEntry):
 		'zero',
 		'extra1',
 		'extra2',
+		'extra3',
 	]
 	# Note 1: CSV "equipPart" has the following meanings.
 	# 300001: All gacha rings.
@@ -558,6 +577,10 @@ class EquipmentEntry(BaseEntry):
 		return [int(id) for id in my.owners.split(u'|')]
 
 	def getlua(my, quoted=False):
+		#Removes unused variables.
+		my.values_dict.pop('desc')
+		my.values_dict.pop('equipID')
+
 		def string_transformer(key, val, quoted):
 			if key == 'owners':
 				# Change the format of owners from a stringly-type,
@@ -637,6 +660,6 @@ class SkinEntry(BaseEntry):
 		lua_table = u', '.join([u'{0}={1}'.format(
 			name, string_transformer(my.values_dict[name])) \
 			for name in my._LUA_ORDER])
-		
+
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)

@@ -46,16 +46,14 @@ class MasterDataOutputter(object):
 		output = u'\n'.join([
 			'--[[Category:Flower Knight description modules]]',
 			'--[[Category:Automatically updated modules]]',
-			'-- Relates ability IDs with their accompanying data.\n',
-			'local p = {',
+			'-- Relates ability IDs with their accompanying data.',
+			'return {',
 
 			# Write the page body.
-			'\t' + u'\n\t'.join([entry.getlua(True) for entry in
+			u'\n'.join([entry.getlua(True) for entry in
 				sorted(self.md.abilities.values(), key=getid)]),
-
 			# Write the page footer.
-			'}\n',
-			'return p',
+			'}'
 			])
 		return output
 
@@ -77,9 +75,9 @@ class MasterDataOutputter(object):
 			}}
 
 			return EquipmentData
-			''').strip().format(equips)
+			''').strip().format(equips).replace(', extra3=0','')
 		return output
-		
+
 	def get_personal_equip_list_page(self):
 		"""Outputs the table of skill IDs and their related skill info."""
 		# Write the page header.
@@ -117,7 +115,7 @@ class MasterDataOutputter(object):
 			--[[Category:Flower Knight description modules]]
 			--[[Category:Automatically updated modules]]
 			-- Relates character data to their IDs.
-			
+
 			return {{
 			{0}}}
 			''').strip().format(knights_str)
@@ -144,7 +142,7 @@ class MasterDataOutputter(object):
 
 		@returns: A dict of {'JP name':'EN name'} pairs.
 		"""
-		
+
 		# Crop all text from the "return" statement and following { symbol.
 		idx_start = page.text.find('return')
 		idx_start += page.text[idx_start + 1:].find('{')
@@ -225,20 +223,20 @@ class MasterDataOutputter(object):
 			--[[Category:Equipment modules]]
 			--[[Category:Automatically updated modules]]
 			--[[Category:Manually updated modules]]
-			
+
 			--[[
 			Relates Japanese equipment names to translated names.
-			
+
 			The Wikia updating scripts automatically add new equipment to this page.
 			Editors need to add translations for these names manually.
-			
+
 			The four generic equipment types are automatically translated from Japanese.
 			They are earrings, rings, bracelets, and necklaces.
 			But for other types of equipment, they need to be written explicitly.
-			
+
 			Machine translations and copy-pastes from Nutaku are NOT ALLOWED.
 			--]]
-			
+
 			return {{
 			    {0}
 			}}''').lstrip().format(equips)
@@ -248,28 +246,28 @@ class MasterDataOutputter(object):
 		"""Outputs a single character's template text to a file."""
 		knight = self.md.get_knight(char_name_or_id)
 		skill = self.md.skills[knight.skill]
-		
+
 		#Lookup flower family
 		for line in self.md.masterTexts['masterPlantFamily']:
 			if line.startswith(knight.family):
 				family = line.split(",")
 				break
-		
+
 		#Lookup flower meaning
 		for line in self.md.masterTexts['masterFlowerBook']:
 			if line.startswith(knight.charID1):
 				meaning = line.split(",")
 				break
-		
+
 		#Modifies English name to conform to IconName rule.
 		icon_name = english_name.replace(' ','').replace('(','_').replace(')','')
-		
+
 		#Assembles the template data via repeated join and concatenations.
 		template_text = ''.join(["{{CharacterStat\n|",
 			"\n|JP = ", knight.fullName,
 			"\n|languageoftheflowers = ", meaning[5],
 			"\n}}",])
-		
+
 		return template_text
 
 	def get_skin_info_page(self):
@@ -343,7 +341,7 @@ class MasterDataOutputter(object):
 			--
 			-- Paid skins are available for purchase by spending Flower Stones.
 			-- Like Exclusive skins, they have a very unique appearance and SD.
-			-- For example, purchasing the wedding skin for Blushing Bride 
+			-- For example, purchasing the wedding skin for Blushing Bride
 			-- allows you to apply the skin to any version of Blushing Bride.
 			-- These skins are NOT labelled as (専用) / (Exclusive)
 			--
@@ -386,7 +384,7 @@ class MasterDataOutputter(object):
 		"""Outputs the table of knight IDs to names, and vice-versa."""
 		# Write the page header.
 		module_name = 'Module:KnightIdAndName/Data'
-		
+
 		def getid(knight):
 			return knight.tiers[1]['id']
 		ids_to_names = '\n'.join(["    ['{0}'] = '{1}',".format(
@@ -404,7 +402,7 @@ class MasterDataOutputter(object):
 			--[[Category:Automatically updated modules]]
 			-- Relates character names to their IDs and vice-versa.
 			-- Use this module when MasterCharacterData is overkill.
-			
+
 			return {{
 			idToName = {{
 			{0}
