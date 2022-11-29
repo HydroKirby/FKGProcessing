@@ -577,8 +577,9 @@ class EquipmentEntry(BaseEntry):
 		return [int(id) for id in my.owners.split(u'|')]
 
 	def getlua(my, quoted=False):
-		#Removes unused description.
+		#Removes unused variables.
 		my.values_dict.pop('desc')
+		my.values_dict.pop('equipID')
 
 		def string_transformer(key, val, quoted):
 			if key == 'owners':
