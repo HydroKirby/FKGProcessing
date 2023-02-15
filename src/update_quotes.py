@@ -1,60 +1,22 @@
 #!/usr/bin/python
 # -*- coding: utf-8  -*-
 import pywikibot
-from pywikibot import i18n
 import parse_master
-import update_lists
 import requests
+from pywikibot import i18n
+from update_lists import ListUpdaterBot
+from collections import OrderedDict
 #import os, sys, re, requests
 
-class ListUpdaterBot(object):
-    def __init__(my):
-        my.site = pywikibot.Site()
-        my.default_summary = i18n.twtranslate(my.site, 'basic-changing')
-        my.comment = u'Automatic update by bot.'
-        my.dry = False
-
-    def save(self, text, page, comment=None, minorEdit=True,
-             botflag=True):
-        """Update the given page with new text."""
-        # only save if something was changed
-        if text != page.get():
-            # Show the title of the page we're working on.
-            # Highlight the title in purple.
-            pywikibot.output(u"\n\n>>> \03{lightpurple}%s\03{default} <<<"
-                             % page.title())
-            # show what was changed
-            pywikibot.showDiff(page.get(), text)
-            pywikibot.output(u'Comment: %s' % comment)
-            if not self.dry:
-                if pywikibot.input_yn(
-                        u'Do you want to accept these changes?',
-                        default=False, automatic_quit=False):
-                    try:
-                        page.text = text
-                        # Save the page
-                        page.save(summary=comment or self.comment,
-                                  minor=minorEdit, botflag=botflag)
-                    except pywikibot.LockedPage:
-                        pywikibot.output(u"Page %s is locked; skipping."
-                                         % page.title(asLink=True))
-                    except pywikibot.EditConflict:
-                        pywikibot.output(
-                            u'Skipping %s because of edit conflict'
-                            % (page.title()))
-                    except pywikibot.SpamfilterError as error:
-                        pywikibot.output(
-                            u'Cannot change %s because of spam blacklist entry %s'
-                            % (page.title(), error.url))
-                    else:
-                        return True
-        return False
+json_data = {}
 
 #Retrieve the source text from japanese wiki
 wikiLink = "http://フラワーナイトガール.攻略wiki.com/index.php?"
+masterData = "outputs/getMaster.txt"
 
 class GenerateQuote(object):
 	def __init__(my):
+		my.api_data = None
 		#Defines the list of quotes to retrieve
 		my.quoteList = ["初登場",
 		"戦闘開始①",
@@ -170,14 +132,14 @@ class GenerateQuote(object):
 		"| conversation005 = <!--My Page Generic Phrase 5 (Bloomed)-->",
 		"| conversation006 = <!--My Page Generic Phrase 6 (Bloomed)-->",
 		"}}"]
-	
+
 	def downloadText(my, charaName):
 		dltext = requests.get(wikiLink + charaName).text
 		if dltext.find('<div class="ie5">') == -1 :
 			redirect = charaName.replace("(","（").replace(")","）")
 			dltext  = requests.get(wikiLink + redirect).text
 		return dltext.replace(' class="spacer" /','').replace(' class="style_td"','').replace('"','\\"')
-		
+
 	def translateLink(my, inputText):
 		#No longer used due to difficulty handling external links
 		#for <a> tag and index is found until -1, transform links
@@ -189,50 +151,114 @@ class GenerateQuote(object):
 			else:
 				linkedText = hyperText
 			inputText = inputText.partition('<a')[0] + linkedText + inputText.partition('</a>')[2]
-		
+
 		return inputText
-		
+
 	def removeLink(my, inputText):
 		#for <a> tag and index is found until -1, transform links
 		while inputText.find('<a') != -1:
 			inputText = inputText.partition("<a")[0] + inputText.partition("<a")[2].partition(">")[2]
-			
+
 		return inputText.replace('</a>','')
+
+	def addExceptions(my, inputText, CharaName):
+		outputText = inputText
+		
+		exceptionList = {
+			"ランタナ(花祭り)": ["初登場 = イエスロリータ・ゴータッチ！","初登場 = 花祭りのニギニギしさを浴びて！<br>ロリっ子美少女ランタナ、新たな衣装でコーリンどぅわあああああ！<br>さぁ、愛でまくるがいい、だんちょ！　イエスロリータ・ゴータッチ！"],
+			"サテラ": ["移動開始時① = ","移動開始時① = サテラについてこい！"],
+			"セントポーリア(きぐるみのんびり貴族)": ["| 会話④ = \n| 会話⑤ = \n| 会話⑥ = ","| 会話④ = 団長さん、新しいドレスどうでしょう？　えへへへ、いっぱい見てくれますね。 何だか、インコの服よりもこちらの方が恥ずかしいですね♪\n| 会話⑤ = インコの衣装を着たら～何だか…身も心も軽くなった気がしました。 色んな衣装を着たら、もっと違う私になれるかも知れませんね～♪\n| 会話⑥ = ドレスの私も～インコの私も～どちらも私です～　団長さんは色々な私を受け入れてくれるからとっても嬉しいんですよ♪<br>ずっと一緒に居てくださいね、団長さ～ん♪"]
+		}
+		
+		if CharaName in exceptionList:
+			outputText = inputText.replace(exceptionList[CharaName][0], exceptionList[CharaName][1])
+
+		return my.removeLink(outputText)
+
+	def parseMasterData(my):
+		#Retrieves quotes from master data if Japanese wiki is not updated yet.
+		debugFlag = False
+		fkgidindex = OrderedDict()
+		quoteindex = OrderedDict()
+
+		with open(masterData, 'r', encoding='utf8') as input:
+			masterDataEntry = input.read()
+		
+		for entry in masterDataEntry.partition("masterCharacterTextResource\n\n")[2].partition("\n\n")[0].split('\n'):
+			fkgid     = entry.split(',')[1]
+			if int(fkgid) % 2 == 1:
+				voiceline = entry.split(',')[3]
+				voicetype = entry.split(',')[4]
+				
+				quoteindex[fkgid + voicetype] = voiceline
+
+		for entry in masterDataEntry.partition("masterCharacter\n\n")[2].partition("\n200003")[0].split('\n'):
+			fkgid   = entry.split(',')[0]
+			isfkg   = entry.split(',')[41]
+			if int(fkgid) % 2 == 1 and isfkg == '1':
+				fkgname = entry.split(',')[55]
+
+				fkgidindex[fkgname] = {
+					"fkgid":fkgid,
+					"fkg_libraryintro":quoteindex[fkgid + "fkg_introduction001"],
+					"fkg_stagestart001":quoteindex[fkgid + "fkg_stagestart001"],
+					"fkg_present001":quoteindex[fkgid + "fkg_present001"],
+					"fkg_present002":quoteindex[fkgid + "fkg_present002"],
+				}
+
+		if debugFlag:
+			for x in fkgidindex:
+				print(x + "\t" + fkgidindex[x]["fkg_libraryintro"])
+
+		if not my.api_data:
+			my.api_data = fkgidindex
 
 	def printquote(my, charaName, updateFlag=False):
 		rawdata = my.downloadText(charaName)
+		#masterdata = my.getText(charaName) get intro line from get master
 
 		#Filter the text with a series of text delimiter partitioning and formatting.
-		libintro = rawdata.partition("自己紹介")[2].partition("<strong>")[2].partition("</strong>")[0] + "\n"
+		libintro = rawdata.partition("自己紹介")[2].partition("<strong>")[2].partition("</strong>")[0].partition("</td>")[0] + "\n"
 		
-		quotetext = rawdata.partition(">図鑑収録ボイス</th></tr><tr>")[2].partition("</table>")[0]
-		quotetext = quotetext
+		if not updateFlag or libintro.find("図鑑のテキストを記載") != -1:
+			my.parseMasterData()
+			libintro = my.api_data[charaName]["fkg_libraryintro"] + "\n"
+
+		quotetext = rawdata.partition("ボイス")[2].partition(">シーン")[2]#.partition("</table>")[0]
 		textList = []
 
 		for quote in my.quoteList:
-			
+
 			quoteEntry  = quote.replace('<br>','')
-			quoteInput  = "<td>"+quote.partition("(開花)")[0]
-			quoteSpeech = quotetext.partition(quoteInput)[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"')
+			quoteInput  = "<td>"+quote.partition("(好感度")[0].partition("(開花)")[0].partition("<br>")[0]
+			quoteSpeech = quotetext.partition(quoteInput)[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"').replace("#REF!","<br>")
+				
+			if (quoteInput == "<td>害虫の巣パネル通過時") and (quoteSpeech == "") :
+				quoteSpeech = quotetext.partition('ダメージギミック接触時')[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"') + quotetext.partition('ダメージパネル接触時')[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"')
 			textList.append("| " + quoteEntry + " = " + quoteSpeech)
-		
+
 		if updateFlag :
 			endText = "{{{{Knightquote\n| CharaName = {0}\n\n| 自己紹介 = {1}{2}".format(charaName,libintro,'\n'.join(textList))
 		else:
 			endText = "\n==Quotes==\n{{{{Knightquote\n| CharaName = {0}\n\n| 自己紹介 = {1}{2}".format(charaName,libintro,'\n'.join(textList+my.outputTextList))
+
+		#if "| 移動開始時① =\n|" append stagestart text 
 		
+		
+
 		fileName = charaName + "_quote.txt"
 
-		return my.removeLink(endText)
+		return my.addExceptions(endText,charaName)
 
 def test():
+	ListUpdater = ListUpdaterBot()
 	site = pywikibot.Site()
 	page = pywikibot.Page(site, u'Colchicum')
 	wikiText = page.get()
 	comment = 'Added quotes'
 	flowerKnightName = wikiText.partition("|JP = ")[2].partition("\n")[0].replace(' ','')
 	textLines = []
-	
+
 	if wikiText.find('Quotes') == -1 or wikiText.find('{{Knightquote') == -1:
 		changeline = True
 		for line in wikiText.split('\n'):
@@ -249,35 +275,38 @@ def test():
 	else:
 		text = wikiText.partition("{{Knightquote")[0] + GenerateQuote.printquote(flowerKnightName,True) + "\n\n| libraryintro =" + wikiText.partition("libraryintro =")[2]
 		comment = 'Updated quotes'
-	
+
 	ListUpdater.save(text, page, comment)
+
+	#get libintro from masterCharacterTextResource
 
 def output_template(text, outfilename):
 	with open(outfilename, 'w', encoding='UTF8') as outfile:
 		outfile.write(text)
-		
+
 def main():
+	ListUpdater = ListUpdaterBot()
 	site = pywikibot.Site()
 	flowerKnightBaseList = pywikibot.Category(site, 'Category:6-Star').articles()
 	flowerKnightAltList  = pywikibot.Category(site, 'Category:5-Star').articles()
 	flowerKnightCoList   = pywikibot.Category(site, 'Category:4-Star').articles()
-	
+
 	for page in flowerKnightBaseList:
-		updateKnightQuote(page)
-		
+		updateKnightQuote(page,ListUpdater)
+
 	for page in flowerKnightAltList:
-		updateKnightQuote(page)
-		
+		updateKnightQuote(page,ListUpdater)
+
 	for page in flowerKnightCoList:
-		updateKnightQuote(page)
+		updateKnightQuote(page,ListUpdater)
 
 
-def updateKnightQuote(page):
+def updateKnightQuote(page,ListUpdater):
 	wikiText = page.get()
 	flowerKnightName = wikiText.partition("|JP = ")[2].partition("\n")[0].replace(' ','')
 	comment = ""
 	textLines = []
-	
+
 	if wikiText.find('Quotes') == -1 or wikiText.find('{{Knightquote') == -1:
 		changeline = True
 		for line in wikiText.split('\n'):
@@ -296,11 +325,10 @@ def updateKnightQuote(page):
 	else:
 		text = wikiText.partition("{{Knightquote")[0] + GenerateQuote.printquote(flowerKnightName,True) + "\n\n| libraryintro =" + wikiText.partition("libraryintro =")[2]
 		comment = 'Updated quotes'
-	
-	print(flowerKnightName)
+
+	print("{0} {1}".format(flowerKnightName, page.title()))
 	ListUpdater.save(text, page, comment)
 
 if __name__ == "__main__":
-	ListUpdater = ListUpdaterBot()
 	GenerateQuote = GenerateQuote()
 	main()
