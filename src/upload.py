@@ -58,6 +58,8 @@ import math
 import os
 import re
 
+import update_lists
+
 import pywikibot
 from pywikibot.bot import suggest_help
 from pywikibot.specialbots import UploadRobot
@@ -139,7 +141,7 @@ def main(*args):
                 else:
                     pywikibot.error('Chunk size parameter is not valid.')
             elif url == u'':
-                url = arg
+                url = ""
             else:
                 description.append(arg)
     description = u' '.join(description)
@@ -172,13 +174,15 @@ def main(*args):
         suggest_help(missing_parameters=missing, additional_text=additional)
         return False
     if os.path.isdir(url):
+        site = pywikibot.Site()
+        site.login(False, 'NazunaBot')
         file_list = []
         for directory_info in os.walk(url):
             if not recursive:
                 # Do not visit any subdirectories
                 directory_info[1][:] = []
             for dir_file in directory_info[2]:
-                if not (pywikibot.FilePage(pywikibot.Site(), "File:" + dir_file).exists()):
+                if not (pywikibot.FilePage(site, "File:" + dir_file).exists()):
                     file_list.append(os.path.join(directory_info[0], dir_file))
                 else:
                     pywikibot.output("File:{0} has been uploaded, skipping".format(dir_file))
@@ -186,11 +190,11 @@ def main(*args):
         url = file_list
     else:
         url = [url]
-    bot = UploadRobot(url, description=description, useFilename=useFilename,
-                      keepFilename=keepFilename,
-                      verifyDescription=verifyDescription,
-                      aborts=aborts, ignoreWarning=ignorewarn,
-                      chunk_size=chunk_size, always=always,
+    bot = UploadRobot(url, description=description, #use_filename=useFilename,
+                      keep_filename=True,
+                      verify_description=False,
+                      aborts=aborts,
+                      chunk_size=chunk_size, always=always, #target_site=target_site,
                       summary=summary)
     bot.run()
 
