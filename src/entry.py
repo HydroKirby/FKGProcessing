@@ -264,7 +264,7 @@ class CharacterEntry(BaseEntry):
 		'id1',
 		'family',
 		'nation',
-		'charID1',
+		'charID1', # Used as reference
 		'baseName0',
 		'baseName1',
 		'rarity',
@@ -281,7 +281,7 @@ class CharacterEntry(BaseEntry):
 		'ability9ID',
 		'skill1ID',
 		'skill2ID',
-		'unknown07', # Added Feb 15, 2020
+		'unused01', # Added Feb 15, 2020
 		'lvlOneHP',
 		'lvlMaxHP',
 		'lvlOneAtk',
@@ -297,41 +297,42 @@ class CharacterEntry(BaseEntry):
 		'ampule2BonusAtk',
 		'ampule2BonusDef',
 		'goldSellValue',
-		'sortCategory', # Unverified
-		'hasAlternateForm', # Unverified
-		'sortID', # Used when viewing the library and sorting by "図鑑No"
+		'sortCategory', #called MasterCharacterLVGroup in masterData
+		'hasAlternateForm', # called MasterCharacterSecondLVGroup in masterData
+		'evolvedCharacterID',
 		'isNotPreEvo',
 		'isFlowerKnight1',
 		'aff1MultHP',
 		'aff1MultAtk',
 		'aff1MultDef',
-		'charID2',
+		'charID2', # Used when viewing the library and sorting by "図鑑No"
 		'evolutionTier',
 		'isFlowerKnight2',
 		'aff2MultHP',
 		'aff2MultAtk',
 		'aff2MultDef',
-		'unknown01',
-		'unknown02',
-		'unknown03',
-		'unknown04',
+		'aff2EnableFlag',
+		'bloomedCharacterID',
+		'maxEvolutionFlag',
+		'bloomingEnableFlag',
 		'fullName',
 		'isBloomedPowersOnly',
 		'variant',
 		'reading',
-		'libraryID', # Note 11-Apr-2020: We now know this is used to matching skins to characters
+		'libraryID', # Note 11/4/2020: We now know this is used to matching skins to characters
 		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
 		'isEventKnight', # Added 1/22/2018. When 1, it's an event character of any evolution tier. Doesn't include serial code girls.
 		'date0',
 		'date1',
-		'unknown06',
+		'unused02',
 		'gameVersionWhenAdded',
 		# Added 3/5/2018. When non-zero, points to the character ID of what this
 		# character would become after being rarity grown.
 		'rarityGrownID',
 		'isRarityGrown', # Added 3/12/2018.
 		'canRarityGrow', # Added 3/12/2018.
-		'date2', # Seems to be added around 01-Jan-2020
+		#'date2', # Seems to be added around 01-Jan-2020. Appears to be no longer in use.
+		'isNazuna', # Added February 06, 2023.
 		]
 	_MASTER_DATA_TYPE = 'character'
 
@@ -513,22 +514,22 @@ class EquipmentEntry(BaseEntry):
 		'isPersonalEquip',
 		'owners',
 		'classification', # See note 2 below
-		'isLevelable', # 0 if okitaeeru or ability bracelet; 1 otherwise
+		'isLevelable', # 0 for forging fairy or ability bracelet; 1 otherwise
 		'isForgingFairy',
 		'desc',
 		'commonEquipPlusValue',
 		'personalEquipSortID',
-		'isPersonalEarring',
-		'zero',
-		'extra1',
-		'extra2',
-		'extra3',
-	]
-	# Note 1: CSV "equipPart" has the following meanings.
+		'evolveID',
+		'MaxEvolveFlag',
+		'WorldFlowerPowerType', # Boosts damage in World Flower missions with matching nation.
+		'classification2', # See note 3 below
+		'EffectType', # 20001 for all rainbow-rarity event equipments, 0 otherwise.
+	]	
+	# Note 1: CSV "equipPart" has the following meanings. 
 	# 300001: All gacha rings.
 	# 300002: All gacha bracelets.
 	# 300003: All gacha necklaces.
-	# 300001: Everything else.
+	# 300004: Everything else.
 
 	# Note 2: CSV "classification" is the easiest way to determine the rarity.
 	# It has the following meanings.
@@ -545,6 +546,18 @@ class EquipmentEntry(BaseEntry):
 	# 101: Copper forge spirits.
 	# 102: Silver forge spirits.
 	# 103: Gold forge spirits.
+
+	# Note 3: CSV "classification2" indicates the equipment type.
+	# It has the following meanings.
+	# 10:  Generic equipments, promotional equipments and forging fairies.
+	# 20:  Personal earrings.
+	# 21:  5* personal equipment.
+	# 22:  6* personal equipment.
+	# 30:  5* anniversary personal equipment.
+	# 32:  6* anniversary personal equipment.
+	# 40:  5* event and whaleship-stage equipments.
+	# 42:  6* event equipments.
+	# 50:  EX equipments.
 	_MASTER_DATA_TYPE = 'equipment'
 
 	def __init__(my, data_entry_csv):
@@ -576,20 +589,29 @@ class EquipmentEntry(BaseEntry):
 			return []
 		return [int(id) for id in my.owners.split(u'|')]
 
+	def string_transformer(my, key, val, quoted):
+		if key == 'owners':
+			# Change the format of owners from a stringly-type,
+			# pipe-separated list of integers to a Lua list.
+			# ex: owners=71|341 becomes owners={71, 341}
+			return '{{{0}}}'.format( ', '.join(val.split('|')) )
+		elif quoted:
+			return quotify_non_number(val)
+		return val
+
+	def table_transformer(my, list, quoted=False):
+		if sum([int(val) for val in list]) == 0:
+			# Remove zero entries 
+			# ex: {0,0,0,0} becomes {}
+			return '{}'
+		elif quoted:
+			return quotify_non_number("{{{0}}}".format(",".join(list)))
+		return "{{{0}}}".format(",".join(list))
+
 	def getlua(my, quoted=False):
 		#Removes unused variables.
 		my.values_dict.pop('desc')
 		my.values_dict.pop('equipID')
-
-		def string_transformer(key, val, quoted):
-			if key == 'owners':
-				# Change the format of owners from a stringly-type,
-				# pipe-separated list of integers to a Lua list.
-				# ex: owners=71|341 becomes owners={71, 341}
-				return '{{{0}}}'.format( ', '.join(val.split('|')) )
-			elif quoted:
-				return quotify_non_number(val)
-			return val
 
 		# Generate the Lua table.
 		# Relate the named entries to their value.
@@ -597,12 +619,87 @@ class EquipmentEntry(BaseEntry):
 		lua_table = u'[{0}] = {{'.format(my.equipID)
 		pairs = []
 		for k, v in sorted(my.values_dict.items()):
-			v = string_transformer(k, v, quoted)
+			v = my.string_transformer(k, v, quoted)
 			pairs.append([k, v])
 		lua_table += u', '.join([u'{0}={1}'.format(
 			pair[0], pair[1]) for pair in pairs])
 		lua_table += '}'
 		return lua_table
+		
+	def getcompactlua(my, quoted=False):
+		"""Returns the stored data as a Lua list."""
+		#New CSV format
+		my.values_dict.pop('desc')
+		# Relate the list of values to the unique ID.
+		return "[{0}]={{{1}}}".format(
+			my.values_dict.pop("equipID"),
+			",".join([v for k, v in my.values_dict.items()])
+		)
+
+	def getmodularlua(my, moduleType=False, quoted=False):
+		"""Returns the stored data as a Lua list."""
+		#New CSV format
+		
+		#Control text if the equipment data entry is invalid for whatever reason.
+		outputEntry = '{}'
+		
+		if moduleType == "stats":
+			statsTable = [
+				my.table_transformer([my.lvlOneAtk, my.lvlMaxAtk, my.lvlOneDef, my.lvlMaxDef]),
+			]
+
+			if my.ability1ID != "0" and my.ability2ID != "0":
+				statsTable.append(
+					my.table_transformer(
+						[my.ability1ID, my.ability1Val0, my.ability1Val1, my.ability1Val2]
+					)
+				)
+
+			if my.ability2ID != "0":
+				statsTable.append(
+					my.table_transformer(
+						[my.ability2ID, my.ability2Val0, my.ability2Val1, my.ability2Val2]
+					)
+				)
+
+			outputEntry = "{0}".format(",".join(statsTable))
+
+		elif moduleType == "unique":
+			outputEntry = "{0}".format(
+				",".join(
+					[
+						quotify_non_number(my.name),
+						my.personalEquipSortID,
+						my.isPersonalEquip,
+						my.string_transformer("owners", my.owners, quoted),
+					]
+				)
+			)
+		elif moduleType == "misc" :
+			outputEntry = "{0}".format(
+				",".join(
+					[
+						my.id0,
+						my.equipPart,
+						my.equipType,
+						my.classification,
+						my.isLevelable,
+						my.isForgingFairy,
+						my.commonEquipPlusValue,
+						my.evolveID,
+						my.MaxEvolveFlag,
+						my.WorldFlowerPowerType,
+						my.classification2,
+						my.EffectType,
+					]
+				)
+			)
+		else:
+			outputEntry = ",".join([v for k,v, in my.values_dict.items()])
+
+		#lua_list = [u'{{{0}}}'.format(",".join(my.values_dict))]
+		# Relate the list of values to the unique ID.
+		return u'[{0}]={{{1}}}'.format(my.equipID, outputEntry)
 
 class SkinEntry(BaseEntry):
 	"""Stores one line of data from the masterCharacterSkin section."""
@@ -631,7 +728,7 @@ class SkinEntry(BaseEntry):
 		'pos',
 		# Perhaps this flag is only for Ping Pong Mum?
 		'unknown00',
-		'unknown01',
+		#'unknown01',
 	]
 	# This defines which vars get shown in getlua()
 	_LUA_ORDER = [
@@ -663,3 +760,141 @@ class SkinEntry(BaseEntry):
 
 		# Surround the Lua table in angle brackets.
 		return u'{{{0}}}'.format(lua_table)
+
+class FlowerMemoryEntry(BaseEntry):
+	"""Stores one line of data from the masterFlowerMemory section."""
+	_CSV_NAMES = [
+		'id',
+		'flowerMemoryID',
+		'name',
+		'readingName',
+		'rarity',
+		'orderNum',
+		'growthType',
+		'lvlOneHP',
+		'HPPerLevel',
+		'lvlOneAtk',
+		'AtkPerLevel',
+		'lvlOneDef',
+		'DefPerLevel',
+		'desc',
+		'AbilityLv0LimitBreak',
+		'AbilityMaxLimitBreak',
+	]
+	# This defines the additional data to be appended to Lua entry
+	_LUA_EXTRA_DATA = [
+		'AbilityLv0LimitBreak', 'AbilityMaxLimitBreak'
+	]
+	_MASTER_DATA_TYPE = 'flower_memory'
+
+	def __init__(my, data_entry_csv):
+		super(FlowerMemoryEntry, my).__init__(data_entry_csv)
+
+	def __lt__(my, other):
+		return my.id < other.id
+
+	def string_transformer(my, val, quoted):
+		if val.find('|') != -1 :
+			# Change the format of owners from a stringly-type,
+			# pipe-separated list of integers to a Lua list.
+			# ex: owners=71|341 becomes owners={71, 341}
+			return '{{{0}}}'.format( ', '.join(val.split('|')) )
+		elif quoted:
+			return quotify_non_number(val)
+		return val
+
+	def getlua_debug(my, quoted=False):
+		return u'[{0}] = {1},'.format(my.id,
+			super(FlowerMemoryEntry, my).getlua(quoted))
+			
+		lua_table = u'[{0}] = {{'.format(my.id)
+		pairs = []
+		for k, v in sorted(my.values_dict.items()):
+			v = my.string_transformer(v, quoted)
+			pairs.append([k, v])
+		lua_table += u', '.join([u'{0}={1}'.format(
+			pair[0], pair[1]) for pair in pairs])
+		lua_table += '}'
+		return lua_table
+
+	def getlua(my, quoted=False):
+		"""Returns the stored data as a Lua list."""
+		# Removes unused data entries.
+		my.values_dict.pop('id')
+		my.values_dict.pop('desc')
+		# Relate the list of values to the unique ID.
+		return "[{0}]={{{1}}}".format(
+			my.values_dict.pop('flowerMemoryID'), ",".join([my.string_transformer(v, quoted) for k, v in my.values_dict.items()])
+		)
+
+class FlowerMemoryAbilityEntry(BaseEntry):
+	"""Stores one line of data from the masterAbility section.
+	
+	Used as ability reference for Flower Memories across Limit Breaks.
+	"""
+	_CSV_NAMES = [
+		'id',
+		'name',
+		'effectID',
+		'optionID',
+		'desc',
+		'value1',
+		'value2',
+		'value3',
+		'value4'
+	]
+	_MASTER_DATA_TYPE = 'flower_memory_ability'
+
+	def __init__(my, data_entry_csv):
+		super(FlowerMemoryAbilityEntry, my).__init__(data_entry_csv)
+
+	def __lt__(my, other):
+		return my.id0 < other.id0
+
+	def getlua(my, quoted=False):
+		"""Returns the stored data as a Lua list."""
+		# Removes unused data entries.
+		my.values_dict.pop('name')
+		my.values_dict.pop('desc')
+		# Relate the list of values to the unique ID.
+		return "[{0}]={{{1}}}".format(
+			my.values_dict.pop('id'), ",".join([v for k, v in my.values_dict.items()])
+		)
+
+class FlowerMemoryAbilityLookup(BaseEntry):
+	"""Stores one line of data from the masterFlowerMemorysAbilitys section.
+	
+	Used as ability reference for Flower Memories across Limit Breaks.
+	"""
+	_CSV_NAMES = [
+		'id',
+		'flowerMemoryID',
+		'limitBreakVal',
+		'abilityId',
+	]
+	_MASTER_DATA_TYPE = 'flower_memory_ability_lookup'
+
+	def __init__(my, data_entry_csv):
+		super(FlowerMemoryAbilityLookup, my).__init__(data_entry_csv)
+
+class BlessedOathLookup(BaseEntry):
+	"""Stores one line of data from the masterCharacterSamePerson section.
+	
+	Used as character ID reference for Blessed Eternal Oath (in-game wedding) flags.
+	"""
+	_CSV_NAMES = [
+		'sameCharacterID',
+		'name',
+		'marriageBlessingFlag',
+	]
+	_MASTER_DATA_TYPE = 'eternal_oath'
+
+	def __init__(my, data_entry_csv):
+		super(BlessedOathLookup, my).__init__(data_entry_csv)
+
+	def getlua(my, quoted=False):
+		"""Returns the sameCharacterID as a Lua list."""
+		if my.marriageBlessingFlag == '1':
+			return "{0}".format(my.sameCharacterID)
+		else:
+			return ''
