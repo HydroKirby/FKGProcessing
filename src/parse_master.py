@@ -9,7 +9,6 @@ from common import *
 from entry import *
 from flowerknight import *
 from getmaster_outputter import MasterDataOutputter
-from parse_syncdata import SyncDataParser
 
 if sys.version_info.major >= 3:
 	# The script is being run under Python 3.
@@ -35,7 +34,6 @@ class MasterData(object):
 	remove_characters = False
 
 	def __init__(my):
-		# Most of these are deprecated 
 		my.masterTexts = {}
 		my.characters = {}
 		my.knights = {}
@@ -44,8 +42,14 @@ class MasterData(object):
 		my.abilities = {}
 		my.ability_descs = {}
 		my.equipment_entries = []
-		my.equipment = {}
-		my.skins = {}
+		my.equipment = []
+		my.skins = []
+		my.data_book = {}
+		my.family_entries = {}
+		my.flower_family = {}
+		my.flower_memories = []
+		my.memory_abilities = {}
+		my.bless_oath = {}
 
 		# This is the new way to access the master data.
 		my.entries = {}
@@ -113,8 +117,6 @@ class MasterData(object):
 		if not len(api_data):
 			print('There are no ability entries. Parsing bug?')
 		ability_entries = [AbilityEntry(entry) for entry in api_data]
-		# Remove abilities related to Strengthening Synthesis.
-		ability_entries = [entry for entry in ability_entries]
 		my.abilities = {a.uniqueID:a for a in ability_entries}
 
 	def _parse_ability_desc_entries(my, api_data=[]):
@@ -122,12 +124,11 @@ class MasterData(object):
 
 		It comes from masterCharacterLeaderSkillDescription.
 		"""
-
 		if not len(api_data):
 			print('There are no ability description entries. Parsing bug?')
 		ability_desc_entries = [AbilityDescEntry(entry) for entry in api_data]
 		my.ability_descs = {a.id0:a for a in ability_desc_entries}
-		
+
 	def _parse_equipment_entries(my, api_data=[]):
 		"""Creates a list of equipment entries from masterCharacterEquipment."""
 		if not len(api_data):
@@ -142,6 +143,62 @@ class MasterData(object):
 		my.skin_entries = [entry.split(',')[:-1] for entry in api_data]
 		my.skins = [SkinEntry(entry) for entry in api_data]
 
+	def _parse_family_entries(my, api_data=[]):
+		if not len(api_data):
+			print('There are no flower family entries. Parsing bug?')
+		"""Creates a list of floral family entries from from the master data.
+		
+		It comes from masterCharacterCategory."""
+		my.family_entries = [entry.split(',')[:-1] for entry in api_data]
+		my.flower_family = {f[0]:f for a in my.family_entries}
+
+	def _parse_data_entries(my, api_data=[]):
+		"""Creates a list of skin entries from masterCharacterSkin."""
+		if not len(api_data):
+			print('There are no skin entries. Parsing bug?')
+		my.data_entries = [entry.split(',')[:-1] for entry in api_data]
+		my.data_book = {d[2]:d for d in my.data_entries}
+
+	def _parse_flower_memories(my, api_data=[], api_data2=[]):
+		"""Creates a list of flower memories from masterFlowerMemory."""
+		
+		"""Generate a lookup table of flower memory abilities."""
+		"""entry[1] is Flower Memory ID which has the ability
+		   entry[2] is Limit Break level
+		   entry[3] is ability ID."""
+		
+		ability_lookup_entries = [entry.split(',')[:-1] for entry in api_data2 if entry.split(',')[2] in ('0','4')]
+		ability_lookup_lv0_list = {a[1]:[] for a in ability_lookup_entries}
+		ability_lookup_lv4_list = {a[1]:[] for a in ability_lookup_entries}
+		
+		#Flower Memories may have multiple ability IDs, so their lists are generated beforehand.
+		for entry in ability_lookup_entries:
+			if entry[2] == '0':
+				ability_lookup_lv0_list[entry[1]].append(entry[3])
+			elif entry[2] == '4':
+				ability_lookup_lv4_list[entry[1]].append(entry[3])
+		
+		for entry in api_data:
+			mID = entry.split(',')[0]
+			entry += "{{{0}}}".format("|".join(ability_lookup_lv0_list[mID])) + ','
+			entry += "{{{0}}}".format("|".join(ability_lookup_lv4_list[mID])
+                        or "|".join(ability_lookup_lv0_list[mID]))
+			
+			#my.flower_memories[mID] = FlowerMemoryEntry(entry)
+			my.flower_memories.append(FlowerMemoryEntry(entry))
+			
+	def _parse_memory_abilities(my, api_data=[]):
+		"""Creates a list of abilities used by flower memories as listed from masterAbility."""
+		if not len(api_data):
+			print('There are no ability entries. Parsing bug?')
+		
+		my.memory_ability_entries = [FlowerMemoryAbilityEntry(entry) for entry in api_data]
+		my.memory_abilities = {a.id:a for a in my.memory_ability_entries}
+		
+	def _parse_blessed_oath_flag(my, api_data=[]):
+		"""Returns a list of Flower Knights that can perform Blessed Eternal Oath."""
+		my.bless_oath = [BlessedOathLookup(entry) for entry in api_data if entry.split(',')[2] == '1']
+
 	def load_getMaster(my):
 		"""Loads and parses getMaster.
 
@@ -152,29 +209,28 @@ class MasterData(object):
 		# Open the master database.
 		loader = MasterDataLoader()
 		api_data = loader.master_json
-		my.api_data = api_data
 
 		# Output the result for debugging purposes
 		loader.output_getMaster_plaintext()
-		
+
 		# Extract relevant data from master database
-		
+
 		if loader.master_text:
 			# Parse data from the old format as a massive CSV string
 			mt = loader.master_text
-			my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', mt)
-			my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', mt)
-			my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', mt)
-			my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', mt)
-			my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', mt)
-			my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', mt)
-			my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', mt)
-			data_skill = my.masterTexts['masterSkill']
-			data_abil = my.masterTexts['masterAbility']
-			data_abil_desc = my.masterTexts['masterAbilityDescs']
-			data_equip = my.masterTexts['masterEquipment']
-			data_char = my.masterTexts['masterCharacter']
-			data_skin = my.masterTexts['masterCharacterSkin']
+			
+			data_skill = my.masterTexts['masterSkill'] = my._extract_section('masterCharacterSkill', mt)
+			data_abil = my.masterTexts['masterAbility'] = my._extract_section('masterCharacterLeaderSkill', mt)
+			data_abil_desc = my.masterTexts['masterAbilityDescs'] = my._extract_section('masterCharacterLeaderSkillDescription', mt)
+			data_equip = my.masterTexts['masterEquipment'] = my._extract_section('masterCharacterEquipment', mt)
+			data_char = my.masterTexts['masterCharacter'] = my._extract_section('masterCharacter', mt)
+			data_skin = my.masterTexts['masterCharacterSkin'] = my._extract_section('masterCharacterSkin', mt)
+			data_family = my.masterTexts['masterPlantFamily'] = my._extract_section('masterCharacterCategory', mt)
+			data_book = my.masterTexts['masterFlowerBook'] = my._extract_section('masterCharacterBook', mt)
+			data_fmem = my.masterTexts['masterFlowerMemory'] = my._extract_section('masterFlowerMemory', mt)
+			data_fab_ref = my.masterTexts['masterFlowerMemoryAbility'] = my._extract_section('masterFlowerMemorysAbilitys', mt)
+			data_fmem_abil = my.masterTexts['masterFlowerMemoryAbility'] = my._extract_section('masterAbility', mt)
+			data_bless_oath = my.masterTexts['masterCharacterSamePerson'] = my._extract_section('masterCharacterSamePerson', mt)
 		else:
 			# Parse data from the new format stored as a dict
 			data_skill = [dat for dat in api_data['masterCharacterSkill'].split('\n') if dat]
@@ -183,7 +239,13 @@ class MasterData(object):
 			data_equip = [dat for dat in api_data['masterCharacterEquipment'].split('\n') if dat]
 			data_char = [dat for dat in api_data['masterCharacter'].split('\n') if dat]
 			data_skin = [dat for dat in api_data['masterCharacterSkin'].split('\n') if dat]
-
+			data_family = [dat for dat in api_data['masterCharacterCategory'].split('\n') if dat]
+			data_book = [dat for dat in api_data['masterCharacterBook'].split('\n') if dat]
+			data_fmem = [dat for dat in api_data['masterFlowerMemory'].split('\n') if dat]
+			data_fab_ref = [dat for dat in api_data['masterFlowerMemorysAbilitys'].split('\n') if dat]
+			data_fmem_abil = [dat for dat in api_data['masterAbility'].split('\n') if dat]
+			data_bless_oath = [dat for dat in api_data['masterCharacterSamePerson'].split('\n') if dat]
+			
 		# Parse character and equipment entries
 		my._parse_skill_entries(data_skill)
 		my._parse_ability_entries(data_abil)
@@ -193,10 +255,12 @@ class MasterData(object):
 		# Parse character entries AFTER ability and ability descriptions.
 		# We need to remove abilities that belong to non-flower knights.
 		my._parse_character_entries(data_char)
-		# Do specialized processing for FMs
-		# TODO: Put the other "Entry" instances into the entries dict
-		sync_parser = SyncDataParser(api_data['masterSyncData'])
-		my.entries['fm'] = sync_parser.synced['master_flower_memorys']
+		my._parse_flower_memories(data_fmem, data_fab_ref)
+		my._parse_memory_abilities(data_fmem_abil)
+		my._parse_blessed_oath_flag(data_bless_oath)
+		
+		my.flower_family = data_family
+		my.data_book = data_book
 
 	def _convert_version_to_int(my, main_ver, major_ver, minor_ver):
 		"""Turns a version date into a sortable integer.
@@ -404,22 +468,46 @@ class MasterData(object):
 		"""Outputs the table of bundled ability IDs and their related ability info."""
 		return self.outputter.get_bundled_ability_list_page()
 
-	def get_equipment_list_page(self):
-		"""Outputs the table of equipment IDs and their related info."""
-		return self.outputter.get_equipment_list_page()
-		
-	def get_personal_equip_list_page(self):
-		"""Outputs the table of skill IDs and their related skill info."""
-		return self.outputter.get_personal_equip_list_page()
-
 	def get_master_char_data_page(self):
 		"""Outputs the table of every char's data and their related names."""
 		return self.outputter.get_master_char_data_page()
+
+	def get_master_char_data_nation_page(self, nation):
+		"""Outputs the table of every char's data and their related names."""
+		return self.outputter.get_master_char_data_nation_page(nation)
+
+	def get_equipment_list_page(self):
+		"""Outputs the table of equipment IDs and their related info."""
+		return self.outputter.get_equipment_list_page()
+
+	def get_user_equip_list_page(self):
+		"""Outputs the table of equipment IDs and their related ownership info."""
+		return self.outputter.get_user_equip_list_page()
+
+	def get_personal_equip_list_page(self):
+		"""Outputs the table of character IDs and their personal equipment."""
+		return self.outputter.get_personal_equip_list_page()
+
+	def get_equipment_stats_list_page(self):
+		"""Outputs the table of equipment IDs and their related stats info."""
+		return self.outputter.get_equipment_stats_list_page()
 
 	def get_new_equipment_names_page(self, page):
 		"""Outputs the table of equipment names."""
 		return self.outputter.get_new_equipment_names_page(page)
 
+	def get_flower_memories_list_page(self):
+		"""Outputs the table of equipment IDs and their related stats info."""
+		return self.outputter.get_flower_memories_list_page()
+
+	def get_flower_memories_abilities_page(self):
+		"""Outputs the table of equipment names."""
+		return self.outputter.get_flower_memories_abilities_page()
+		
+	def get_eternal_oath_page(self, page):
+		"""Outputs the table of equipment names."""
+		return self.outputter.get_eternal_oath_page(page)
+		
 	def get_char_entries(my, char_name_or_id):
 		"""Finds all entries relevant to a character ID or full name."""
 		char_id = ''
