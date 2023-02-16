@@ -74,19 +74,19 @@ class FlowerKnight(object):
 			return
 		tier = entry.evolutionTier
 		isRarityGrown = entry.isRarityGrown == '1'
-		unknown03 = entry.unknown03 == '1'
-		unknown04 = entry.unknown04 == '1'
+		maxEvolutionFlag = entry.maxEvolutionFlag == '1'
+		bloomingEnableFlag = entry.bloomingEnableFlag == '1'
 		if tier == '1':
 			my._add_tier1_entry(entry)
 		elif tier == '2':
 			my._add_tier2_entry(entry)
 		elif (tier == '3' and not isRarityGrown) or \
-			(tier == '98' and isRarityGrown and not unknown03 and unknown04):
+			(tier == '98' and isRarityGrown and not maxEvolutionFlag and bloomingEnableFlag):
 			# tier = 3 means it is a 5* or 6* that can bloom.
 			# tier = 98 and tier = 99 means it is a 2-4* that can go beyond evolution.
 			my._add_tier3_entry(entry)
 		elif (tier == '4' and isRarityGrown) or \
-			(tier == '99' and isRarityGrown and unknown03 and not unknown04):
+			(tier == '99' and isRarityGrown and maxEvolutionFlag and not bloomingEnableFlag):
 			my._add_tier4_entry(entry)
 		elif not FlowerKnight.stated_integrity_bug:
 			print('Warning: CharacterEntry w/an invalid evolution tier.\n' \
@@ -137,9 +137,9 @@ class FlowerKnight(object):
 		my.tiers[1]['date0'] = entry.date0
 		my.tiers[1]['date1'] = entry.date1
 		my.tiers[1]['gameVersionWhenAdded'] = entry.gameVersionWhenAdded
-		# Only the pre-evolved entry has a sort ID because evolved/bloomed
-		# pics aren't used in the library / 図鑑.
-		my.charID1 = entry.sortID
+		# charID and charID2 is now almost identical except for skins.
+		# libraryID is same across character variants and skins.
+		my.charID1 = entry.charID1
 		my.charID2 = entry.charID2
 		my.libID = entry.libraryID
 
@@ -301,7 +301,7 @@ class FlowerKnight(object):
 		#Fill out a string format table with descriptive variable names.
 		formatDict = {
 			'id':my.tiers[1]['id'],
-			'charID':my.charID1,
+			'charID1':my.charID1,
 			'charID2':my.charID2,
 			'libID':my.libID,
 			'type':my.type,
@@ -414,8 +414,8 @@ class FlowerKnight(object):
 		if my.can_bloom():
 			tier3StatsString = dedent('''
 				tier3Lv1 = {{ {tier3Lv1HP}, {tier3Lv1Atk}, {tier3Lv1Def} }},
-				tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},
-				''').lstrip().format(**formatDict)
+				tier3LvMax = {{ {tier3LvMaxHP}, {tier3LvMaxAtk}, {tier3LvMaxDef} }},'''
+				).lstrip().format(**formatDict)
 			tier3AffString = dedent('''
 				tier3Aff1Bonus = {{ {tier3Aff1HP}, {tier3Aff1Atk}, {tier3Aff1Def} }},
 				tier3Aff2Bonus = {{ {tier3Aff2HP}, {tier3Aff2Atk}, {tier3Aff2Def} }},
@@ -426,10 +426,10 @@ class FlowerKnight(object):
 		tier4StatsString = tier4AffString = ''
 		tier4SkillString = ''
 		if my.can_rarity_grow():
-			tier4StatsString = dedent('''
+			tier4StatsString = '\n' + dedent('''
 				tier4Lv1 = {{ {tier4Lv1HP}, {tier4Lv1Atk}, {tier4Lv1Def} }},
-				tier4LvMax = {{ {tier4LvMaxHP}, {tier4LvMaxAtk}, {tier4LvMaxDef} }},
-				''').lstrip().format(**formatDict)
+				tier4LvMax = {{ {tier4LvMaxHP}, {tier4LvMaxAtk}, {tier4LvMaxDef} }},'''
+				).lstrip().format(**formatDict)
 			tier4AffString = dedent('''
 				tier4Aff1Bonus = {{ {tier4Aff1HP}, {tier4Aff1Atk}, {tier4Aff1Def} }},
 				tier4Aff2Bonus = {{ {tier4Aff2HP}, {tier4Aff2Atk}, {tier4Aff2Def} }},
@@ -454,10 +454,10 @@ class FlowerKnight(object):
 
 		lua_table = dedent(u'''
 			{{id = {id},
-			charID = {charID},
-			libID = {libID},
 			name = {japanese},
 			reading = "{reading}",
+			libID = {libID},
+			personalEquipOwnerID = {charID1},
 			type = {type},
 			rarity = {rarity},
 			isEvent = {isEvent},
@@ -465,16 +465,15 @@ class FlowerKnight(object):
 			likes = {gift},
 			nation = {nation},
 			family = {family},
-			personalEquipOwnerID = {charID2},
 			dateAdded = {dateAdded},
 			skill = {skill},
 			{tier4skill}bundledAbilities = {{ {abilityString} }},
 			tier1Lv1 = {{ {tier1Lv1HP}, {tier1Lv1Atk}, {tier1Lv1Def} }},
 			tier1LvMax = {{ {tier1LvMaxHP}, {tier1LvMaxAtk}, {tier1LvMaxDef} }},
-			{tier2StatsString}{tier3StatsString}{tier4StatsString}speed = {speed},
+			{tier2StatsString}{tier3StatsString}{tier4StatsString}
 			tier1Aff1Bonus = {{ {tier1Aff1HP}, {tier1Aff1Atk}, {tier1Aff1Def} }},
 			tier1Aff2Bonus = {{ {tier1Aff2HP}, {tier1Aff2Atk}, {tier1Aff2Def} }},
-			{tier2AffString}{tier3AffString}{tier4AffString}}}''').lstrip().format(**formatDict)
+			{tier2AffString}{tier3AffString}{tier4AffString}speed = {speed}}}''').lstrip().format(**formatDict)
 
 		return lua_table
 
