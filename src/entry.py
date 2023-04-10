@@ -509,7 +509,7 @@ class EquipmentEntry(BaseEntry):
 		'ability2Val0',
 		'ability2Val1',
 		'ability2Val2',
-		'equipPart', # See note 1 below
+		#'equipPart', # See note 1 below
 		'equipType',
 		'isPersonalEquip',
 		'owners',
@@ -525,7 +525,7 @@ class EquipmentEntry(BaseEntry):
 		'classification2', # See note 3 below
 		'EffectType', # 20001 for all rainbow-rarity event equipments, 0 otherwise.
 	]	
-	# Note 1: CSV "equipPart" has the following meanings. 
+	# Note 1: CSV "equipPart" has the following meanings. Is now deprecated.
 	# 300001: All gacha rings.
 	# 300002: All gacha bracelets.
 	# 300003: All gacha necklaces.
@@ -680,7 +680,6 @@ class EquipmentEntry(BaseEntry):
 				",".join(
 					[
 						my.id0,
-						my.equipPart,
 						my.equipType,
 						my.classification,
 						my.isLevelable,
