@@ -135,7 +135,6 @@ class FlowerKnight(object):
 		my.tiers[1]['aff2'] = [entry.aff2MultHP, entry.aff2MultAtk, entry.aff2MultDef]
 		# Both date values and the game-version-when-added strings can differ between tiers.
 		my.tiers[1]['date0'] = entry.date0
-		my.tiers[1]['date1'] = entry.date1
 		my.tiers[1]['gameVersionWhenAdded'] = entry.gameVersionWhenAdded
 		# charID and charID2 is now almost identical except for skins.
 		# libraryID is same across character variants and skins.
@@ -154,7 +153,6 @@ class FlowerKnight(object):
 		my.tiers[2]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
 		my.tiers[2]['aff2'] = [entry.aff2MultHP, entry.aff2MultAtk, entry.aff2MultDef]
 		my.tiers[2]['date0'] = entry.date0
-		my.tiers[2]['date1'] = entry.date1
 		my.tiers[2]['gameVersionWhenAdded'] = entry.gameVersionWhenAdded
 
 	def _add_tier3_entry(my, entry):
@@ -180,7 +178,6 @@ class FlowerKnight(object):
 		my.tiers[3]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
 		my.tiers[3]['aff2'] = [entry.aff2MultHP, entry.aff2MultAtk, entry.aff2MultDef]
 		my.tiers[3]['date0'] = entry.date0
-		my.tiers[3]['date1'] = entry.date1
 		my.tiers[3]['gameVersionWhenAdded'] = entry.gameVersionWhenAdded
 
 	def _add_tier4_entry(my, entry):
@@ -204,7 +201,6 @@ class FlowerKnight(object):
 		my.tiers[4]['aff1'] = [entry.aff1MultHP, entry.aff1MultAtk, entry.aff1MultDef]
 		my.tiers[4]['aff2'] = [entry.aff2MultHP, entry.aff2MultAtk, entry.aff2MultDef]
 		my.tiers[4]['date0'] = entry.date0
-		my.tiers[4]['date1'] = entry.date1
 		my.tiers[4]['gameVersionWhenAdded'] = entry.gameVersionWhenAdded
 
 	def _determine_romaji(my):
@@ -237,29 +233,20 @@ class FlowerKnight(object):
 			# Cannot bloom or rarity grow.
 			my.latest_date = max([
 				my.tiers[1]['date0'],
-				my.tiers[1]['date1'],
-				my.tiers[2]['date0'],
-				my.tiers[2]['date1'],])
+				my.tiers[2]['date0'],])
 		elif my.growability == FlowerKnight.NO_RARITY_GROWTH:
 			# Can bloom, but not rarity grow.
 			my.latest_date = max([
 				my.tiers[1]['date0'],
-				my.tiers[1]['date1'],
 				my.tiers[2]['date0'],
-				my.tiers[2]['date1'],
-				my.tiers[3]['date0'],
-				my.tiers[3]['date1'],])
+				my.tiers[3]['date0'],])
 		else:
 			# Can bloom and rarity grow.
 			my.latest_date = max([
 				my.tiers[1]['date0'],
-				my.tiers[1]['date1'],
 				my.tiers[2]['date0'],
-				my.tiers[2]['date1'],
 				my.tiers[3]['date0'],
-				my.tiers[3]['date1'],
-				my.tiers[4]['date0'],
-				my.tiers[4]['date1'],])
+				my.tiers[4]['date0'],])
 		return my.latest_date
 
 	def has_id(my, id):
