@@ -266,7 +266,7 @@ class CharacterEntry(BaseEntry):
 		'nation',
 		'charID1', # Used as reference
 		'baseName0',
-		'baseName1',
+		# 'baseName1', Deprecated on May 29, 2023.
 		'rarity',
 		'type',
 		'gift',
@@ -281,7 +281,7 @@ class CharacterEntry(BaseEntry):
 		'ability9ID',
 		'skill1ID',
 		'skill2ID',
-		'unused01', # Added Feb 15, 2020
+		# 'unused01', Added Feb 15, 2020. Deprecated on May 29, 2023.
 		'lvlOneHP',
 		'lvlMaxHP',
 		'lvlOneAtk',
@@ -323,8 +323,8 @@ class CharacterEntry(BaseEntry):
 		'isSpecialSynthMat', # Added 12/4/2017. When 1, it's a Kodaibana, Ampule, or Naae.
 		'isEventKnight', # Added 1/22/2018. When 1, it's an event character of any evolution tier. Doesn't include serial code girls.
 		'date0',
-		'date1',
-		'unused02',
+		# 'date1',  Appears to be no longer in use.
+		# 'unused02', Appears to be no longer in use.
 		'gameVersionWhenAdded',
 		# Added 3/5/2018. When non-zero, points to the character ID of what this
 		# character would become after being rarity grown.
