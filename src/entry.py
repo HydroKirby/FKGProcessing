@@ -725,9 +725,9 @@ class SkinEntry(BaseEntry):
 		'skinName',
 		# Order of icons for on the skin selection modal
 		'pos',
+		'dateAdded',
 		# Perhaps this flag is only for Ping Pong Mum?
 		'unknown00',
-		#'unknown01',
 	]
 	# This defines which vars get shown in getlua()
 	_LUA_ORDER = [
