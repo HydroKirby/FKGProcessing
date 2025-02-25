@@ -399,7 +399,7 @@ class CompareData(object):
 				my.downloadImage.downloadEquipImage(entry)
 
 		for entry in my.mariage_id_lookup:
-			my.downloadAudio.getOathCharacterVoice(entry.sameCharacterID)
+			my.downloadAudio.getOathCharacterVoice(entry)
 		
 		if VOICE_DOWNLOAD: my.downloadAudio.downloadAllVoice()
 		
