@@ -44,7 +44,8 @@ class Imaging(object):
 	'../res/type-slash.png',
 	'../res/type-blunt.png',
 	'../res/type-pierce.png',
-	'../res/type-magic.png']
+	'../res/type-magic.png',
+	'../res/type-dream.png']
 	ICON_STAGES = [
 	'../res/stage-preEvolved.png',
 	'../res/stage-evolved.png',
@@ -135,7 +136,9 @@ class Imaging(object):
 		# Select the layers to use.
 		frame = my.icon_frames[rarity - 1]
 		bg = my.icon_bgs[rarity - 1]
-		if typing : icon_typing = my.icon_types[typing - 1]
+		if typing :
+			if typing == 100: typing = 5
+			icon_typing = my.icon_types[typing - 1]
 		if stage  : stage_level = my.icon_stages[stage - 1]
 		# Apply the layers.
 		result = my.apply_layer(char_icon, bg)
