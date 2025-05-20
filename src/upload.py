@@ -57,13 +57,13 @@ from __future__ import absolute_import, unicode_literals
 import math
 import os
 import re
+import sys
 
 import update_lists
 
 import pywikibot
 from pywikibot.bot import suggest_help
 from pywikibot.specialbots import UploadRobot
-
 
 def main(*args):
     """
@@ -81,12 +81,13 @@ def main(*args):
     always = False
     useFilename = None
     verifyDescription = False
-    aborts = set()
+    aborts = True
     ignorewarn = set()
     chunk_size = 0
     chunk_size_regex = r'^-chunked(?::(\d+(?:\.\d+)?)[ \t]*(k|ki|m|mi)?b?)?$'
     chunk_size_regex = re.compile(chunk_size_regex, re.I)
     recursive = False
+    #target_site = APISite("NazunaBot", "fkg")
 
     # process all global bot args
     # returns a list of non-global args, i.e. args for upload.py
@@ -144,6 +145,7 @@ def main(*args):
                 url = ""
             else:
                 description.append(arg)
+    
     description = u' '.join(description)
     while not ("://" in url or os.path.exists(url)):
         if not url:
@@ -156,8 +158,9 @@ def main(*args):
             url = None
             break
         else:
-            pywikibot.output(error)
-        url = pywikibot.input(u'URL, file or directory where files are now:')
+            pywikibot.error(error)
+            url = pywikibot.input(u'URL, file or directory where files are now:')
+    
     if always and ((aborts is not True and ignorewarn is not True) or
                    not description or url is None):
         additional = ''
@@ -173,6 +176,7 @@ def main(*args):
         additional += 'Unable to run in -always mode'
         suggest_help(missing_parameters=missing, additional_text=additional)
         return False
+	
     if os.path.isdir(url):
         site = pywikibot.Site()
         site.login(False, 'NazunaBot')
@@ -185,7 +189,7 @@ def main(*args):
                 if not (pywikibot.FilePage(site, "File:" + dir_file).exists()):
                     file_list.append(os.path.join(directory_info[0], dir_file))
                 else:
-                    pywikibot.output("File:{0} has been uploaded, skipping".format(dir_file))
+                    pywikibot.info("File:{0} has been uploaded, skipping".format(dir_file))
 				
         url = file_list
     else:
@@ -197,7 +201,10 @@ def main(*args):
                       chunk_size=chunk_size, always=always, #target_site=target_site,
                       summary=summary)
     bot.run()
-
+    
+    if not sys.executable.split('\\')[-1] == 'pythonw.exe':
+        print("Press ENTER to exit...")
+        input()
 
 if __name__ == "__main__":
     main()
