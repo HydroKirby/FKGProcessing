@@ -28,7 +28,7 @@ class GenerateQuote(object):
 		"戦闘スキル①",
 		"戦闘スキル②",
 		"戦闘スキル③(開花)",
-		'戦闘スキル④(開花)',
+		"戦闘スキル④(開花)",
 		"汎用(怒)",
 		"被ダメージ",
 		"被ダメージ(致命傷)",
@@ -134,11 +134,21 @@ class GenerateQuote(object):
 		"}}"]
 
 	def downloadText(my, charaName):
-		dltext = requests.get(wikiLink + charaName).text
-		if dltext.find('<div class="ie5">') == -1 :
-			redirect = charaName.replace("(","（").replace(")","）")
-			dltext  = requests.get(wikiLink + redirect).text
-		return dltext.replace(' class="spacer" /','').replace(' class="style_td"','').replace('"','\\"')
+		retry = 5
+		for r in range(retry + 1):
+			try:
+				dltext = requests.get(wikiLink + charaName).text
+			except requests.RequestException as error:
+				if r < retry:
+					print(f"loading {charaName} attempt failed, retrying...")
+				else:
+					print(f"Unable to load {charaName}")
+					print(type(error).__name__)
+			else:
+				if dltext.find('<div class="ie5">') == -1 :
+					redirect = charaName.replace("(","（").replace(")","）")
+					dltext  = requests.get(wikiLink + redirect).text
+				return dltext.replace(' class="spacer" /','').replace(' class="style_td"','').replace('"','\\"')
 
 	def translateLink(my, inputText):
 		#No longer used due to difficulty handling external links
@@ -160,11 +170,19 @@ class GenerateQuote(object):
 			inputText = inputText.partition("<a")[0] + inputText.partition("<a")[2].partition(">")[2]
 
 		return inputText.replace('</a>','')
+	
+	def testIndex(my, mylist, key):
+		try:
+			return mylist[key]
+		except KeyError:
+			print(str(key) + " doesn't have text entry.")
+			return ""
 
 	def addExceptions(my, inputText, CharaName):
 		outputText = inputText
 		
 		exceptionList = {
+                        "コオニタビラコ(新春)": ["戦闘スキル③(開花) = \n| 戦闘スキル④(開花) = ","| 戦闘スキル③(開花) = 手加減しません！\n| 戦闘スキル④(開花) = これでおしまいです！"],
 			"ランタナ(花祭り)": ["初登場 = イエスロリータ・ゴータッチ！","初登場 = 花祭りのニギニギしさを浴びて！<br>ロリっ子美少女ランタナ、新たな衣装でコーリンどぅわあああああ！<br>さぁ、愛でまくるがいい、だんちょ！　イエスロリータ・ゴータッチ！"],
 			"サテラ": ["移動開始時① = ","移動開始時① = サテラについてこい！"],
 			"セントポーリア(きぐるみのんびり貴族)": ["| 会話④ = \n| 会話⑤ = \n| 会話⑥ = ","| 会話④ = 団長さん、新しいドレスどうでしょう？　えへへへ、いっぱい見てくれますね。 何だか、インコの服よりもこちらの方が恥ずかしいですね♪\n| 会話⑤ = インコの衣装を着たら～何だか…身も心も軽くなった気がしました。 色んな衣装を着たら、もっと違う私になれるかも知れませんね～♪\n| 会話⑥ = ドレスの私も～インコの私も～どちらも私です～　団長さんは色々な私を受け入れてくれるからとっても嬉しいんですよ♪<br>ずっと一緒に居てくださいね、団長さ～ん♪"]
@@ -184,26 +202,29 @@ class GenerateQuote(object):
 		with open(masterData, 'r', encoding='utf8') as input:
 			masterDataEntry = input.read()
 		
-		for entry in masterDataEntry.partition("masterCharacterTextResource\n\n")[2].partition("\n\n")[0].split('\n'):
-			fkgid     = entry.split(',')[1]
-			if int(fkgid) % 2 == 1:
-				voiceline = entry.split(',')[3]
-				voicetype = entry.split(',')[4]
+		textResource = masterDataEntry.partition("masterCharacterTextResource\n\n")[2].partition("\n\n")[0].split('\n') + masterDataEntry.partition("masterCharacterTextResource2\n\n")[2].partition("\n\n")[0].split('\n')
+		
+		for entry in textResource:
+			if entry != '':
+				fkgid     = entry.split(',')[1]
+				if int(fkgid) % 2 == 1:
+					voiceline = entry.split(',')[3]
+					voicetype = entry.split(',')[4]
 				
-				quoteindex[fkgid + voicetype] = voiceline
+					quoteindex[fkgid + voicetype] = voiceline
 
 		for entry in masterDataEntry.partition("masterCharacter\n\n")[2].partition("\n200003")[0].split('\n'):
 			fkgid   = entry.split(',')[0]
-			isfkg   = entry.split(',')[41]
+			isfkg   = entry.split(',')[39]
 			if int(fkgid) % 2 == 1 and isfkg == '1':
-				fkgname = entry.split(',')[55]
+				fkgname = entry.split(',')[53].replace('"','')
 
 				fkgidindex[fkgname] = {
 					"fkgid":fkgid,
-					"fkg_libraryintro":quoteindex[fkgid + "fkg_introduction001"],
-					"fkg_stagestart001":quoteindex[fkgid + "fkg_stagestart001"],
-					"fkg_present001":quoteindex[fkgid + "fkg_present001"],
-					"fkg_present002":quoteindex[fkgid + "fkg_present002"],
+					"fkg_libraryintro": my.testIndex(quoteindex, fkgid + "fkg_introduction001"),
+					"fkg_stagestart001": my.testIndex(quoteindex, fkgid + "fkg_stagestart001"),
+					"fkg_present001": my.testIndex(quoteindex, fkgid + "fkg_present001"),
+					"fkg_present002": my.testIndex(quoteindex, fkgid + "fkg_present002"),
 				}
 
 		if debugFlag:
@@ -212,16 +233,24 @@ class GenerateQuote(object):
 
 		if not my.api_data:
 			my.api_data = fkgidindex
+			#print("MasterData loaded")
 
-	def printquote(my, charaName, updateFlag=False):
+		#	print(x.split(",")[0] + " " + x.split(",")[55])
+		#https://dugrqaqinbtcq.cloudfront.net/product/ynnFQcGDLfaUcGhp/assets/event/
+		#https://dugrqaqinbtcq.cloudfront.net/product/ynnFQcGDLfaUcGhp/assets/event/new/ new_
+
+
+	def printquote(my, charaName, wikiText, updateFlag=False):
+		charaName = charaName.replace('10thAnniversary','10th Anniversary')
 		rawdata = my.downloadText(charaName)
+		if not my.api_data: my.parseMasterData()
 		#masterdata = my.getText(charaName) get intro line from get master
 
 		#Filter the text with a series of text delimiter partitioning and formatting.
 		libintro = rawdata.partition("自己紹介")[2].partition("<strong>")[2].partition("</strong>")[0].partition("</td>")[0] + "\n"
 		
-		if not updateFlag or libintro.find("図鑑のテキストを記載") != -1:
-			my.parseMasterData()
+		if libintro.find("図鑑のテキストを記載") != -1:
+		# not updateFlag or
 			libintro = my.api_data[charaName]["fkg_libraryintro"] + "\n"
 
 		quotetext = rawdata.partition("ボイス")[2].partition(">シーン")[2]#.partition("</table>")[0]
@@ -232,7 +261,18 @@ class GenerateQuote(object):
 			quoteEntry  = quote.replace('<br>','')
 			quoteInput  = "<td>"+quote.partition("(好感度")[0].partition("(開花)")[0].partition("<br>")[0]
 			quoteSpeech = quotetext.partition(quoteInput)[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"').replace("#REF!","<br>")
-				
+			#if (quoteInput == "<td>害虫の巣パネル通過時") and (quoteSpeech == "") : print(quoteEntry+" "+quoteInput+" "+quoteSpeech)
+			
+			if (quoteInput == "<td>移動開始時①") and (quoteSpeech == "") :
+				quoteSpeech = my.api_data[charaName]["fkg_stagestart001"]
+			if (quoteInput == "<td>贈り物プレゼント時①") and (quoteSpeech == "") :
+				quoteSpeech = my.api_data[charaName]["fkg_present001"]
+			if (quoteInput == "<td>贈り物プレゼント時②") and (quoteSpeech == "") :
+				quoteSpeech = my.api_data[charaName]["fkg_present002"]
+			if (quoteInput == "<td>戦闘スキル③") and (quoteSpeech == "") :
+				quoteSpeech = quotetext.partition("戦闘スキル開花①")[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"').replace("#REF!","<br>")
+			if (quoteInput == "<td>戦闘スキル④") and (quoteSpeech == "") :
+				quoteSpeech = quotetext.partition("戦闘スキル開花②")[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"').replace("#REF!","<br>")
 			if (quoteInput == "<td>害虫の巣パネル通過時") and (quoteSpeech == "") :
 				quoteSpeech = quotetext.partition('ダメージギミック接触時')[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"') + quotetext.partition('ダメージパネル接触時')[2].partition("<td>")[2].partition("</td>")[0].replace('&quot;','"')
 			textList.append("| " + quoteEntry + " = " + quoteSpeech)
@@ -256,14 +296,14 @@ def test():
 	page = pywikibot.Page(site, u'Colchicum')
 	wikiText = page.get()
 	comment = 'Added quotes'
-	flowerKnightName = wikiText.partition("|JP = ")[2].partition("\n")[0].replace(' ','')
+	flowerKnightName = wikiText.partition("|JP = ")[2].partition("\n")[0].replace(' ','').replace('10thAnniversary','10th Anniversary')
 	textLines = []
 
 	if wikiText.find('Quotes') == -1 or wikiText.find('{{Knightquote') == -1:
 		changeline = True
 		for line in wikiText.split('\n'):
 			if line.find('}}') != -1 and line.find(' = ') == -1 and changeline:
-				line += GenerateQuote.printquote(flowerKnightName)
+				line += GenerateQuote.printquote(flowerKnightName,wikiText)
 				changeline = False
 			if not line.replace(' ', '').startswith('==Quotes'):
 				textLines.append(line)
@@ -273,7 +313,7 @@ def test():
 		text = GenerateQuote.removeLink(wikiText)
 		comment = 'Removed external link in quotes'
 	else:
-		text = wikiText.partition("{{Knightquote")[0] + GenerateQuote.printquote(flowerKnightName,True) + "\n\n| libraryintro =" + wikiText.partition("libraryintro =")[2]
+		text = wikiText.partition("{{Knightquote")[0] + GenerateQuote.printquote(flowerKnightName,wikiText,True) + "\n\n| libraryintro =" + wikiText.partition("libraryintro =")[2]
 		comment = 'Updated quotes'
 
 	ListUpdater.save(text, page, comment)
@@ -287,23 +327,20 @@ def output_template(text, outfilename):
 def main():
 	ListUpdater = ListUpdaterBot()
 	site = pywikibot.Site()
-	flowerKnightBaseList = pywikibot.Category(site, 'Category:6-Star').articles()
-	flowerKnightAltList  = pywikibot.Category(site, 'Category:5-Star').articles()
-	flowerKnightCoList   = pywikibot.Category(site, 'Category:4-Star').articles()
+	flowerKnightList = list(pywikibot.Category(site, 'Category:6-Star').articles()) \
+	+ list(pywikibot.Category(site, 'Category:5-Star').articles()) \
+	+ list(pywikibot.Category(site, 'Category:4-Star').articles())
+	editorlist = []
 
-	for page in flowerKnightBaseList:
-		updateKnightQuote(page,ListUpdater)
+	for page in flowerKnightList:
+		editorlist.append(verifyKnightQuote(page))
+	
+	for page in editorlist:
+		ListUpdater.save(page["text"], page["name"], page["comment"])
 
-	for page in flowerKnightAltList:
-		updateKnightQuote(page,ListUpdater)
-
-	for page in flowerKnightCoList:
-		updateKnightQuote(page,ListUpdater)
-
-
-def updateKnightQuote(page,ListUpdater):
+def verifyKnightQuote(page):
 	wikiText = page.get()
-	flowerKnightName = wikiText.partition("|JP = ")[2].partition("\n")[0].replace(' ','')
+	flowerKnightName = wikiText.partition("|JP = ")[2].partition("\n")[0].replace(' ','').replace('10thAnniversary','10th Anniversary')
 	comment = ""
 	textLines = []
 
@@ -311,7 +348,7 @@ def updateKnightQuote(page,ListUpdater):
 		changeline = True
 		for line in wikiText.split('\n'):
 			if line.find('}}') != -1 and line.find(' = ') == -1 and changeline:
-				line += GenerateQuote.printquote(flowerKnightName)
+				line += GenerateQuote.printquote(flowerKnightName,wikiText)
 				changeline = False
 			if not line.replace(' ', '').startswith('==Quotes'):
 				textLines.append(line)
@@ -323,11 +360,14 @@ def updateKnightQuote(page,ListUpdater):
 		text = GenerateQuote.removeLink(wikiText)
 		comment = 'Removed external link from quotes'
 	else:
-		text = wikiText.partition("{{Knightquote")[0] + GenerateQuote.printquote(flowerKnightName,True) + "\n\n| libraryintro =" + wikiText.partition("libraryintro =")[2]
+		text = wikiText.partition("{{Knightquote")[0] + GenerateQuote.printquote(flowerKnightName,wikiText,True) + "\n\n| libraryintro =" + wikiText.partition("libraryintro =")[2]
 		comment = 'Updated quotes'
 
-	print("{0} {1}".format(flowerKnightName, page.title()))
-	ListUpdater.save(text, page, comment)
+	appendChange = ''
+	if wikiText != text : appendChange = ' to be edited...'
+	print("{0} {1}{2}".format(flowerKnightName, page.title(),appendChange))
+	return {"text": text, "name": page, "comment": comment}
+	#ListUpdater.save(text, page, comment)
 
 if __name__ == "__main__":
 	GenerateQuote = GenerateQuote()
