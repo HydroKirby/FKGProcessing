@@ -11,9 +11,24 @@ Each instance of an Entry stores a single CSV line from the master data.
 """
 
 def add_quotes(text):
-	"""Puts pairs of double-quotes around strings."""
-	if text.startswith('"') and text.endswith('"'):
-		return text
+	"""Surrounds the passed text to make it a valid Lua string.
+
+	The result is ALWAYS encapsulated even if it was
+	already a valid Lua string.
+
+	@example foo			---> returns "foo"
+	@example "foo"			---> returns '"foo"'
+	@example "foo's bar"	---> returns [["foo's bar"]]
+	@example 'foo'			---> returns "'foo'"
+	"""
+
+	if '"' in text:
+		# Cannot encapsulate in double-quotes.
+		if "'" in text:
+			# Cannot encapsulate in quotes or double-quotes.
+			# Gotta waste bytes and use double square-brackets.
+			return '[[' + text + ']]'
+		return "'" + text + "'"
 	return '"' + text + '"'
 
 def get_float(val):
