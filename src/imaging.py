@@ -136,6 +136,8 @@ class Imaging(object):
 		# Select the layers to use.
 		frame = my.icon_frames[rarity - 1]
 		bg = my.icon_bgs[rarity - 1]
+		# 5 has no attack icon frame, while 100 is Dream-type.
+		if typing == 5: typing = None
 		if typing :
 			if typing == 100: typing = 5
 			icon_typing = my.icon_types[typing - 1]
