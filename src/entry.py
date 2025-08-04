@@ -348,6 +348,7 @@ class CharacterEntry(BaseEntry):
 		'canRarityGrow', # Added 3/12/2018.
 		#'date2', # Seems to be added around 01-Jan-2020. Appears to be no longer in use.
 		'isNazuna', # Added February 06, 2023.
+		'extendedCharacterID',
 		]
 	_MASTER_DATA_TYPE = 'character'
 
