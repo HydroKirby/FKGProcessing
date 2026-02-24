@@ -334,7 +334,9 @@ class GetLuaModuleData(object):
 	def getModuleData(my,ModuleLink,splitParam,oldID=''):
 		if oldID != '':
 			oldID = "oldid={0}&".format(oldID)
-		return urllibrary.urlopen(my.moduleLink.format(ModuleLink,oldID)).read().decode("utf-8").split(splitParam)
+		agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+		link = urllibrary.Request(my.moduleLink.format(ModuleLink,oldID), headers={'user-agent': agent, 'upgrade-insecure-requests':'1'})
+		return urllibrary.urlopen(link).read().decode("utf-8").split(splitParam)
 	
 	def getCharaIDList(my,oldID=''):
 		lua_charadata = my.getModuleData('MasterCharacterData','},\n["',oldID)
