@@ -67,25 +67,23 @@ class FlowerKnight(object):
 
 	def add_entry(my, entry):
 		"""Adds a CharacterEntry instance to this knight's data."""
-		if int(entry.id0) >= 700000 and entry.fullName == 'ツツジ':
-			# This is an NPC character. Do not store their data.
+		if int(entry.id0) >= 700000:
+			if entry.fullName == 'ツツジ' or entry.id0 in ['146603001']:
+			# This is either an NPC character or an alternate skin. Do not store their data.
 			# Otherwise, it might overwrite the playable character's data.
-			# An example is the one-star Tsutsuji/Azalea.
-			return
-		tier = entry.evolutionTier
-		isRarityGrown = entry.isRarityGrown == '1'
-		maxEvolutionFlag = entry.maxEvolutionFlag == '1'
-		bloomingEnableFlag = entry.bloomingEnableFlag == '1'
-		if entry.id0 == entry.charID2 and entry.charID2 == entry.extendedCharacterID:
-			# Handles the weird case with サンカヨウ whose master data looks like this
+			# An example is the one-star Tsutsuji/Azalea, and Skeleton Flower (Easter) alternate skin.
 			#       id0,       id1, charID1, baseName0,   charID2,             fullName,                variant, extendedCharacterID,
 			#    146603,    146603,    6046, サンカヨウ,      6046, サンカヨウ(イースター),              イースター,            14660300,
 			#    146604,    146604,    6046, サンカヨウ,      6046, サンカヨウ(イースター),              イースター,            14660400,
 			#    446603,    446603,    6046, サンカヨウ,      6046, サンカヨウ(イースター),              イースター,            44660300,
 			# 146603001, 146603001,    6046, サンカヨウ, 146603001, サンカヨウ(イースター), イースター(別バージョン),           146603001,
 			# That last entry is an alternate skin. We can ignore it or store it somehow
-			pass
-		elif tier == '1':
+				return
+		tier = entry.evolutionTier
+		isRarityGrown = entry.isRarityGrown == '1'
+		maxEvolutionFlag = entry.maxEvolutionFlag == '1'
+		bloomingEnableFlag = entry.bloomingEnableFlag == '1'
+		if tier == '1':
 			my._add_tier1_entry(entry)
 		elif tier == '2':
 			my._add_tier2_entry(entry)
