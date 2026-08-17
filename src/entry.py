@@ -539,7 +539,15 @@ class EquipmentEntry(BaseEntry):
 		'MaxEvolveFlag',
 		'WorldFlowerPowerType', # Boosts damage in World Flower missions with matching nation.
 		'classification2', # See note 3 below
-		'EffectType', # 20001 for all rainbow-rarity event equipments, 0 otherwise.
+		'EffectType' # 20001 for all rainbow-rarity event equipments, 0 otherwise.
+        'unknown01',
+        'unknown02',
+        'unknown03',
+        'unknown04',
+        'unknown05',
+        'unknown06',
+        'unknown07',
+        'unknown08',
 	]	
 	# Note 1: CSV "equipPart" has the following meanings. Is now deprecated.
 	# 300001: All gacha rings.
